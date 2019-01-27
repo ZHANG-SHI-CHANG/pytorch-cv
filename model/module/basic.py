@@ -1,3 +1,4 @@
+import torch
 from torch import nn
 
 __all__ = ['_conv3x3', '_bn_no_affine']
@@ -16,6 +17,15 @@ def _bn_no_affine(channels, norm_layer=nn.BatchNorm2d, norm_kwargs=None):
     bn_layer.weight.requires_grad = False
     bn_layer.bias.requires_grad = False
     return bn_layer
+
+
+# init scale: in order to fit gluon (Parameter without grad)
+def _init_scale(scale=[0.229, 0.224, 0.225]):
+    param = nn.Parameter(torch.Tensor(scale).view(1, 3, 1, 1) * 255, requires_grad=False)
+    return param
+
+
+
 
 
 if __name__ == '__main__':
