@@ -9,10 +9,7 @@ import os
 from torch import nn
 import torch.nn.functional as F
 
-
-def _conv3x3(in_channels, channels, stride):
-    return nn.Conv2d(in_channels, channels, kernel_size=3, stride=stride, padding=1,
-                     bias=False)
+from model.module.basic import _conv3x3, _bn_no_affine
 
 
 # -----------------------------------------------------------------------------
@@ -53,7 +50,7 @@ class CIFARBasicBlockV1(nn.Module):
         if downsample:
             self.downsample = list()
             self.downsample.append(nn.Conv2d(in_channels, channels, kernel_size=1, stride=stride,
-                                              bias=False))
+                                             bias=False))
             self.downsample.append(norm_layer(channels, **({} if norm_kwargs is None else norm_kwargs)))
             self.downsample = nn.Sequential(*self.downsample)
         else:
@@ -140,7 +137,7 @@ class CIFARResNetV1(nn.Module):
     layers : list of int
         Numbers of layers in each block
     channels : list of int
-        Numbers of channels in each block. Length should be one larger than layers list.
+        Numbers of channels in each block. Length should be two larger than layers list.
     classes : int, default 10
         Number of classification classes.
     norm_layer : object
@@ -197,7 +194,7 @@ class CIFARResNetV2(nn.Module):
     layers : list of int
         Numbers of layers in each block
     channels : list of int
-        Numbers of channels in each block. Length should be one larger than layers list.
+        Numbers of channels in each block. Length should be two larger than layers list.
     classes : int, default 10
         Number of classification classes.
     norm_layer : object
@@ -212,9 +209,7 @@ class CIFARResNetV2(nn.Module):
         super(CIFARResNetV2, self).__init__(**kwargs)
         assert len(layers) == len(channels) - 2
         self.features = list()
-        self.features.append(norm_layer(channels[0], affine=False,
-                                        **({} if norm_kwargs is None else norm_kwargs)))
-
+        self.features.append(_bn_no_affine(channels[0], norm_layer, norm_kwargs))
         self.features.append(nn.Conv2d(channels[0], channels[1], 3, 1, 1, bias=False))
 
         for i, num_layer in enumerate(layers):

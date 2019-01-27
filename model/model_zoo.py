@@ -1,4 +1,5 @@
 from .models_zoo.cifarresnet import *
+from .models_zoo.resnet import *
 
 __all__ = ['get_model', 'get_model_list']
 
@@ -10,6 +11,17 @@ _models = {
     'cifar_resnet20_v2': cifar_resnet20_v2,
     'cifar_resnet56_v2': cifar_resnet56_v2,
     'cifar_resnet110_v2': cifar_resnet110_v2,
+    # imagenet
+    'resnet18_v1': resnet18_v1,
+    'resnet34_v1': resnet34_v1,
+    'resnet50_v1': resnet50_v1,
+    'resnet101_v1': resnet101_v1,
+    'resnet152_v1': resnet152_v1,
+    'resnet18_v2': resnet18_v2,
+    'resnet34_v2': resnet34_v2,
+    'resnet50_v2': resnet50_v2,
+    'resnet101_v2': resnet101_v2,
+    'resnet152_v2': resnet152_v2,
 }
 
 

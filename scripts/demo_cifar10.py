@@ -12,7 +12,7 @@ parser.add_argument('--model', type=str, default='cifar_resnet110_v1',
                     help='name of the model to use')
 parser.add_argument('--saved-params', type=str, default='',
                     help='path to the saved model parameters')
-parser.add_argument('--input-pic', type=str, default='./png/mt_baker.jpg',
+parser.add_argument('--input-pic', type=str, default='./png/cat.jpg',
                     help='path to the input picture')
 opt = parser.parse_args()
 
