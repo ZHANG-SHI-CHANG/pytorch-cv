@@ -59,7 +59,7 @@ class SSDAnchorGenerator(nn.Module):
                     w = sizes[0] * sr
                     h = sizes[0] / sr
                     anchors.append([cx, cy, w, h])
-        return np.array(anchors).reshape(1, 1, alloc_size[0], alloc_size[1], -1)
+        return np.array(anchors).reshape(1, 1, alloc_size[0], alloc_size[1], -1).astype(np.float32)
 
     @property
     def num_depth(self):

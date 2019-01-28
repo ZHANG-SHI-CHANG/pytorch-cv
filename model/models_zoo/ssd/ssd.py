@@ -1,13 +1,22 @@
 """Single-shot Multi-box Detector."""
 from __future__ import absolute_import
 
+import os
 import torch
 from torch import nn
 import torch.nn.functional as F
 
 from .anchor import SSDAnchorGenerator
 from model.module.predictor import ConvPredictor
+from model.module.nms import box_nms
 from model.module.coder import MultiPerClassDecoder, NormalizedBoxCenterDecoder
+from model.models_zoo.ssd.vgg_atrous import vgg16_atrous_300, vgg16_atrous_512
+from data.pascal_voc.detection import VOCDetection
+
+__all__ = ['SSD', 'get_ssd',
+           # vgg + voc
+           'ssd_300_vgg16_atrous_voc',
+           'ssd_512_vgg16_atrous_voc', ]
 
 
 class SSD(nn.Module):
@@ -81,7 +90,7 @@ class SSD(nn.Module):
                  steps, classes, use_1x1_transition=True, use_bn=True,
                  reduce_ratio=1.0, min_depth=128, global_pool=False, pretrained=False,
                  stds=(0.1, 0.1, 0.2, 0.2), nms_thresh=0.45, nms_topk=400, post_nms=100,
-                 anchor_alloc_size=128, norm_layer=nn.BatchNorm, norm_kwargs=None, **kwargs):
+                 anchor_alloc_size=128, norm_layer=nn.BatchNorm2d, norm_kwargs=None, **kwargs):
         super(SSD, self).__init__(**kwargs)
         if norm_kwargs is None:
             norm_kwargs = {}
@@ -105,12 +114,12 @@ class SSD(nn.Module):
         self.post_nms = post_nms
 
         # TODO: write a FeatureExpander
-        # if network is None:
-        #     # use fine-grained manually designed block as features
-        #     try:
-        #         self.features = features(pretrained=pretrained, norm_layer=norm_layer, norm_kwargs=norm_kwargs)
-        #     except TypeError:
-        #         self.features = features(pretrained=pretrained)
+        if network is None:
+            # use fine-grained manually designed block as features
+            try:
+                self.features = features(pretrained=pretrained, norm_layer=norm_layer, norm_kwargs=norm_kwargs)
+            except TypeError:
+                self.features = features(pretrained=pretrained)
         # else:
         #     try:
         #         self.features = FeatureExpander(
@@ -130,13 +139,13 @@ class SSD(nn.Module):
         self.anchor_generators = nn.ModuleList()
         asz = anchor_alloc_size
         im_size = (base_size, base_size)
-        for i, s, r, st in zip(range(num_layers), sizes, ratios, steps):
+        for channel, s, r, st in zip(self.features.channel, sizes, ratios, steps):
             anchor_generator = SSDAnchorGenerator(im_size, s, r, st, (asz, asz))
-            self.anchor_generators.add(anchor_generator)
+            self.anchor_generators.append(anchor_generator)
             asz = max(asz // 2, 16)  # pre-compute larger than 16x16 anchor map
             num_anchors = anchor_generator.num_depth
-            self.class_predictors.add(ConvPredictor(num_anchors * (len(self.classes) + 1)))
-            self.box_predictors.add(ConvPredictor(num_anchors * 4))
+            self.class_predictors.append(ConvPredictor(channel, num_anchors * (len(self.classes) + 1)))
+            self.box_predictors.append(ConvPredictor(channel, num_anchors * 4))
         self.bbox_decoder = NormalizedBoxCenterDecoder(stds)
         self.cls_decoder = MultiPerClassDecoder(len(self.classes) + 1, thresh=0.01)
 
@@ -179,11 +188,11 @@ class SSD(nn.Module):
 
     def forward(self, x):
         features = self.features(x)
-        b = features.shape[0]
+        b = x.shape[0]
         # print(len(features))
-        cls_preds = [torch.permute(cp(feat), (0, 2, 3, 1)).flatten(1)
+        cls_preds = [(cp(feat).permute(0, 2, 3, 1)).flatten(1)
                      for feat, cp in zip(features, self.class_predictors)]
-        box_preds = [torch.permute(bp(feat), (0, 2, 3, 1)).flatten(1)
+        box_preds = [(bp(feat).permute(0, 2, 3, 1)).flatten(1)
                      for feat, bp in zip(features, self.box_predictors)]
         anchors = [ag(feat).view(1, -1)
                    for feat, ag in zip(features, self.anchor_generators)]
@@ -202,13 +211,11 @@ class SSD(nn.Module):
             per_result = torch.cat([cls_id, score, bboxes], dim=-1)
             results.append(per_result)
         result = torch.cat(results, dim=1)
-        # TODO: add nms
-        # if 1 > self.nms_thresh > 0:
-        #     result = F.contrib.box_nms(
-        #         result, overlap_thresh=self.nms_thresh, topk=self.nms_topk, valid_thresh=0.01,
-        #         id_index=0, score_index=1, coord_start=2, force_suppress=False)
-        #     if self.post_nms > 0:
-        #         result = result.slice_axis(axis=1, begin=0, end=self.post_nms)
+        if 1 > self.nms_thresh > 0:
+            result = box_nms(result, overlap_thresh=self.nms_thresh, topk=self.nms_topk,
+                             score_index=1, coord_start=2, id_index=0)
+            if self.post_nms > 0:
+                result = result.narrow(1, 0, self.post_nms)
         ids = result.narrow(2, 0, 1)
         scores = result.narrow(2, 1, 1)
         bboxes = result.narrow(2, 2, 4)
@@ -236,3 +243,120 @@ class SSD(nn.Module):
         #         class_predictors.add(new_cp)
         #     self.class_predictors = class_predictors
         #     self.cls_decoder = MultiPerClassDecoder(len(self.classes) + 1, thresh=0.01)
+
+
+def get_ssd(name, base_size, features, filters, sizes, ratios, steps, classes,
+            dataset, pretrained=False, pretrained_base=True,
+            root=os.path.join(os.path.expanduser('~'), '.torch', 'models'), **kwargs):
+    """Get SSD models.
+
+    Parameters
+    ----------
+    name : str or None
+        Model name, if `None` is used, you must specify `features` to be a `nn.Module`.
+    base_size : int
+        Base image size for training, this is fixed once training is assigned.
+        A fixed base size still allows you to have variable input size during test.
+    features : iterable of str or `nn.Module`
+        List of network internal output names, in order to specify which layers are
+        used for predicting bbox values.
+        If `name` is `None`, `features` must be a `nn.Module` which generate multiple
+        outputs for prediction.
+    filters : iterable of float or None
+        List of convolution layer channels which is going to be appended to the base
+        network feature extractor. If `name` is `None`, this is ignored.
+    sizes : iterable fo float
+        Sizes of anchor boxes, this should be a list of floats, in incremental order.
+        The length of `sizes` must be len(layers) + 1. For example, a two stage SSD
+        model can have ``sizes = [30, 60, 90]``, and it converts to `[30, 60]` and
+        `[60, 90]` for the two stages, respectively. For more details, please refer
+        to original paper.
+    ratios : iterable of list
+        Aspect ratios of anchors in each output layer. Its length must be equals
+        to the number of SSD output layers.
+    steps : list of int
+        Step size of anchor boxes in each output layer.
+    classes : iterable of str
+        Names of categories.
+    dataset : str
+        Name of dataset. This is used to identify model name because models trained on
+        different datasets are going to be very different.
+    pretrained : bool or str
+        Boolean value controls whether to load the default pretrained weights for model.
+    pretrained_base : bool or str, optional, default is True
+        Load pretrained base network, the extra layers are randomized. Note that
+        if pretrained is `True`, this has no effect.
+    root : str
+        Model weights storing path.
+    norm_layer : object
+        Normalization layer used (default: :class:`nn.BatchNorm`)
+        Can be :class:`nn.BatchNorm` or :class:`other normalization`.
+    norm_kwargs : dict
+        Additional `norm_layer` arguments
+
+    Returns
+    -------
+    nn.Module
+        A SSD detection network.
+    """
+    pretrained_base = False if pretrained else pretrained_base
+    base_name = None if callable(features) else name
+    net = SSD(base_name, base_size, features, filters, sizes, ratios, steps,
+              pretrained=pretrained_base, classes=classes, **kwargs)
+    if pretrained:
+        from model.model_store import get_model_file
+        full_name = '_'.join(('ssd', str(base_size), name, dataset))
+        net.load_state_dict(torch.load(get_model_file(full_name, root=root)))
+    return net
+
+
+def ssd_300_vgg16_atrous_voc(pretrained=False, pretrained_base=True, **kwargs):
+    """SSD architecture with VGG16 atrous 300x300 base network for Pascal VOC.
+
+    Parameters
+    ----------
+    pretrained : bool or str
+        Boolean value controls whether to load the default pretrained weights for model.
+        String value represents the hashtag for a certain version of pretrained weights.
+    pretrained_base : bool or str, optional, default is True
+        Load pretrained base network, the extra layers are randomized.
+
+    Returns
+    -------
+    HybridBlock
+        A SSD detection network.
+    """
+    classes = VOCDetection.CLASSES
+    net = get_ssd('vgg16_atrous', 300, features=vgg16_atrous_300, filters=None,
+                  sizes=[30, 60, 111, 162, 213, 264, 315],
+                  ratios=[[1, 2, 0.5]] + [[1, 2, 0.5, 3, 1.0 / 3]] * 3 + [[1, 2, 0.5]] * 2,
+                  steps=[8, 16, 32, 64, 100, 300],
+                  classes=classes, dataset='voc', pretrained=pretrained,
+                  pretrained_base=pretrained_base, **kwargs)
+    return net
+
+
+def ssd_512_vgg16_atrous_voc(pretrained=False, pretrained_base=True, **kwargs):
+    """SSD architecture with VGG16 atrous 512x512 base network.
+
+    Parameters
+    ----------
+    pretrained : bool or str
+        Boolean value controls whether to load the default pretrained weights for model.
+        String value represents the hashtag for a certain version of pretrained weights.
+    pretrained_base : bool or str, optional, default is True
+        Load pretrained base network, the extra layers are randomized.
+
+    Returns
+    -------
+    HybridBlock
+        A SSD detection network.
+    """
+    classes = VOCDetection.CLASSES
+    net = get_ssd('vgg16_atrous', 512, features=vgg16_atrous_512, filters=None,
+                  sizes=[51.2, 76.8, 153.6, 230.4, 307.2, 384.0, 460.8, 537.6],
+                  ratios=[[1, 2, 0.5]] + [[1, 2, 0.5, 3, 1.0 / 3]] * 4 + [[1, 2, 0.5]] * 2,
+                  steps=[8, 16, 32, 64, 128, 256, 512],
+                  classes=classes, dataset='voc', pretrained=pretrained,
+                  pretrained_base=pretrained_base, **kwargs)
+    return net

@@ -1,5 +1,6 @@
 from .models_zoo.cifarresnet import *
 from .models_zoo.resnet import *
+from .models_zoo.ssd.ssd import *
 
 __all__ = ['get_model', 'get_model_list']
 
@@ -22,6 +23,9 @@ _models = {
     'resnet50_v2': resnet50_v2,
     'resnet101_v2': resnet101_v2,
     'resnet152_v2': resnet152_v2,
+    # voc + ssd
+    'ssd_300_vgg16_atrous_voc': ssd_300_vgg16_atrous_voc,
+    'ssd_512_vgg16_atrous_voc': ssd_512_vgg16_atrous_voc,
 }
 
 

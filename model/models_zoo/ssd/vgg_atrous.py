@@ -123,6 +123,7 @@ class VGGAtrousExtractor(VGGAtrousBase):
     def __init__(self, layers, filters, extras, batch_norm=False, **kwargs):
         super(VGGAtrousExtractor, self).__init__(layers, filters, batch_norm, **kwargs)
         self.extras = list()
+        self.channel = [512, 1024]
         for i, config in enumerate(extras):
             extra = list()
             for f_in, f, k, s, p in config:
@@ -130,6 +131,7 @@ class VGGAtrousExtractor(VGGAtrousBase):
                 if batch_norm:
                     extra.append(nn.BatchNorm(f))
                 extra.append(nn.ReLU(inplace=True))
+            self.channel.append(f)
             self.extras.append(nn.Sequential(*extra))
         self.extras = nn.Sequential(*self.extras)
         self._weights_init()
