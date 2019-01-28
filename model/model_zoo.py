@@ -26,6 +26,8 @@ _models = {
     # voc + ssd
     'ssd_300_vgg16_atrous_voc': ssd_300_vgg16_atrous_voc,
     'ssd_512_vgg16_atrous_voc': ssd_512_vgg16_atrous_voc,
+    'ssd_512_resnet50_v1_voc': ssd_512_resnet50_v1_voc,
+
 }
 
 

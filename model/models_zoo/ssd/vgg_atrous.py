@@ -120,10 +120,10 @@ class VGGAtrousExtractor(VGGAtrousBase):
 
     """
 
-    def __init__(self, layers, filters, extras, batch_norm=False, **kwargs):
+    def __init__(self, layers, filters, extras, channel=[512, 1024], batch_norm=False, **kwargs):
         super(VGGAtrousExtractor, self).__init__(layers, filters, batch_norm, **kwargs)
         self.extras = list()
-        self.channel = [512, 1024]
+        self.channel = channel
         for i, config in enumerate(extras):
             extra = list()
             for f_in, f, k, s, p in config:

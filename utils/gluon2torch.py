@@ -42,6 +42,7 @@ def get_key_map(name):
     gluon_model = get_model(name, pretrained=False, pretrained_base=False)
     torch_keys = torch_model.state_dict().keys()
     gluon_keys = [k[len(gluon_model.name) + 1:] for k in gluon_model.collect_params().keys()]
+    assert len(torch_keys) == len(gluon_keys)
     return dict(zip(gluon_keys, torch_keys))
 
 
@@ -49,7 +50,7 @@ if __name__ == '__main__':
     home = os.path.expanduser('~')
 
     parse = argparse.ArgumentParser(description='Convert gluon model to pytorch')
-    parse.add_argument('--name', type=str, default='ssd_300_vgg16_atrous_voc', help='name of the model')
+    parse.add_argument('--name', type=str, default='ssd_512_resnet50_v1_voc', help='name of the model')
     parse.add_argument('--gluon-path', type=str, default=os.path.join(home, '.mxnet/models'),
                        help='path to the gluon models')
     parse.add_argument('--torch-path', type=str, default=os.path.join(home, '.torch/models'),

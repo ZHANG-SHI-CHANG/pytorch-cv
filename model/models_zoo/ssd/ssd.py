@@ -8,6 +8,7 @@ import torch.nn.functional as F
 
 from .anchor import SSDAnchorGenerator
 from model.module.predictor import ConvPredictor
+from model.module.features import FeatureExpander
 from model.module.nms import box_nms
 from model.module.coder import MultiPerClassDecoder, NormalizedBoxCenterDecoder
 from model.models_zoo.ssd.vgg_atrous import vgg16_atrous_300, vgg16_atrous_512
@@ -16,7 +17,10 @@ from data.pascal_voc.detection import VOCDetection
 __all__ = ['SSD', 'get_ssd',
            # vgg + voc
            'ssd_300_vgg16_atrous_voc',
-           'ssd_512_vgg16_atrous_voc', ]
+           'ssd_512_vgg16_atrous_voc',
+           # resnet + voc
+           'ssd_512_resnet50_v1_voc',
+           ]
 
 
 class SSD(nn.Module):
@@ -86,7 +90,7 @@ class SSD(nn.Module):
 
     """
 
-    def __init__(self, network, base_size, features, num_filters, sizes, ratios,
+    def __init__(self, network, base_size, features, num_filters, channels, sizes, ratios,
                  steps, classes, use_1x1_transition=True, use_bn=True,
                  reduce_ratio=1.0, min_depth=128, global_pool=False, pretrained=False,
                  stds=(0.1, 0.1, 0.2, 0.2), nms_thresh=0.45, nms_topk=400, post_nms=100,
@@ -97,7 +101,7 @@ class SSD(nn.Module):
         if network is None:
             num_layers = len(ratios)
         else:
-            num_layers = len(features) + len(num_filters) + int(global_pool)
+            num_layers = len(features) + len(num_filters) - 1 + int(global_pool)
         assert len(sizes) == num_layers + 1
         sizes = list(zip(sizes[:-1], sizes[1:]))
         assert isinstance(ratios, list), "Must provide ratios as list or list of list"
@@ -113,27 +117,27 @@ class SSD(nn.Module):
         self.nms_topk = nms_topk
         self.post_nms = post_nms
 
-        # TODO: write a FeatureExpander
+        # TODO: 还是存在bug
         if network is None:
             # use fine-grained manually designed block as features
             try:
                 self.features = features(pretrained=pretrained, norm_layer=norm_layer, norm_kwargs=norm_kwargs)
             except TypeError:
                 self.features = features(pretrained=pretrained)
-        # else:
-        #     try:
-        #         self.features = FeatureExpander(
-        #             network=network, outputs=features, num_filters=num_filters,
-        #             use_1x1_transition=use_1x1_transition,
-        #             use_bn=use_bn, reduce_ratio=reduce_ratio, min_depth=min_depth,
-        #             global_pool=global_pool, pretrained=pretrained, ctx=ctx,
-        #             norm_layer=norm_layer, norm_kwargs=norm_kwargs)
-        #     except TypeError:
-        #         self.features = FeatureExpander(
-        #             network=network, outputs=features, num_filters=num_filters,
-        #             use_1x1_transition=use_1x1_transition,
-        #             use_bn=use_bn, reduce_ratio=reduce_ratio, min_depth=min_depth,
-        #             global_pool=global_pool, pretrained=pretrained, ctx=ctx)
+        else:
+            try:
+                self.features = FeatureExpander(
+                    network=network, outputs=features, num_filters=num_filters,
+                    channels=channels, use_1x1_transition=use_1x1_transition,
+                    use_bn=use_bn, reduce_ratio=reduce_ratio, min_depth=min_depth,
+                    global_pool=global_pool, pretrained=pretrained,
+                    norm_layer=norm_layer, norm_kwargs=norm_kwargs)
+            except TypeError:
+                self.features = FeatureExpander(
+                    network=network, outputs=features, num_filters=num_filters,
+                    channels=channels, use_1x1_transition=use_1x1_transition,
+                    use_bn=use_bn, reduce_ratio=reduce_ratio, min_depth=min_depth,
+                    global_pool=global_pool, pretrained=pretrained)
         self.class_predictors = nn.ModuleList()
         self.box_predictors = nn.ModuleList()
         self.anchor_generators = nn.ModuleList()
@@ -245,7 +249,7 @@ class SSD(nn.Module):
         #     self.cls_decoder = MultiPerClassDecoder(len(self.classes) + 1, thresh=0.01)
 
 
-def get_ssd(name, base_size, features, filters, sizes, ratios, steps, classes,
+def get_ssd(name, base_size, features, filters, channels, sizes, ratios, steps, classes,
             dataset, pretrained=False, pretrained_base=True,
             root=os.path.join(os.path.expanduser('~'), '.torch', 'models'), **kwargs):
     """Get SSD models.
@@ -265,6 +269,8 @@ def get_ssd(name, base_size, features, filters, sizes, ratios, steps, classes,
     filters : iterable of float or None
         List of convolution layer channels which is going to be appended to the base
         network feature extractor. If `name` is `None`, this is ignored.
+    channels : iterable of float or None
+        List of convolution layer in channels
     sizes : iterable fo float
         Sizes of anchor boxes, this should be a list of floats, in incremental order.
         The length of `sizes` must be len(layers) + 1. For example, a two stage SSD
@@ -301,7 +307,7 @@ def get_ssd(name, base_size, features, filters, sizes, ratios, steps, classes,
     """
     pretrained_base = False if pretrained else pretrained_base
     base_name = None if callable(features) else name
-    net = SSD(base_name, base_size, features, filters, sizes, ratios, steps,
+    net = SSD(base_name, base_size, features, filters, channels, sizes, ratios, steps,
               pretrained=pretrained_base, classes=classes, **kwargs)
     if pretrained:
         from model.model_store import get_model_file
@@ -327,7 +333,7 @@ def ssd_300_vgg16_atrous_voc(pretrained=False, pretrained_base=True, **kwargs):
         A SSD detection network.
     """
     classes = VOCDetection.CLASSES
-    net = get_ssd('vgg16_atrous', 300, features=vgg16_atrous_300, filters=None,
+    net = get_ssd('vgg16_atrous', 300, features=vgg16_atrous_300, filters=None, channels=None,
                   sizes=[30, 60, 111, 162, 213, 264, 315],
                   ratios=[[1, 2, 0.5]] + [[1, 2, 0.5, 3, 1.0 / 3]] * 3 + [[1, 2, 0.5]] * 2,
                   steps=[8, 16, 32, 64, 100, 300],
@@ -353,10 +359,43 @@ def ssd_512_vgg16_atrous_voc(pretrained=False, pretrained_base=True, **kwargs):
         A SSD detection network.
     """
     classes = VOCDetection.CLASSES
-    net = get_ssd('vgg16_atrous', 512, features=vgg16_atrous_512, filters=None,
+    net = get_ssd('vgg16_atrous', 512, features=vgg16_atrous_512, filters=None, channels=None,
                   sizes=[51.2, 76.8, 153.6, 230.4, 307.2, 384.0, 460.8, 537.6],
                   ratios=[[1, 2, 0.5]] + [[1, 2, 0.5, 3, 1.0 / 3]] * 4 + [[1, 2, 0.5]] * 2,
                   steps=[8, 16, 32, 64, 128, 256, 512],
                   classes=classes, dataset='voc', pretrained=pretrained,
                   pretrained_base=pretrained_base, **kwargs)
     return net
+
+
+def ssd_512_resnet50_v1_voc(pretrained=False, pretrained_base=True, **kwargs):
+    """SSD architecture with ResNet v1 50 layers.
+
+    Parameters
+    ----------
+    pretrained : bool or str
+        Boolean value controls whether to load the default pretrained weights for model.
+        String value represents the hashtag for a certain version of pretrained weights.
+    pretrained_base : bool or str, optional, default is True
+        Load pretrained base network, the extra layers are randomized.
+    norm_layer : object
+        Normalization layer used (default: :class:`nn.BatchNorm`)
+        Can be :class:`nn.BatchNorm` or :class:`other normalization`.
+    norm_kwargs : dict
+        Additional `norm_layer` arguments
+
+    Returns
+    -------
+    nn.Module
+        A SSD detection network.
+    """
+    classes = VOCDetection.CLASSES
+    return get_ssd('resnet50_v1', 512,
+                   features=[[6, 5, 0, 5], [7, 2, 0, 5]],
+                   filters=[512, 512, 512, 256, 256],
+                   channels=[256],
+                   sizes=[51.2, 102.4, 189.4, 276.4, 363.52, 450.6, 492],
+                   ratios=[[1, 2, 0.5]] + [[1, 2, 0.5, 3, 1.0 / 3]] * 3 + [[1, 2, 0.5]] * 2,
+                   steps=[16, 32, 64, 128, 256, 512],
+                   classes=classes, dataset='voc', pretrained=pretrained,
+                   pretrained_base=pretrained_base, **kwargs)
