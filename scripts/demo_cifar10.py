@@ -8,7 +8,7 @@ from torchvision import transforms
 from model.model_zoo import get_model
 
 parser = argparse.ArgumentParser(description='Predict CIFAR10 classes from a given image')
-parser.add_argument('--model', type=str, default='cifar_resnet110_v1',
+parser.add_argument('--model', type=str, default='CIFAR_ResNeXt29_16x64d',
                     help='name of the model to use')
 parser.add_argument('--saved-params', type=str, default='',
                     help='path to the saved model parameters')
@@ -40,7 +40,7 @@ transform_fn = transforms.Compose([
 
 img = transform_fn(img)
 with torch.no_grad():
-    pred = net(img.unsqueeze(0))
+    pred = net(img.unsqueeze(0)).squeeze()
 
 ind = pred.argmax()
 print('The input picture is classified to be [%s], with probability %.3f.' %

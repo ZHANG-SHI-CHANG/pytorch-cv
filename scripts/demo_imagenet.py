@@ -35,7 +35,7 @@ transform_fn = transforms.Compose([
 
 img = transform_fn(img).unsqueeze(0)
 with torch.no_grad():
-    pred = net(img)
+    pred = net(img).squeeze()
 
 topK = 5
 _, ind = pred.topk(topK)

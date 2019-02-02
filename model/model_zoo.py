@@ -1,4 +1,7 @@
 from .models_zoo.cifarresnet import *
+from .models_zoo.cifarwideresnet import *
+from .models_zoo.cifarresnext import *
+from .models_zoo.vgg import *
 from .models_zoo.resnet import *
 from .models_zoo.ssd.ssd import *
 
@@ -12,7 +15,12 @@ _models = {
     'cifar_resnet20_v2': cifar_resnet20_v2,
     'cifar_resnet56_v2': cifar_resnet56_v2,
     'cifar_resnet110_v2': cifar_resnet110_v2,
-    # imagenet
+    'cifar_wideresnet16_10': cifar_wideresnet16_10,
+    'cifar_wideresnet28_10': cifar_wideresnet28_10,
+    'cifar_wideresnet40_8': cifar_wideresnet40_8,
+    'cifar_resnext29_32x4d': cifar_resnext29_32x4d,
+    'cifar_resnext29_16x64d': cifar_resnext29_16x64d,
+    # imagenet - resnet
     'resnet18_v1': resnet18_v1,
     'resnet34_v1': resnet34_v1,
     'resnet50_v1': resnet50_v1,
@@ -23,6 +31,15 @@ _models = {
     'resnet50_v2': resnet50_v2,
     'resnet101_v2': resnet101_v2,
     'resnet152_v2': resnet152_v2,
+    # imagenet - vgg
+    'vgg11': vgg11,
+    'vgg13': vgg13,
+    'vgg16': vgg16,
+    'vgg19': vgg19,
+    'vgg11_bn': vgg11_bn,
+    'vgg13_bn': vgg13_bn,
+    'vgg16_bn': vgg16_bn,
+    'vgg19_bn': vgg19_bn,
     # voc + ssd
     'ssd_300_vgg16_atrous_voc': ssd_300_vgg16_atrous_voc,
     'ssd_512_vgg16_atrous_voc': ssd_512_vgg16_atrous_voc,

@@ -323,7 +323,7 @@ class ResNetV1(nn.Module):
 
     def forward(self, x):
         x = self.features(x)
-        x = F.avg_pool2d(x, x.shape[2]).squeeze()
+        x = F.avg_pool2d(x, x.shape[2]).squeeze_(3).squeeze_(2)
         x = self.output(x)
         return x
 
@@ -393,7 +393,7 @@ class ResNetV2(nn.Module):
 
     def forward(self, x):
         x = self.features(x)
-        x = F.avg_pool2d(x, x.shape[2]).squeeze()
+        x = F.avg_pool2d(x, x.shape[2]).squeeze_(3).squeeze_(2)
         x = self.output(x)
         return x
 
@@ -658,7 +658,6 @@ if __name__ == '__main__':
     module = list(net.features.children())
     for i in range(8):
         print(i, '->', module[i])
-
 
     # a = torch.randn(2, 3, 224, 224)
 

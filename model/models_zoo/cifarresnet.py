@@ -176,7 +176,7 @@ class CIFARResNetV1(nn.Module):
 
     def forward(self, x):
         x = self.features(x)
-        x = F.avg_pool2d(x, x.shape[2]).squeeze()
+        x = F.avg_pool2d(x, x.shape[2]).squeeze_(3).squeeze_(2)
         x = self.output(x)
 
         return x
@@ -234,7 +234,7 @@ class CIFARResNetV2(nn.Module):
 
     def forward(self, x):
         x = self.features(x)
-        x = F.avg_pool2d(x, x.shape[2]).squeeze()
+        x = F.avg_pool2d(x, x.shape[2]).squeeze_(3).squeeze_(2)
         x = self.output(x)
         return x
 
