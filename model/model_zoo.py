@@ -5,6 +5,8 @@ from .models_zoo.vgg import *
 from .models_zoo.resnet import *
 from .models_zoo.resnetv1b import *
 from .models_zoo.mobilenet import *
+from .models_zoo.squeezenet import *
+from .models_zoo.densenet import *
 from .models_zoo.ssd.ssd import *
 
 __all__ = ['get_model', 'get_model_list']
@@ -62,6 +64,14 @@ _models = {
     'vgg13_bn': vgg13_bn,
     'vgg16_bn': vgg16_bn,
     'vgg19_bn': vgg19_bn,
+    # imagenet - squeezenet
+    'squeezenet1.0': squeezenet1_0,
+    'squeezenet1.1': squeezenet1_1,
+    # imagenet - densenet
+    'densenet121': densenet121,
+    'densenet161': densenet161,
+    'densenet169': densenet169,
+    'densenet201': densenet201,
     # voc + ssd
     'ssd_300_vgg16_atrous_voc': ssd_300_vgg16_atrous_voc,
     'ssd_512_vgg16_atrous_voc': ssd_512_vgg16_atrous_voc,

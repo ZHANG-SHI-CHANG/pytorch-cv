@@ -63,8 +63,22 @@
 
 ### SqueezeNet
 
-- [ ] SqueezeNet1.0
-- [ ] SqueezeNet1.1
+- [x] SqueezeNet1.0
+- [x] SqueezeNet1.1
+
+### DenseNet
+
+- [x] DenseNet121
+- [x] DenseNet161
+- [ ] DenseNet169
+- [ ] DenseNet201
+
+### Others
+
+- [ ] AlexNet
+- [ ] darknet53
+- [ ] InceptionV3
+- [ ] SENet_154
 
 ## SSD
 
