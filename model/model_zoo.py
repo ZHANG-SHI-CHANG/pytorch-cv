@@ -3,6 +3,8 @@ from .models_zoo.cifarwideresnet import *
 from .models_zoo.cifarresnext import *
 from .models_zoo.vgg import *
 from .models_zoo.resnet import *
+from .models_zoo.resnetv1b import *
+from .models_zoo.mobilenet import *
 from .models_zoo.ssd.ssd import *
 
 __all__ = ['get_model', 'get_model_list']
@@ -31,6 +33,26 @@ _models = {
     'resnet50_v2': resnet50_v2,
     'resnet101_v2': resnet101_v2,
     'resnet152_v2': resnet152_v2,
+    'resnet18_v1b': resnet18_v1b,
+    'resnet34_v1b': resnet34_v1b,
+    'resnet50_v1b': resnet50_v1b,
+    'resnet101_v1b': resnet101_v1b,
+    'resnet152_v1b': resnet152_v1b,
+    'resnet50_v1c': resnet50_v1c,
+    'resnet101_v1c': resnet101_v1c,
+    'resnet152_v1c': resnet152_v1c,
+    'resnet50_v1d': resnet50_v1d,
+    'resnet101_v1d': resnet101_v1d,
+    'resnet152_v1d': resnet152_v1d,
+    # imagenet - mobilenet
+    'mobilenet1.0': mobilenet1_0,
+    'mobilenet0.75': mobilenet0_75,
+    'mobilenet0.5': mobilenet0_5,
+    'mobilenet0.25': mobilenet0_25,
+    'mobilenetv2_1.0': mobilenet_v2_1_0,
+    'mobilenetv2_0.75': mobilenet_v2_0_75,
+    'mobilenetv2_0.5': mobilenet_v2_0_5,
+    'mobilenetv2_0.25': mobilenet_v2_0_25,
     # imagenet - vgg
     'vgg11': vgg11,
     'vgg13': vgg13,

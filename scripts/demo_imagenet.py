@@ -8,7 +8,7 @@ from torchvision import transforms
 from model.model_zoo import get_model
 
 parser = argparse.ArgumentParser(description='Predict ImageNet classes from a given image')
-parser.add_argument('--model', type=str, default='ResNet50_v1',
+parser.add_argument('--model', type=str, default='MobileNetV2_0.25',
                     help='name of the model to use')
 parser.add_argument('--saved-params', type=str, default='',
                     help='path to the saved model parameters')
