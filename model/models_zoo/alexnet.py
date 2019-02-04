@@ -21,35 +21,31 @@ class AlexNet(nn.Module):
 
     def __init__(self, classes=1000, img_size=224, **kwargs):
         super(AlexNet, self).__init__(**kwargs)
-        with self.name_scope():
-            self.features = list()
-            self.features.append(nn.Conv2d(3, 64, kernel_size=11, stride=4, padding=2))
-            self.features.append(nn.ReLU(inplace=True))
-            self.features.append(nn.MaxPool2d(kernel_size=3, stride=2))
-            self.features.append(nn.Conv2d(64, 192, kernel_size=5, padding=2))
-            self.features.append(nn.ReLU(inplace=True))
-            self.features.append(nn.MaxPool2d(kernel_size=3, stride=2))
-            self.features.append(nn.Conv2d(192, 384, kernel_size=3, padding=1))
-            self.features.append(nn.ReLU(inplace=True))
-            self.features.append(nn.Conv2d(384, 256, kernel_size=3, padding=1))
-            self.features.append(nn.ReLU(inplace=True))
-            self.features.append(nn.Conv2d(256, 256, kernel_size=3, padding=1))
-            self.features.append(nn.ReLU(inplace=True))
-            self.features.append(nn.MaxPool2d(kernel_size=3, stride=2))
-            self.features = nn.Sequential(*self.features)
+        self.features = list()
+        self.features.append(nn.Conv2d(3, 64, kernel_size=11, stride=4, padding=2))
+        self.features.append(nn.ReLU(inplace=True))
+        self.features.append(nn.MaxPool2d(kernel_size=3, stride=2))
+        self.features.append(nn.Conv2d(64, 192, kernel_size=5, padding=2))
+        self.features.append(nn.ReLU(inplace=True))
+        self.features.append(nn.MaxPool2d(kernel_size=3, stride=2))
+        self.features.append(nn.Conv2d(192, 384, kernel_size=3, padding=1))
+        self.features.append(nn.ReLU(inplace=True))
+        self.features.append(nn.Conv2d(384, 256, kernel_size=3, padding=1))
+        self.features.append(nn.ReLU(inplace=True))
+        self.features.append(nn.Conv2d(256, 256, kernel_size=3, padding=1))
+        self.features.append(nn.ReLU(inplace=True))
+        self.features.append(nn.MaxPool2d(kernel_size=3, stride=2))
+        self.features = nn.Sequential(*self.features)
 
-            self.liner = list()
-            self.liner.append(nn.Linear(256 * (img_size // 32) ** 2, 4096))
-            self.liner.append(nn.ReLU(inplace=True))
-            self.liner.append(nn.Linear(4096, 4096))
-            self.liner.append(nn.ReLU(inplace=True))
-            self.liner.append(nn.Dropout(0.5))
-            self.liner.append(nn.Linear(4096, 4096))
-            self.liner.append(nn.ReLU(inplace=True))
-            self.liner.append(nn.Dropout(0.5))
-            self.liner = nn.Sequential(*self.liner)
+        self.liner = list()
+        self.liner.append(nn.Linear(256 * (((img_size - 7) // 4 + 1) // 8) ** 2, 4096))
+        self.liner.append(nn.ReLU(inplace=True))
+        self.liner.append(nn.Linear(4096, 4096))
+        self.liner.append(nn.ReLU(inplace=True))
+        self.liner.append(nn.Dropout(0.5))
+        self.liner = nn.Sequential(*self.liner)
 
-            self.output = nn.Dense(classes)
+        self.output = nn.Linear(4096, classes)
 
     def forward(self, x):
         x = self.features(x).view(x.shape[0], -1)
@@ -82,3 +78,13 @@ def alexnet(pretrained=False, root=os.path.join(os.path.expanduser('~'), '.torch
         net.classes = attrib.classes
         net.classes_long = attrib.classes_long
     return net
+
+
+if __name__ == '__main__':
+    import torch
+
+    a = torch.randn(2, 3, 224, 224)
+    net = alexnet()
+    print(net)
+    with torch.no_grad():
+        net(a)

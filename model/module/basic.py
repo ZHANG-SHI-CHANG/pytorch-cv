@@ -9,6 +9,131 @@ def _conv3x3(in_channels, channels, stride):
                      bias=False)
 
 
+# for darknet
+def _conv2d(in_channel, channel, kernel, padding, stride, norm_layer=nn.BatchNorm2d, norm_kwargs=None):
+    """A common conv-bn-leakyrelu cell"""
+    cell = list()
+    cell.append(nn.Conv2d(in_channel, channel, kernel_size=kernel,
+                          stride=stride, padding=padding, bias=False))
+    cell.append(norm_layer(channel, eps=1e-5, momentum=0.9, **({} if norm_kwargs is None else norm_kwargs)))
+    cell.append(nn.LeakyReLU(0.1))
+    return nn.Sequential(*cell)
+
+
+# for inception
+def _make_basic_conv(in_channel, norm_layer=nn.BatchNorm2d, norm_kwargs=None, **kwargs):
+    out = list()
+    out.append(nn.Conv2d(in_channel, bias=False, **kwargs))
+    out.append(norm_layer(kwargs['out_channels'], eps=0.001, **({} if norm_kwargs is None else norm_kwargs)))
+    out.append(nn.ReLU(inplace=True))
+    return nn.Sequential(*out)
+
+
+def _make_branch(in_channel, use_pool, norm_layer, norm_kwargs, *conv_settings):
+    out = list()
+    if use_pool == 'avg':
+        out.append(nn.AvgPool2d(kernel_size=3, stride=1, padding=1))
+    elif use_pool == 'max':
+        out.append(nn.MaxPool2D(kernel_size=3, stride=2))
+    setting_names = ['out_channels', 'kernel_size', 'stride', 'padding']
+    for setting in conv_settings:
+        kwargs = {}
+        for i, value in enumerate(setting):
+            if value is not None:
+                kwargs[setting_names[i]] = value
+        out.append(_make_basic_conv(in_channel, norm_layer, norm_kwargs, **kwargs))
+        in_channel = kwargs['out_channels']
+    return nn.Sequential(*out)
+
+
+class MakeA(nn.Module):
+    def __init__(self, in_channel, pool_features, norm_layer, norm_kwargs):
+        super(MakeA, self).__init__()
+        self.out1 = _make_branch(in_channel, None, norm_layer, norm_kwargs,
+                                 (64, 1, 1, 0))
+        self.out2 = _make_branch(in_channel, None, norm_layer, norm_kwargs,
+                                 (48, 1, 1, 0), (64, 5, 1, 2))
+        self.out3 = _make_branch(in_channel, None, norm_layer, norm_kwargs,
+                                 (64, 1, 1, 0), (96, 3, 1, 1), (96, 3, 1, 1))
+        self.out4 = _make_branch(in_channel, 'avg', norm_layer, norm_kwargs,
+                                 (pool_features, 1, 1, 0))
+
+    def forward(self, x):
+        o1 = self.out1(x)
+        o2 = self.out2(x)
+        o3 = self.out3(x)
+        o4 = self.out4(x)
+        return torch.cat([o1, o2, o3, o4], 1)
+
+
+class MakeB(nn.Module):
+    def __init__(self, in_channel, norm_layer, norm_kwargs):
+        super(MakeB, self).__init__()
+        self.out1 = _make_branch(in_channel, None, norm_layer, norm_kwargs,
+                                 (384, 3, 2, 0))
+        self.out2 = _make_branch(in_channel, None, norm_layer, norm_kwargs,
+                                 (64, 1, 1, 0), (96, 3, 1, 1), (96, 3, 2, 0))
+        self.out3 = _make_branch(in_channel, 'max', norm_layer, norm_kwargs)
+
+    def forward(self, x):
+        o1 = self.out1(x)
+        o2 = self.out2(x)
+        o3 = self.out3(x)
+        return torch.cat([o1, o2, o3], 1)
+
+
+class MakeC(nn.Module):
+    def __init__(self, in_channel, channels_7x7, norm_layer, norm_kwargs):
+        super(MakeC, self).__init__()
+        self.out1 = _make_branch(in_channel, None, norm_layer, norm_kwargs,
+                                 (192, 1, 1, 0))
+        self.out2 = _make_branch(in_channel, None, norm_layer, norm_kwargs,
+                                 (channels_7x7, 1, 1, 0), (channels_7x7, (1, 7), 1, (0, 3)),
+                                 (192, (7, 1), 1, (3, 0)))
+        self.out3 = _make_branch(in_channel, None, norm_layer, norm_kwargs,
+                                 (channels_7x7, 1, 1, 0), (channels_7x7, (7, 1), 1, (3, 0)),
+                                 (channels_7x7, (1, 7), 1, (0, 3)), (channels_7x7, (7, 1), 1, (3, 0)),
+                                 (192, (1, 7), 1, (0, 3)))
+        self.out4 = _make_branch(in_channel, 'avg', norm_layer, norm_kwargs,
+                                 (192, 1, 1, 0))
+
+    def forward(self, x):
+        o1 = self.out1(x)
+        o2 = self.out2(x)
+        o3 = self.out3(x)
+        o4 = self.out4(x)
+        return torch.cat([o1, o2, o3, o4], 1)
+
+
+class MakeD(nn.Module):
+    def __init__(self, in_channel, norm_layer, norm_kwargs):
+        super(MakeD, self).__init__()
+        self.out1 = _make_branch(in_channel, None, norm_layer, norm_kwargs,
+                                 (192, 1, 1, 0), (320, 3, 2, 0))
+        self.out2 = _make_branch(in_channel, None, norm_layer, norm_kwargs,
+                                 (192, 1, 1, 0), (192, (1, 7), 1, (0, 3)),
+                                 (192, (7, 1), 1, (3, 0)), (192, 3, 2, 0))
+        self.out3 = _make_branch(in_channel, 'max', norm_layer, norm_kwargs)
+
+    def forward(self, x):
+        o1 = self.out1(x)
+        o2 = self.out2(x)
+        o3 = self.out3(x)
+        return torch.cat([o1, o2, o3], 1)
+
+# class MakeE(nn.Module):
+#     def __init__(self, in_channel, norm_layer, norm_kwargs):
+#         super(MakeE, self).__init__()
+#         self.out1 = _make_branch(in_channel, None, norm_layer, norm_kwargs,
+#                                  (320, 1, 1, 0))
+#
+#
+#     def forward(self, x):
+#         o1 = self.out1(x)
+#         o2 = self.out2(x)
+#         o3 = self.out3(x)
+#         return torch.cat([o1, o2, o3], 1)
+
 # for mobile net
 def _add_conv(out, in_channels, channels=1, kernel=1, stride=1, pad=0, num_group=1,
               active=True, relu6=False, norm_layer=nn.BatchNorm2d, norm_kwargs=None):

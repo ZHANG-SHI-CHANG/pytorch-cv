@@ -7,6 +7,8 @@ from .models_zoo.resnetv1b import *
 from .models_zoo.mobilenet import *
 from .models_zoo.squeezenet import *
 from .models_zoo.densenet import *
+from .models_zoo.alexnet import *
+from .models_zoo.yolo.darknet import *
 from .models_zoo.ssd.ssd import *
 
 __all__ = ['get_model', 'get_model_list']
@@ -72,6 +74,9 @@ _models = {
     'densenet161': densenet161,
     'densenet169': densenet169,
     'densenet201': densenet201,
+    # imagenet - others
+    'alexnet': alexnet,
+    'darknet53': darknet53,
     # voc + ssd
     'ssd_300_vgg16_atrous_voc': ssd_300_vgg16_atrous_voc,
     'ssd_512_vgg16_atrous_voc': ssd_512_vgg16_atrous_voc,

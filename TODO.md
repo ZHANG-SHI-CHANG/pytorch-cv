@@ -70,13 +70,13 @@
 
 - [x] DenseNet121
 - [x] DenseNet161
-- [ ] DenseNet169
-- [ ] DenseNet201
+- [x] DenseNet169
+- [x] DenseNet201
 
 ### Others
 
-- [ ] AlexNet
-- [ ] darknet53
+- [x] AlexNet
+- [x] darknet53
 - [ ] InceptionV3
 - [ ] SENet_154
 
