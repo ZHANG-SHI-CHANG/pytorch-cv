@@ -8,7 +8,7 @@ from torchvision import transforms
 from model.model_zoo import get_model
 
 parser = argparse.ArgumentParser(description='Predict ImageNet classes from a given image')
-parser.add_argument('--model', type=str, default='darknet53',
+parser.add_argument('--model', type=str, default='InceptionV3',
                     help='name of the model to use')
 parser.add_argument('--saved-params', type=str, default='',
                     help='path to the saved model parameters')
@@ -27,8 +27,8 @@ img = Image.open(opt.input_pic)
 
 # Transform
 transform_fn = transforms.Compose([
-    transforms.Resize(256),
-    transforms.CenterCrop(224),
+    transforms.Resize(256 if model_name.lower() != 'inceptionv3' else 299),
+    transforms.CenterCrop(224 if model_name.lower() != 'inceptionv3' else 299),
     transforms.ToTensor(),
     transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 ])

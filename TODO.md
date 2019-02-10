@@ -77,8 +77,8 @@
 
 - [x] AlexNet
 - [x] darknet53
-- [ ] InceptionV3
-- [ ] SENet_154
+- [x] InceptionV3
+- [x] SENet_154
 
 ## SSD
 

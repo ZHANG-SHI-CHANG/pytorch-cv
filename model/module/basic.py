@@ -34,7 +34,7 @@ def _make_branch(in_channel, use_pool, norm_layer, norm_kwargs, *conv_settings):
     if use_pool == 'avg':
         out.append(nn.AvgPool2d(kernel_size=3, stride=1, padding=1))
     elif use_pool == 'max':
-        out.append(nn.MaxPool2D(kernel_size=3, stride=2))
+        out.append(nn.MaxPool2d(kernel_size=3, stride=2))
     setting_names = ['out_channels', 'kernel_size', 'stride', 'padding']
     for setting in conv_settings:
         kwargs = {}
@@ -63,6 +63,7 @@ class MakeA(nn.Module):
         o2 = self.out2(x)
         o3 = self.out3(x)
         o4 = self.out4(x)
+        # out channels = 64+64+96+pool_features
         return torch.cat([o1, o2, o3, o4], 1)
 
 
@@ -79,6 +80,7 @@ class MakeB(nn.Module):
         o1 = self.out1(x)
         o2 = self.out2(x)
         o3 = self.out3(x)
+        # out_channels=384+96+in_channels
         return torch.cat([o1, o2, o3], 1)
 
 
@@ -102,6 +104,7 @@ class MakeC(nn.Module):
         o2 = self.out2(x)
         o3 = self.out3(x)
         o4 = self.out4(x)
+        # out_channels=192*4=768
         return torch.cat([o1, o2, o3, o4], 1)
 
 
@@ -119,20 +122,40 @@ class MakeD(nn.Module):
         o1 = self.out1(x)
         o2 = self.out2(x)
         o3 = self.out3(x)
+        # out_channels=192*2+in_channels
         return torch.cat([o1, o2, o3], 1)
 
-# class MakeE(nn.Module):
-#     def __init__(self, in_channel, norm_layer, norm_kwargs):
-#         super(MakeE, self).__init__()
-#         self.out1 = _make_branch(in_channel, None, norm_layer, norm_kwargs,
-#                                  (320, 1, 1, 0))
-#
-#
-#     def forward(self, x):
-#         o1 = self.out1(x)
-#         o2 = self.out2(x)
-#         o3 = self.out3(x)
-#         return torch.cat([o1, o2, o3], 1)
+
+class MakeE(nn.Module):
+    def __init__(self, in_channel, norm_layer, norm_kwargs):
+        super(MakeE, self).__init__()
+        self.s0 = _make_branch(in_channel, None, norm_layer, norm_kwargs, (320, 1, 1, 0))
+
+        self.s1 = _make_branch(in_channel, None, norm_layer, norm_kwargs, (384, 1, 1, 0))
+        self.s11 = _make_branch(384, None, norm_layer, norm_kwargs, (384, (1, 3), 1, (0, 1)))
+        self.s12 = _make_branch(384, None, norm_layer, norm_kwargs, (384, (3, 1), 1, (1, 0)))
+
+        self.s2 = _make_branch(in_channel, None, norm_layer, norm_kwargs, (448, 1, 1, 0),
+                               (384, 3, 1, 1))
+        self.s21 = _make_branch(384, None, norm_layer, norm_kwargs, (384, (1, 3), 1, (0, 1)))
+        self.s22 = _make_branch(384, None, norm_layer, norm_kwargs, (384, (3, 1), 1, (1, 0)))
+
+        self.s3 = _make_branch(in_channel, 'avg', norm_layer, norm_kwargs, (192, 1, 1, 0))
+
+    def forward(self, x):
+        o0 = self.s0(x)
+        o1 = self.s1(x)
+        o11 = self.s11(o1)
+        o12 = self.s12(o1)
+        o1 = torch.cat([o11, o12], 1)
+        o2 = self.s2(x)
+        o21 = self.s21(o2)
+        o22 = self.s22(o2)
+        o2 = torch.cat([o21, o22], 1)
+        o3 = self.s3(x)
+        # out_channels=384*4+192
+        return torch.cat([o0, o1, o2, o3], 1)
+
 
 # for mobile net
 def _add_conv(out, in_channels, channels=1, kernel=1, stride=1, pad=0, num_group=1,
