@@ -89,3 +89,12 @@
 - [x] ssd_512_resnet50_v1_voc
 - [x] ssd_512_mobilenet1.0_voc
 
+## YOLO
+
+### VOC
+
+- [ ] yolo3_darknet53_voc（320x320）
+- [ ] yolo3_darknet53_voc（416x416）
+- [ ] yolo3_mobilenet1.0_voc（320x320）
+- [ ] yolo3_mobilenet1.0_voc（416x416）
+

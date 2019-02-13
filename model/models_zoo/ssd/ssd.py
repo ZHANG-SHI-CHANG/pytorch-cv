@@ -119,7 +119,6 @@ class SSD(nn.Module):
         self.nms_topk = nms_topk
         self.post_nms = post_nms
 
-        # TODO: 还是存在bug
         if network is None:
             # use fine-grained manually designed block as features
             try:
