@@ -10,7 +10,7 @@ from utils.viz.bbox import plot_bbox
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Test with SSD networks.')
-    parser.add_argument('--network', type=str, default='ssd_300_vgg16_atrous_voc',
+    parser.add_argument('--network', type=str, default='ssd_512_mobilenet1.0_voc',
                         help="Base network name")
     parser.add_argument('--images', type=str, default='',
                         help='Test images, use comma to split multiple.')

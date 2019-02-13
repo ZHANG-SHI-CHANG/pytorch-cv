@@ -82,6 +82,10 @@
 
 ## SSD
 
-- [ ] add cpp extension nms
-- [ ] add resnet version
+### VOC
+
+- [x] ssd_300_vgg16_atrous_voc
+- [x] ssd_512_vgg16_atrous_voc
+- [x] ssd_512_resnet50_v1_voc
+- [x] ssd_512_mobilenet1.0_voc
 

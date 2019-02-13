@@ -654,10 +654,10 @@ if __name__ == '__main__':
     import torch
 
     net = resnet50_v1()
-    cnt = 0
-    module = list(net.features.children())
-    for i in range(8):
-        print(i, '->', module[i])
+    # cnt = 0
+    # for key in net.state_dict().keys():
+    #     if not key.endswith('num_batches_tracked'):
+    #         print(key)
 
     # a = torch.randn(2, 3, 224, 224)
 

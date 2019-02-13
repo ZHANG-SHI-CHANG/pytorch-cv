@@ -396,24 +396,27 @@ def mobilenet_v2_0_25(**kwargs):
 
 
 if __name__ == '__main__':
-    net1 = mobilenet0_25()
-    net2 = mobilenet0_5()
-    net3 = mobilenet0_75()
-    net4 = mobilenet1_0()
-    net5 = mobilenet_v2_0_5()
-    net6 = mobilenet_v2_0_25()
-    net7 = mobilenet_v2_0_75()
-    net8 = mobilenet_v2_1_0()
-    # print(net8)
-    import torch
-
-    a = torch.randn(2, 3, 224, 224)
-    with torch.no_grad():
-        net1(a)
-        net2(a)
-        net3(a)
-        net4(a)
-        net5(a)
-        net6(a)
-        net7(a)
-        net8(a)
+    net = mobilenet1_0()
+    print(net)
+    print(len(list(net.features.children())))
+    # net1 = mobilenet0_25()
+    # net2 = mobilenet0_5()
+    # net3 = mobilenet0_75()
+    # net4 = mobilenet1_0()
+    # net5 = mobilenet_v2_0_5()
+    # net6 = mobilenet_v2_0_25()
+    # net7 = mobilenet_v2_0_75()
+    # net8 = mobilenet_v2_1_0()
+    # # print(net8)
+    # import torch
+    #
+    # a = torch.randn(2, 3, 224, 224)
+    # with torch.no_grad():
+    #     net1(a)
+    #     net2(a)
+    #     net3(a)
+    #     net4(a)
+    #     net5(a)
+    #     net6(a)
+    #     net7(a)
+    #     net8(a)

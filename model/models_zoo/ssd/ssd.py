@@ -6,7 +6,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
-from .anchor import SSDAnchorGenerator
+from model.models_zoo.ssd.anchor import SSDAnchorGenerator
 from model.module.predictor import ConvPredictor
 from model.module.features import FeatureExpander
 from model.module.nms import box_nms
@@ -20,6 +20,8 @@ __all__ = ['SSD', 'get_ssd',
            'ssd_512_vgg16_atrous_voc',
            # resnet + voc
            'ssd_512_resnet50_v1_voc',
+           # mobilenet + voc
+           'ssd_512_mobilenet1_0_voc',
            ]
 
 
@@ -193,7 +195,6 @@ class SSD(nn.Module):
     def forward(self, x):
         features = self.features(x)
         b = x.shape[0]
-        # print(len(features))
         cls_preds = [(cp(feat).permute(0, 2, 3, 1)).flatten(1)
                      for feat, cp in zip(features, self.class_predictors)]
         box_preds = [(bp(feat).permute(0, 2, 3, 1)).flatten(1)
@@ -391,11 +392,49 @@ def ssd_512_resnet50_v1_voc(pretrained=False, pretrained_base=True, **kwargs):
     """
     classes = VOCDetection.CLASSES
     return get_ssd('resnet50_v1', 512,
-                   features=[[6, 5, 0, 5], [7, 2, 0, 5]],
-                   filters=[512, 512, 512, 256, 256],
-                   channels=[256],
+                   features=[[6, 5], [7, 2]],
+                   filters=[2048, 512, 512, 256, 256],
+                   channels=[1024, 2048],
                    sizes=[51.2, 102.4, 189.4, 276.4, 363.52, 450.6, 492],
                    ratios=[[1, 2, 0.5]] + [[1, 2, 0.5, 3, 1.0 / 3]] * 3 + [[1, 2, 0.5]] * 2,
                    steps=[16, 32, 64, 128, 256, 512],
                    classes=classes, dataset='voc', pretrained=pretrained,
                    pretrained_base=pretrained_base, **kwargs)
+
+
+def ssd_512_mobilenet1_0_voc(pretrained=False, pretrained_base=True, **kwargs):
+    """SSD architecture with mobilenet1.0 base networks.
+
+    Parameters
+    ----------
+    pretrained : bool or str
+        Boolean value controls whether to load the default pretrained weights for model.
+        String value represents the hashtag for a certain version of pretrained weights.
+    pretrained_base : bool or str, optional, default is True
+        Load pretrained base network, the extra layers are randomized.
+    norm_layer : object
+        Normalization layer used (default: :class:`nn.BatchNorm`)
+        Can be :class:`nn.BatchNorm` or :class:`other normalization`.
+    norm_kwargs : dict
+        Additional `norm_layer` arguments
+
+    Returns
+    -------
+    nn.Module
+        A SSD detection network.
+    """
+    classes = VOCDetection.CLASSES
+    return get_ssd('mobilenet1.0', 512,
+                   features=[[68], [80]],
+                   filters=[1024, 512, 512, 256, 256],
+                   channels=[512, 1024],
+                   sizes=[51.2, 102.4, 189.4, 276.4, 363.52, 450.6, 492],
+                   ratios=[[1, 2, 0.5]] + [[1, 2, 0.5, 3, 1.0 / 3]] * 3 + [[1, 2, 0.5]] * 2,
+                   steps=[16, 32, 64, 128, 256, 512],
+                   classes=classes, dataset='voc', pretrained=pretrained,
+                   pretrained_base=pretrained_base, **kwargs)
+
+
+if __name__ == '__main__':
+    net = ssd_512_resnet50_v1_voc()
+    print(net)

@@ -24,7 +24,7 @@ def _parse_network(network, outputs, pretrained, **kwargs):
 
     Returns
     -------
-    results: list of nn.Module (the same sizeas len(outputs))
+    results: list of nn.Module (the same size as len(outputs))
 
     """
     l, n = len(outputs), len(outputs[0])
@@ -88,12 +88,12 @@ class FeatureExpander(nn.Module):
 
     """
 
-    def __init__(self, network, outputs, num_filters, channels=[256], use_1x1_transition=True,
+    def __init__(self, network, outputs, num_filters, channels=[1024, 2048], use_1x1_transition=True,
                  use_bn=True, reduce_ratio=1.0, min_depth=128, global_pool=False,
                  pretrained=False, **kwargs):
         super(FeatureExpander, self).__init__()
         self.features = nn.ModuleList(_parse_network(network, outputs, pretrained, **kwargs))
-        self.channel = channels + num_filters
+        self.channel = channels + num_filters[1:]
         self.extras = list()
         for i, f in enumerate(num_filters[1:]):
             extra = list()
@@ -126,7 +126,14 @@ class FeatureExpander(nn.Module):
 
 
 if __name__ == '__main__':
-    net = 'resnet50_v1'
-    outputs = [[6, 5, 0, 5], [7, 2, 0, 5]]
+    net = 'mobilenet1.0'
+    # outputs = [[6, 5, 0, 7], [7, 2, 0, 7]]
+    outputs = [[68], [80]]
     res = _parse_network(net, outputs, pretrained=False)
-    p = nn.ModuleList(_parse_network(net, outputs, pretrained=False))
+    print(res[0])
+    cnt = 0
+    for key in res[0].state_dict().keys():
+        if not (key.endswith('num_batches_tracked') or key.endswith('running_mean') or
+                key.endswith('running_var')):
+            cnt += 1
+    print(cnt)
