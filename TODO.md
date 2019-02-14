@@ -93,8 +93,5 @@
 
 ### VOC
 
-- [ ] yolo3_darknet53_voc（320x320）
-- [ ] yolo3_darknet53_voc（416x416）
-- [ ] yolo3_mobilenet1.0_voc（320x320）
-- [ ] yolo3_mobilenet1.0_voc（416x416）
-
+- [x] yolo3_darknet53_voc
+- [x] yolo3_mobilenet1.0_voc

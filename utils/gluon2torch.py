@@ -39,14 +39,14 @@ if __name__ == '__main__':
     home = os.path.expanduser('~')
 
     parse = argparse.ArgumentParser(description='Convert gluon model to pytorch')
-    parse.add_argument('--name', type=str, default='ssd_512_mobilenet1.0_voc', help='name of the model')
+    parse.add_argument('--name', type=str, default='yolo3_mobilenet1.0_voc', help='name of the model')
     parse.add_argument('--gluon-path', type=str, default=os.path.join(home, '.mxnet/models'),
                        help='path to the gluon models')
     parse.add_argument('--torch-path', type=str, default=os.path.join(home, '.torch/models'),
                        help='path to the pytorch models')
     # for detection
     parse.add_argument('--base', type=bool, default=True, help='use pretrained_base')
-    parse.add_argument('--reorder', type=bool, default=True, help='reorder keys')
+    parse.add_argument('--reorder', type=bool, default=False, help='reorder keys')  # for ssd-resnet
 
     config = parse.parse_args()
     gluon2torch(config.name, config.gluon_path, config.torch_path, config.base, config.reorder)

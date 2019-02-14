@@ -4,13 +4,13 @@ import torch
 import matplotlib.pyplot as plt
 
 from model.model_zoo import get_model
-from data.transforms.ssd import load_test   # TODO: change to yolo
+from data.transforms.yolo import load_test   # TODO: change to yolo
 from utils.viz.bbox import plot_bbox
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Test with YOLO networks.')
-    parser.add_argument('--network', type=str, default='yolo3_darknet53_voc',
+    parser.add_argument('--network', type=str, default='yolo3_mobilenet1.0_voc',
                         help="Base network name")
     parser.add_argument('--images', type=str, default='',
                         help='Test images, use comma to split multiple.')

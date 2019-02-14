@@ -10,8 +10,8 @@ from .models_zoo.densenet import *
 from .models_zoo.alexnet import *
 from .models_zoo.senet import *
 from .models_zoo.inception import *
-from .models_zoo.yolo.darknet import *
 from .models_zoo.ssd.ssd import *
+from .models_zoo.yolo.yolo3 import *
 
 __all__ = ['get_model', 'get_model_list']
 
@@ -86,6 +86,9 @@ _models = {
     'ssd_512_vgg16_atrous_voc': ssd_512_vgg16_atrous_voc,
     'ssd_512_resnet50_v1_voc': ssd_512_resnet50_v1_voc,
     'ssd_512_mobilenet1.0_voc': ssd_512_mobilenet1_0_voc,
+    # voc + yolo3
+    'yolo3_darknet53_voc': yolo3_darknet53_voc,
+    'yolo3_mobilenet1.0_voc': yolo3_mobilenet1_0_voc,
 }
 
 

@@ -7,7 +7,10 @@ import os
 import torch
 from torch import nn
 
+from model.module.nms import box_nms
 from model.module.basic import _conv2d
+from model.models_zoo.yolo.darknet import darknet53
+from model.models_zoo.mobilenet import get_mobilenet
 from model.models_zoo.yolo.yolo_module import _upsample, YOLOOutputV3, YOLODetectionBlockV3
 
 
@@ -56,8 +59,8 @@ class YOLOV3(nn.Module):
         for :class:`mxnet.gluon.contrib.nn.SyncBatchNorm`.
     """
 
-    def __init__(self, stages, channels, anchors, strides, classes, alloc_size=(128, 128),
-                 nms_thresh=0.45, nms_topk=400, post_nms=100, pos_iou_thresh=1.0,
+    def __init__(self, stages, out_channels, block_channels, channels, anchors, strides, classes,
+                 alloc_size=(128, 128), nms_thresh=0.45, nms_topk=400, post_nms=100, pos_iou_thresh=1.0,
                  ignore_iou_thresh=0.7, norm_layer=nn.BatchNorm2d, norm_kwargs=None, **kwargs):
         super(YOLOV3, self).__init__(**kwargs)
         self._classes = classes
@@ -73,21 +76,21 @@ class YOLOV3(nn.Module):
         #     raise NotImplementedError(
         #         "pos_iou_thresh({}) < 1.0 is not implemented!".format(pos_iou_thresh))
         # self._loss = YOLOV3Loss()
-        self.stages = list()
-        self.transitions = list()
-        self.yolo_blocks = list()
-        self.yolo_outputs = list()
+        self.stages = nn.ModuleList()
+        self.transitions = nn.ModuleList()
+        self.yolo_blocks = nn.ModuleList()
+        self.yolo_outputs = nn.ModuleList()
         # note that anchors and strides should be used in reverse order
-        for i, stage, in_channel, channel, anchor, stride in zip(
-                range(len(stages)), stages, in_channels, channels, anchors[::-1], strides[::-1]):
+        for i, stage, out_channel, block_channel, channel, anchor, stride in zip(
+                range(len(stages)), stages, out_channels, block_channels, channels, anchors[::-1], strides[::-1]):
             self.stages.append(stage)
-            block = YOLODetectionBlockV3(in_channel, channel, norm_layer=norm_layer, norm_kwargs=norm_kwargs)
+            block = YOLODetectionBlockV3(block_channel, channel, norm_layer=norm_layer, norm_kwargs=norm_kwargs)
             self.yolo_blocks.append(block)
-            output = YOLOOutputV3(len(classes), anchor, stride, alloc_size=alloc_size)
-            self.yolo_outputs.add(output)
+            output = YOLOOutputV3(out_channel, len(classes), anchor, stride, alloc_size=alloc_size)
+            self.yolo_outputs.append(output)
             if i > 0:
-                self.transitions.add(_conv2d(channel, 1, 0, 1,
-                                             norm_layer=norm_layer, norm_kwargs=norm_kwargs))
+                self.transitions.append(_conv2d(out_channel, channel, 1, 0, 1, norm_layer=norm_layer,
+                                                norm_kwargs=norm_kwargs))
 
     def forward(self, x, *args):
         """YOLOV3 network forward.
@@ -115,7 +118,7 @@ class YOLOV3(nn.Module):
         all_feat_maps = []
         all_detections = []
         routes = []
-        for stage, block, output in zip(self.stages, self.yolo_blocks, self.yolo_outputs):
+        for stage in self.stages:
             x = stage(x)
             routes.append(x)
 
@@ -164,17 +167,16 @@ class YOLOV3(nn.Module):
         #             F.concat(*all_objectness, dim=1), F.concat(*all_class_pred, dim=1))
 
         # concat all detection results from different stages
-        result = torch.cat(*all_detections, dim=1)
+        result = torch.cat(all_detections, dim=1)
         # apply nms per class
-        # if self.nms_thresh > 0 and self.nms_thresh < 1:
-        #     result = F.contrib.box_nms(
-        #         result, overlap_thresh=self.nms_thresh, valid_thresh=0.01,
-        #         topk=self.nms_topk, id_index=0, score_index=1, coord_start=2, force_suppress=False)
-        #     if self.post_nms > 0:
-        #         result = result.slice_axis(axis=1, begin=0, end=self.post_nms)
-        ids = result.slice_axis(axis=-1, begin=0, end=1)
-        scores = result.slice_axis(axis=-1, begin=1, end=2)
-        bboxes = result.slice_axis(axis=-1, begin=2, end=None)
+        if 1 > self.nms_thresh > 0:
+            result = box_nms(result, overlap_thresh=self.nms_thresh, topk=self.nms_topk,
+                             score_index=1, coord_start=2, id_index=0)
+            if self.post_nms > 0:
+                result = result.narrow(1, 0, self.post_nms)
+        ids = result.narrow(-1, 0, 1)
+        scores = result.narrow(-1, 1, 1)
+        bboxes = result.narrow(-1, 2, 4)
         return ids, scores, bboxes
 
     @property
@@ -214,7 +216,7 @@ class YOLOV3(nn.Module):
         -------
         None
         """
-        self._clear_cached_op()
+        # self._clear_cached_op()
         self.nms_thresh = nms_thresh
         self.nms_topk = nms_topk
         self.post_nms = post_nms
@@ -234,18 +236,17 @@ class YOLOV3(nn.Module):
     #         outputs.reset_class(classes)
 
 
-def get_yolov3(name, stages, filters, anchors, strides, classes,
-               dataset, pretrained=False, ctx=mx.cpu(),
-               root=os.path.join('~', '.mxnet', 'models'), **kwargs):
+def get_yolov3(name, stages, out_channels, block_channels, filters, anchors, strides, classes, dataset,
+               pretrained=False, root=os.path.join(os.path.expanduser('~'), '.torch', 'models'), **kwargs):
     """Get YOLOV3 models.
     Parameters
     ----------
     name : str or None
-        Model name, if `None` is used, you must specify `features` to be a `HybridBlock`.
-    stages : iterable of str or `HybridBlock`
+        Model name, if `None` is used, you must specify `features` to be a `nn.Module`.
+    stages : iterable of str or `nn.Module`
         List of network internal output names, in order to specify which layers are
         used for predicting bbox values.
-        If `name` is `None`, `features` must be a `HybridBlock` which generate multiple
+        If `name` is `None`, `features` must be a `nn.Module` which generate multiple
         outputs for prediction.
     filters : iterable of float or None
         List of convolution layer channels which is going to be appended to the base
@@ -272,8 +273,6 @@ def get_yolov3(name, stages, filters, anchors, strides, classes,
     pretrained_base : bool or str, optional, default is True
         Load pretrained base network, the extra layers are randomized. Note that
         if pretrained is `True`, this has no effect.
-    ctx : mxnet.Context
-        Context such as mx.cpu(), mx.gpu(0).
     root : str
         Model weights storing path.
     norm_layer : object
@@ -287,9 +286,91 @@ def get_yolov3(name, stages, filters, anchors, strides, classes,
     HybridBlock
         A YOLOV3 detection network.
     """
-    net = YOLOV3(stages, filters, anchors, strides, classes=classes, **kwargs)
+    net = YOLOV3(stages, out_channels, block_channels, filters, anchors, strides, classes=classes, **kwargs)
     if pretrained:
-        from ..model_store import get_model_file
+        from model.model_store import get_model_file
         full_name = '_'.join(('yolo3', name, dataset))
-        net.load_parameters(get_model_file(full_name, tag=pretrained, root=root), ctx=ctx)
+        net.load_state_dict(torch.load(get_model_file(full_name, root=root)))
     return net
+
+
+def yolo3_darknet53_voc(pretrained_base=True, pretrained=False,
+                        norm_layer=nn.BatchNorm2d, norm_kwargs=None, **kwargs):
+    """YOLO3 multi-scale with darknet53 base network on VOC dataset.
+    Parameters
+    ----------
+    pretrained_base : bool or str
+        Boolean value controls whether to load the default pretrained weights for model.
+        String value represents the hashtag for a certain version of pretrained weights.
+    pretrained : bool or str
+        Boolean value controls whether to load the default pretrained weights for model.
+        String value represents the hashtag for a certain version of pretrained weights.
+    norm_layer : object
+        Normalization layer used (default: :class:`mxnet.gluon.nn.BatchNorm`)
+        Can be :class:`mxnet.gluon.nn.BatchNorm` or :class:`mxnet.gluon.contrib.nn.SyncBatchNorm`.
+    norm_kwargs : dict
+        Additional `norm_layer` arguments, for example `num_devices=4`
+        for :class:`mxnet.gluon.contrib.nn.SyncBatchNorm`.
+    Returns
+    -------
+    mxnet.gluon.HybridBlock
+        Fully hybrid yolo3 network.
+    """
+    from data.pascal_voc.detection import VOCDetection
+    pretrained_base = False if pretrained else pretrained_base
+    base_net = darknet53(
+        pretrained=pretrained_base, norm_layer=norm_layer, norm_kwargs=norm_kwargs, **kwargs)
+    stages = [base_net.features[:15], base_net.features[15:24], base_net.features[24:]]
+    anchors = [[10, 13, 16, 30, 33, 23], [30, 61, 62, 45, 59, 119], [116, 90, 156, 198, 373, 326]]
+    strides = [8, 16, 32]
+    classes = VOCDetection.CLASSES
+    return get_yolov3('darknet53', stages, [1024, 512, 256], [1024, 768, 384], [512, 256, 128], anchors, strides,
+                      classes, 'voc', pretrained=pretrained, norm_layer=norm_layer, norm_kwargs=norm_kwargs, **kwargs)
+
+
+def yolo3_mobilenet1_0_voc(pretrained_base=True, pretrained=False,
+                           norm_layer=nn.BatchNorm2d, norm_kwargs=None, **kwargs):
+    """YOLO3 multi-scale with mobilenet base network on VOC dataset.
+    Parameters
+    ----------
+    pretrained_base : bool or str
+        Boolean value controls whether to load the default pretrained weights for model.
+        String value represents the hashtag for a certain version of pretrained weights.
+    pretrained : bool or str
+        Boolean value controls whether to load the default pretrained weights for model.
+        String value represents the hashtag for a certain version of pretrained weights.
+    norm_layer : object
+        Normalization layer used (default: :class:`mxnet.gluon.nn.BatchNorm`)
+        Can be :class:`mxnet.gluon.nn.BatchNorm` or :class:`mxnet.gluon.contrib.nn.SyncBatchNorm`.
+    norm_kwargs : dict
+        Additional `norm_layer` arguments, for example `num_devices=4`
+        for :class:`mxnet.gluon.contrib.nn.SyncBatchNorm`.
+    Returns
+    -------
+    mxnet.gluon.HybridBlock
+        Fully hybrid yolo3 network.
+    """
+    from data.pascal_voc.detection import VOCDetection
+
+    pretrained_base = False if pretrained else pretrained_base
+    base_net = get_mobilenet(multiplier=1, pretrained=pretrained_base,
+                             norm_layer=norm_layer, norm_kwargs=norm_kwargs, **kwargs)
+    stages = [base_net.features[:33],
+              base_net.features[33:69],
+              base_net.features[69:]]
+
+    anchors = [[10, 13, 16, 30, 33, 23], [30, 61, 62, 45, 59, 119],
+               [116, 90, 156, 198, 373, 326]]
+    strides = [8, 16, 32]
+    classes = VOCDetection.CLASSES
+    return get_yolov3('mobilenet1.0', stages, [1024, 512, 256], [1024, 768, 384], [512, 256, 128],
+                      anchors, strides, classes, 'voc', pretrained=pretrained,
+                      norm_layer=norm_layer, norm_kwargs=norm_kwargs, **kwargs)
+
+
+if __name__ == '__main__':
+    net = yolo3_darknet53_voc(pretrained_base=False)
+    a = torch.randn(1, 3, 416, 416)
+    net.eval()
+    out = net(a)
+    print(out[0].shape)

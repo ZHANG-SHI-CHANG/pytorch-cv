@@ -106,8 +106,8 @@ class YOLOOutputV3(nn.Module):
         grid_x, grid_y = np.meshgrid(grid_x, grid_y)
         # stack to (n, n, 2)
         offsets = np.concatenate((grid_x[:, :, np.newaxis], grid_y[:, :, np.newaxis]), axis=-1)
-        # expand dims to (1, n, n, 1, 2) so it's easier for broadcasting
-        offsets = np.expand_dims(np.expand_dims(offsets, axis=2), axis=0)
+        # expand dims to (1, 1, n, n, 2) so it's easier for broadcasting
+        offsets = np.expand_dims(np.expand_dims(offsets, axis=0), axis=0)
         self.offsets = nn.Parameter(torch.from_numpy(offsets), requires_grad=False)
 
     def forward(self, x):
@@ -134,8 +134,8 @@ class YOLOOutputV3(nn.Module):
         objness = pred.narrow(-1, 4, 1)
         class_pred = pred.narrow(-1, 5, self._classes)
 
-        # valid offsets, (1, height, width, 1, 2)
-        offsets = self.offsets.narrow(1, 0, x.shape[2]).narrow(2, 0, x.shape[3])
+        # valid offsets, (1, 1, height, width, 2)
+        offsets = self.offsets.narrow(2, 0, x.shape[2]).narrow(3, 0, x.shape[3])
         # reshape to (1, height*width, 1, 2)
         offsets = offsets.contiguous().view(1, -1, 1, 2)
 
@@ -157,7 +157,7 @@ class YOLOOutputV3(nn.Module):
         ids = scores * 0 + torch.arange(0, self._classes, dtype=torch.float).view(-1, 1, 1, 1, 1)
         detections = torch.cat([ids, scores, bboxes], dim=-1)
         # reshape to (B, xx, 6)
-        detections = detections.permute(1, 0, 2, 3, 4).view(b, -1, 6)
+        detections = detections.permute(1, 0, 2, 3, 4).contiguous().view(b, -1, 6)
         return detections
 
     # def reset_class(self, classes):
