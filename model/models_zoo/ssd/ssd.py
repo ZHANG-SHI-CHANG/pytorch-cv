@@ -15,13 +15,16 @@ from model.models_zoo.ssd.vgg_atrous import vgg16_atrous_300, vgg16_atrous_512
 from data.pascal_voc.detection import VOCDetection
 
 __all__ = ['SSD', 'get_ssd',
-           # vgg + voc
+           # voc
            'ssd_300_vgg16_atrous_voc',
            'ssd_512_vgg16_atrous_voc',
-           # resnet + voc
            'ssd_512_resnet50_v1_voc',
-           # mobilenet + voc
            'ssd_512_mobilenet1_0_voc',
+           # coco
+           'ssd_300_vgg16_atrous_coco',
+           'ssd_512_vgg16_atrous_coco',
+           'ssd_512_resnet50_v1_coco',
+           'ssd_512_mobilenet1_0_coco',
            ]
 
 
@@ -342,6 +345,33 @@ def ssd_300_vgg16_atrous_voc(pretrained=False, pretrained_base=True, **kwargs):
     return net
 
 
+def ssd_300_vgg16_atrous_coco(pretrained=False, pretrained_base=True, **kwargs):
+    """SSD architecture with VGG16 atrous 300x300 base network for COCO.
+
+    Parameters
+    ----------
+    pretrained : bool or str
+        Boolean value controls whether to load the default pretrained weights for model.
+        String value represents the hashtag for a certain version of pretrained weights.
+    pretrained_base : bool or str, optional, default is True
+        Load pretrained base network, the extra layers are randomized.
+
+    Returns
+    -------
+    HybridBlock
+        A SSD detection network.
+    """
+    from data.mscoco.detection import COCODetection
+    classes = COCODetection.CLASSES
+    net = get_ssd('vgg16_atrous', 300, features=vgg16_atrous_300, filters=None, channels=None,
+                  sizes=[21, 45, 99, 153, 207, 261, 315],
+                  ratios=[[1, 2, 0.5]] + [[1, 2, 0.5, 3, 1.0 / 3]] * 3 + [[1, 2, 0.5]] * 2,
+                  steps=[8, 16, 32, 64, 100, 300],
+                  classes=classes, dataset='coco', pretrained=pretrained,
+                  pretrained_base=pretrained_base, **kwargs)
+    return net
+
+
 def ssd_512_vgg16_atrous_voc(pretrained=False, pretrained_base=True, **kwargs):
     """SSD architecture with VGG16 atrous 512x512 base network.
 
@@ -366,6 +396,32 @@ def ssd_512_vgg16_atrous_voc(pretrained=False, pretrained_base=True, **kwargs):
                   classes=classes, dataset='voc', pretrained=pretrained,
                   pretrained_base=pretrained_base, **kwargs)
     return net
+
+
+def ssd_512_vgg16_atrous_coco(pretrained=False, pretrained_base=True, **kwargs):
+    """SSD architecture with VGG16 atrous layers for COCO.
+
+    Parameters
+    ----------
+    pretrained : bool or str
+        Boolean value controls whether to load the default pretrained weights for model.
+        String value represents the hashtag for a certain version of pretrained weights.
+    pretrained_base : bool or str, optional, default is True
+        Load pretrained base network, the extra layers are randomized.
+
+    Returns
+    -------
+    HybridBlock
+        A SSD detection network.
+    """
+    from data.mscoco.detection import COCODetection
+    classes = COCODetection.CLASSES
+    return get_ssd('vgg16_atrous', 512, features=vgg16_atrous_512, filters=None, channels=None,
+                   sizes=[51.2, 76.8, 153.6, 230.4, 307.2, 384.0, 460.8, 537.6],
+                   ratios=[[1, 2, 0.5]] + [[1, 2, 0.5, 3, 1.0 / 3]] * 4 + [[1, 2, 0.5]] * 2,
+                   steps=[8, 16, 32, 64, 128, 256, 512],
+                   classes=classes, dataset='coco', pretrained=pretrained,
+                   pretrained_base=pretrained_base, **kwargs)
 
 
 def ssd_512_resnet50_v1_voc(pretrained=False, pretrained_base=True, **kwargs):
@@ -401,6 +457,41 @@ def ssd_512_resnet50_v1_voc(pretrained=False, pretrained_base=True, **kwargs):
                    pretrained_base=pretrained_base, **kwargs)
 
 
+def ssd_512_resnet50_v1_coco(pretrained=False, pretrained_base=True, **kwargs):
+    """SSD architecture with ResNet v1 50 layers for COCO.
+
+    Parameters
+    ----------
+    pretrained : bool or str
+        Boolean value controls whether to load the default pretrained weights for model.
+        String value represents the hashtag for a certain version of pretrained weights.
+    pretrained_base : bool or str, optional, default is True
+        Load pretrained base network, the extra layers are randomized.
+    norm_layer : object
+        Normalization layer used (default: :class:`mxnet.gluon.nn.BatchNorm`)
+        Can be :class:`mxnet.gluon.nn.BatchNorm` or :class:`mxnet.gluon.contrib.nn.SyncBatchNorm`.
+    norm_kwargs : dict
+        Additional `norm_layer` arguments, for example `num_devices=4`
+        for :class:`mxnet.gluon.contrib.nn.SyncBatchNorm`.
+
+    Returns
+    -------
+    HybridBlock
+        A SSD detection network.
+    """
+    from data.mscoco.detection import COCODetection
+    classes = COCODetection.CLASSES
+    return get_ssd('resnet50_v1', 512,
+                   features=[[6, 5], [7, 2]],
+                   filters=[2048, 512, 512, 256, 256],
+                   channels=[1024, 2048],
+                   sizes=[51.2, 133.12, 215.04, 296.96, 378.88, 460.8, 542.72],
+                   ratios=[[1, 2, 0.5]] + [[1, 2, 0.5, 3, 1.0 / 3]] * 3 + [[1, 2, 0.5]] * 2,
+                   steps=[16, 32, 64, 128, 256, 512],
+                   classes=classes, dataset='coco', pretrained=pretrained,
+                   pretrained_base=pretrained_base, **kwargs)
+
+
 def ssd_512_mobilenet1_0_voc(pretrained=False, pretrained_base=True, **kwargs):
     """SSD architecture with mobilenet1.0 base networks.
 
@@ -431,6 +522,41 @@ def ssd_512_mobilenet1_0_voc(pretrained=False, pretrained_base=True, **kwargs):
                    ratios=[[1, 2, 0.5]] + [[1, 2, 0.5, 3, 1.0 / 3]] * 3 + [[1, 2, 0.5]] * 2,
                    steps=[16, 32, 64, 128, 256, 512],
                    classes=classes, dataset='voc', pretrained=pretrained,
+                   pretrained_base=pretrained_base, **kwargs)
+
+
+def ssd_512_mobilenet1_0_coco(pretrained=False, pretrained_base=True, **kwargs):
+    """SSD architecture with mobilenet1.0 base networks for COCO.
+
+    Parameters
+    ----------
+    pretrained : bool or str
+        Boolean value controls whether to load the default pretrained weights for model.
+        String value represents the hashtag for a certain version of pretrained weights.
+    pretrained_base : bool or str, optional, default is True
+        Load pretrained base network, the extra layers are randomized.
+    norm_layer : object
+        Normalization layer used (default: :class:`mxnet.gluon.nn.BatchNorm`)
+        Can be :class:`mxnet.gluon.nn.BatchNorm` or :class:`mxnet.gluon.contrib.nn.SyncBatchNorm`.
+    norm_kwargs : dict
+        Additional `norm_layer` arguments, for example `num_devices=4`
+        for :class:`mxnet.gluon.contrib.nn.SyncBatchNorm`.
+
+    Returns
+    -------
+    HybridBlock
+        A SSD detection network.
+    """
+    from data.mscoco.detection import COCODetection
+    classes = COCODetection.CLASSES
+    return get_ssd('mobilenet1.0', 512,
+                   features=[[68], [80]],
+                   filters=[1024, 512, 512, 256, 256],
+                   channels=[512, 1024],
+                   sizes=[51.2, 102.4, 189.4, 276.4, 363.52, 450.6, 492],
+                   ratios=[[1, 2, 0.5]] + [[1, 2, 0.5, 3, 1.0 / 3]] * 3 + [[1, 2, 0.5]] * 2,
+                   steps=[16, 32, 64, 128, 256, 512],
+                   classes=classes, dataset='coco', pretrained=pretrained,
                    pretrained_base=pretrained_base, **kwargs)
 
 

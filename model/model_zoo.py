@@ -10,8 +10,10 @@ from .models_zoo.densenet import *
 from .models_zoo.alexnet import *
 from .models_zoo.senet import *
 from .models_zoo.inception import *
+from .models_zoo.yolo.darknet import *
 from .models_zoo.ssd.ssd import *
 from .models_zoo.yolo.yolo3 import *
+from .models_zoo.seg.fcn import *
 
 __all__ = ['get_model', 'get_model_list']
 
@@ -81,14 +83,26 @@ _models = {
     'darknet53': darknet53,
     'inceptionv3': inception_v3,
     'senet_154': senet_154,
-    # voc + ssd
+    # ssd
     'ssd_300_vgg16_atrous_voc': ssd_300_vgg16_atrous_voc,
     'ssd_512_vgg16_atrous_voc': ssd_512_vgg16_atrous_voc,
     'ssd_512_resnet50_v1_voc': ssd_512_resnet50_v1_voc,
     'ssd_512_mobilenet1.0_voc': ssd_512_mobilenet1_0_voc,
+    'ssd_300_vgg16_atrous_coco': ssd_300_vgg16_atrous_coco,
+    'ssd_512_vgg16_atrous_coco': ssd_512_vgg16_atrous_coco,
+    'ssd_512_resnet50_v1_coco': ssd_512_resnet50_v1_coco,
+    'ssd_512_mobilenet1.0_coco': ssd_512_mobilenet1_0_coco,
     # voc + yolo3
     'yolo3_darknet53_voc': yolo3_darknet53_voc,
     'yolo3_mobilenet1.0_voc': yolo3_mobilenet1_0_voc,
+    'yolo3_darknet53_coco': yolo3_darknet53_coco,
+    'yolo3_mobilenet1.0_coco': yolo3_mobilenet1_0_coco,
+    # fcn
+    'fcn_resnet101_voc': get_fcn_resnet101_voc,
+    'fcn_resnet101_coco': get_fcn_resnet101_coco,
+    'fcn_resnet101_ade': get_fcn_resnet101_ade,
+    'fcn_resnet50_ade': get_fcn_resnet50_ade,
+
 }
 
 

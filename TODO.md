@@ -89,9 +89,38 @@
 - [x] ssd_512_resnet50_v1_voc
 - [x] ssd_512_mobilenet1.0_voc
 
+### COCO
+
+- [x] ssd_300_vgg16_atrous_coco
+- [x] ssd_512_vgg16_atrous_coco
+- [x] ssd_512_resnet50_v1_coco
+- [x] ssd_512_mobilenet1.0_coco
+
 ## YOLO
 
 ### VOC
 
 - [x] yolo3_darknet53_voc
 - [x] yolo3_mobilenet1.0_voc
+
+### COCO
+
+- [x] yolo3_darknet53_coco
+- [x] yolo3_mobilenet1.0_coco
+
+## Segmentation
+
+### FCN
+
+- [x] fcn_resnet101_voc
+- [x] fcn_resnet101_coco
+- [x] fcn_resnet50_ade
+- [x] fcn_resnet101_ade
+
+### PSPNet
+
+- [ ] psp_resnet101_coco
+- [ ] psp_resnet101_voc
+- [ ] psp_resnet50_ade
+- [ ] psp_resnet101_ade
+- [ ] psp_resnet101_citys

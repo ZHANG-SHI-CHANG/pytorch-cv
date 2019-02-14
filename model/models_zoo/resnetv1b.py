@@ -169,6 +169,7 @@ class ResNetV1b(nn.Module):
             self.conv1.append(nn.Conv2d(stem_width, stem_width * 2, kernel_size=3, stride=1,
                                         padding=1, bias=False))
             self.conv1 = nn.Sequential(*self.conv1)
+            channel[0] = stem_width * 2
         self.bn1 = norm_layer(stem_width * 2, **({} if norm_kwargs is None else norm_kwargs))
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
@@ -456,12 +457,6 @@ def resnet50_v1c(pretrained=False, root=os.path.join(os.path.expanduser('~'), '.
     return model
 
 
-if __name__ == '__main__':
-    net = resnet50_v1c()
-    print(net)
-    # print(net.block)
-
-
 def resnet101_v1c(pretrained=False, root=os.path.join(os.path.expanduser('~'), '.torch/models'), **kwargs):
     """Constructs a ResNetV1c-101 model.
 
@@ -744,6 +739,11 @@ def resnet101_v1s(pretrained=False, root=os.path.join(os.path.expanduser('~'), '
         model.classes = attrib.classes
         model.classes_long = attrib.classes_long
     return model
+
+
+if __name__ == '__main__':
+    net = resnet101_v1s()
+    print(net)
 
 
 def resnet152_v1s(pretrained=False, root=os.path.join(os.path.expanduser('~'), '.torch/models'), **kwargs):
