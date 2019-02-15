@@ -39,7 +39,7 @@ class SegBaseModel(nn.Module):
         self.layer4 = pretrained.layer4
         height = height if height is not None else crop_size
         width = width if width is not None else crop_size
-        self._up_kwargs = {'height': height, 'width': width}
+        self._up_kwargs = (height, width)
         self.base_size = base_size
         self.crop_size = crop_size
 
@@ -61,8 +61,7 @@ class SegBaseModel(nn.Module):
 
     def demo(self, x):
         h, w = x.shape[2:]
-        self._up_kwargs['height'] = h
-        self._up_kwargs['width'] = w
+        self._up_kwargs = (h, w)
         pred = self.forward(x)
         if self.aux:
             pred = pred[0]

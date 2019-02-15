@@ -60,12 +60,12 @@ class FCN(SegBaseModel):
 
         outputs = []
         x = self.head(c4)
-        x = F.interpolate(x, (self._up_kwargs['height'], self._up_kwargs['width']), mode='bilinear')
+        x = F.interpolate(x, self._up_kwargs, mode='bilinear')
         outputs.append(x)
 
         if self.aux:
             auxout = self.auxlayer(c3)
-            auxout = F.interpolate(auxout, (self._up_kwargs['height'], self._up_kwargs['width']), mode='bilinear')
+            auxout = F.interpolate(auxout, self._up_kwargs, mode='bilinear')
             outputs.append(auxout)
         return tuple(outputs)
 

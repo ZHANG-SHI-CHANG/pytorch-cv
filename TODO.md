@@ -119,8 +119,17 @@
 
 ### PSPNet
 
-- [ ] psp_resnet101_coco
-- [ ] psp_resnet101_voc
-- [ ] psp_resnet50_ade
-- [ ] psp_resnet101_ade
-- [ ] psp_resnet101_citys
+- [x] psp_resnet101_coco
+- [x] psp_resnet101_voc
+- [x] psp_resnet50_ade
+- [x] psp_resnet101_ade
+- [x] psp_resnet101_citys
+
+### Deeplab
+
+- [x] deeplab_resnet101_coco
+- [x] deeplab_resnet101_voc
+- [x] deeplab_resnet152_voc
+- [x] deeplab_resnet50_ade
+- [x] deeplab_resnet101_ade
+

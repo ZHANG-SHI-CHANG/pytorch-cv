@@ -14,6 +14,8 @@ from .models_zoo.yolo.darknet import *
 from .models_zoo.ssd.ssd import *
 from .models_zoo.yolo.yolo3 import *
 from .models_zoo.seg.fcn import *
+from .models_zoo.seg.pspnet import *
+from .models_zoo.seg.deeplabv3 import *
 
 __all__ = ['get_model', 'get_model_list']
 
@@ -92,7 +94,7 @@ _models = {
     'ssd_512_vgg16_atrous_coco': ssd_512_vgg16_atrous_coco,
     'ssd_512_resnet50_v1_coco': ssd_512_resnet50_v1_coco,
     'ssd_512_mobilenet1.0_coco': ssd_512_mobilenet1_0_coco,
-    # voc + yolo3
+    # yolo3
     'yolo3_darknet53_voc': yolo3_darknet53_voc,
     'yolo3_mobilenet1.0_voc': yolo3_mobilenet1_0_voc,
     'yolo3_darknet53_coco': yolo3_darknet53_coco,
@@ -102,7 +104,18 @@ _models = {
     'fcn_resnet101_coco': get_fcn_resnet101_coco,
     'fcn_resnet101_ade': get_fcn_resnet101_ade,
     'fcn_resnet50_ade': get_fcn_resnet50_ade,
-
+    # pspnet
+    'psp_resnet101_coco': get_psp_resnet101_coco,
+    'psp_resnet101_voc': get_psp_resnet101_voc,
+    'psp_resnet50_ade': get_psp_resnet50_ade,
+    'psp_resnet101_ade': get_psp_resnet101_ade,
+    'psp_resnet101_citys': get_psp_resnet101_citys,
+    # deeplab
+    'deeplab_resnet101_coco': get_deeplab_resnet101_coco,
+    'deeplab_resnet101_voc': get_deeplab_resnet101_voc,
+    'deeplab_resnet152_voc': get_deeplab_resnet152_voc,
+    'deeplab_resnet50_ade': get_deeplab_resnet50_ade,
+    'deeplab_resnet101_ade': get_deeplab_resnet101_ade,
 }
 
 
