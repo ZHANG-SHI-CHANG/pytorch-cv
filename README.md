@@ -31,5 +31,6 @@ Convert the [gluon-cv](https://github.com/dmlc/gluon-cv/) to pytorch.
 
 ## TODO
 
-- [ ] add GPU to demo
+- [x] add GPU to demo
+- [ ] add evaluation
 

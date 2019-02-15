@@ -3,6 +3,7 @@ from PIL import Image
 
 import torch
 import torch.nn.functional as F
+from torch.backends import cudnn
 from torchvision import transforms
 
 from model.model_zoo import get_model
@@ -14,6 +15,8 @@ def parse_args():
                         help='name of the model to use')
     parser.add_argument('--saved-params', type=str, default='',
                         help='path to the saved model parameters')
+    parser.add_argument('--cuda', type=bool, default=False,
+                        help='demo with GPU')
     parser.add_argument('--input-pic', type=str, default='./png/cat.jpg',
                         help='path to the input picture')
     opt = parser.parse_args()
@@ -26,11 +29,15 @@ if __name__ == '__main__':
     class_names = ['airplane', 'automobile', 'bird', 'cat', 'deer',
                    'dog', 'frog', 'horse', 'ship', 'truck']
     args = parse_args()
+    device = torch.device('cpu')
+    if args.cuda:
+        cudnn.benchmark = True
+        device = torch.device('cuda:0')
     # Load Model
     model_name = args.model
     pretrained = True if args.saved_params == '' else False
     kwargs = {'classes': classes, 'pretrained': pretrained}
-    net = get_model(model_name, **kwargs)
+    net = get_model(model_name, **kwargs).to(device)
     net.eval()
 
     # Load Images
@@ -44,7 +51,7 @@ if __name__ == '__main__':
         transforms.Normalize([0.4914, 0.4822, 0.4465], [0.2023, 0.1994, 0.2010])
     ])
 
-    img = transform_fn(img)
+    img = transform_fn(img).to(device)
     with torch.no_grad():
         pred = net(img.unsqueeze(0)).squeeze()
 

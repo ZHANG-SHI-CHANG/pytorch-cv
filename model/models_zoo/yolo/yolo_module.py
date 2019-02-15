@@ -154,7 +154,7 @@ class YOLOOutputV3(nn.Module):
         # prediction per class
         bboxes = bbox.repeat(self._classes, 1, 1, 1, 1)
         scores = class_score.permute(3, 0, 1, 2).unsqueeze(4)
-        ids = scores * 0 + torch.arange(0, self._classes, dtype=torch.float).view(-1, 1, 1, 1, 1)
+        ids = scores * 0 + torch.arange(0, self._classes, dtype=torch.float, device=x.device).view(-1, 1, 1, 1, 1)
         detections = torch.cat([ids, scores, bboxes], dim=-1)
         # reshape to (B, xx, 6)
         detections = detections.permute(1, 0, 2, 3, 4).contiguous().view(b, -1, 6)

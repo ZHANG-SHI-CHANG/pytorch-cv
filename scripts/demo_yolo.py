@@ -1,10 +1,11 @@
 import argparse
-
-import torch
 import matplotlib.pyplot as plt
 
+import torch
+from torch.backends import cudnn
+
 from model.model_zoo import get_model
-from data.transforms.yolo import load_test   # TODO: change to yolo
+from data.transforms.yolo import load_test
 from utils.viz.bbox import plot_bbox
 
 
@@ -14,8 +15,8 @@ def parse_args():
                         help="Base network name")
     parser.add_argument('--images', type=str, default='',
                         help='Test images, use comma to split multiple.')
-    parser.add_argument('--gpus', type=str, default='',
-                        help='Training with GPUs, you can specify 1,3 for example.')
+    parser.add_argument('--cuda', type=bool, default=False,
+                        help='demo with GPU')
     parser.add_argument('--pretrained', type=str, default='True',
                         help='Load weights from previously saved parameters.')
     parser.add_argument('--thresh', type=float, default=0.5,
@@ -26,16 +27,21 @@ def parse_args():
 
 if __name__ == '__main__':
     args = parse_args()
+    device = torch.device('cpu')
+    if args.cuda:
+        cudnn.benchmark = True
+        device = torch.device('cuda:0')
     image_list = ['png/street.jpg']
-    net = get_model(args.network, pretrained=True)
+    net = get_model(args.network, pretrained=True).to(device)
     net.set_nms(0.45, 200)
     net.eval()
 
     ax = None
     for image in image_list:
         x, img = load_test(image, short=512)
+        x = x.to(device)
         with torch.no_grad():
-            ids, scores, bboxes = [xx[0].numpy() for xx in net(x)]
+            ids, scores, bboxes = [xx[0].cpu().numpy() for xx in net(x)]
         ax = plot_bbox(img, bboxes, scores, ids, thresh=args.thresh,
                        class_names=net.classes, ax=ax)
         plt.show()

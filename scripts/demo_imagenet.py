@@ -3,6 +3,7 @@ from PIL import Image
 
 import torch
 import torch.nn.functional as F
+from torch.backends import cudnn
 from torchvision import transforms
 
 from model.model_zoo import get_model
@@ -14,6 +15,8 @@ def parse_args():
                         help='name of the model to use')
     parser.add_argument('--saved-params', type=str, default='',
                         help='path to the saved model parameters')
+    parser.add_argument('--cuda', type=bool, default=False,
+                        help='demo with GPU')
     parser.add_argument('--input-pic', type=str, default='./png/mt_baker.jpg',
                         help='path to the input picture')
     opt = parser.parse_args()
@@ -22,10 +25,14 @@ def parse_args():
 
 if __name__ == '__main__':
     opt = parse_args()
+    device = torch.device('cpu')
+    if opt.cuda:
+        cudnn.benchmark = True
+        device = torch.device('cuda:0')
     # Load Model
     model_name = opt.model
     pretrained = True if opt.saved_params == '' else False
-    net = get_model(model_name, pretrained=pretrained)
+    net = get_model(model_name, pretrained=pretrained).to(device)
     net.eval()
 
     # Load Images
@@ -39,9 +46,9 @@ if __name__ == '__main__':
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
 
-    img = transform_fn(img).unsqueeze(0)
+    img = transform_fn(img).to(device)
     with torch.no_grad():
-        pred = net(img).squeeze()
+        pred = net(img.unsqueeze(0)).squeeze()
 
     topK = 5
     _, ind = pred.topk(topK)

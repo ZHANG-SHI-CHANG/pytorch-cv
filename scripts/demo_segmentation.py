@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 
 import torch
+from torch.backends import cudnn
 from torchvision import transforms
 
 from model.model_zoo import get_model
@@ -16,6 +17,8 @@ def parse_args():
                         help='name of the model to use')
     parser.add_argument('--saved-params', type=str, default='',
                         help='path to the saved model parameters')
+    parser.add_argument('--cuda', type=bool, default=False,
+                        help='demo with GPU')
     parser.add_argument('--input-pic', type=str, default=None,
                         help='path to the input picture')
     opt = parser.parse_args()
@@ -24,10 +27,14 @@ def parse_args():
 
 if __name__ == '__main__':
     opt = parse_args()
+    device = torch.device('cpu')
+    if opt.cuda:
+        cudnn.benchmark = True
+        device = torch.device('cuda:0')
     # Load Model
     model_name = opt.model
     pretrained = True if opt.saved_params == '' else False
-    model = get_model(model_name, pretrained=pretrained, pretrained_base=False)
+    model = get_model(model_name, pretrained=pretrained, pretrained_base=False).to(device)
     model.eval()
 
     # Load Images
@@ -43,13 +50,13 @@ if __name__ == '__main__':
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
 
-    img = transform_fn(img).unsqueeze(0)
+    img = transform_fn(img).unsqueeze(0).to(device)
     with torch.no_grad():
         output = model.demo(img)
 
     color_map = {'voc': 'pascal_voc', 'coco': 'pascal_voc',
                  'ade': 'ade20k', 'citys': 'citys'}
-    predict = torch.argmax(output, 1).squeeze(0).numpy()
+    predict = torch.argmax(output, 1).squeeze(0).cpu().numpy()
     mask = get_color_pallete(predict, color_map[model_name.split('_')[-1]])
     mask.save('./png/output.png')
     mmask = mpimg.imread('./png/output.png')
