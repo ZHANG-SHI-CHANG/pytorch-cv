@@ -10,7 +10,9 @@ from torch.utils import data
 from model import model_zoo
 from data.batchify import Tuple, Stack, Pad
 from data.pascal_voc.detection import VOCDetection
+from data.mscoco.detection import COCODetection
 from utils.metrics.voc_detection import VOC07MApMetric
+from utils.metrics.coco_detection import COCODetectionMetric
 from data.transforms.ssd import SSDDefaultValTransform
 
 
@@ -19,11 +21,11 @@ def get_dataset(dataset, data_shape):
     if dataset.lower() == 'voc':
         val_dataset = VOCDetection(splits=[(2007, 'test')], transform=transform)
         val_metric = VOC07MApMetric(iou_thresh=0.5, class_names=val_dataset.classes)
-    # elif dataset.lower() == 'coco':
-    #     val_dataset = gdata.COCODetection(splits='instances_val2017', skip_empty=False)
-    #     val_metric = COCODetectionMetric(
-    #         val_dataset, args.save_prefix + '_eval', cleanup=True,
-    #         data_shape=(data_shape, data_shape))
+    elif dataset.lower() == 'coco':
+        val_dataset = COCODetection(splits='instances_val2017', skip_empty=False, transform=transform)
+        val_metric = COCODetectionMetric(
+            val_dataset, args.save_prefix + '_eval', cleanup=True,
+            data_shape=(data_shape, data_shape))
     else:
         raise NotImplementedError('Dataset: {} not implemented.'.format(dataset))
     return val_dataset, val_metric
@@ -78,7 +80,7 @@ def parse_args():
                         help="Input data shape")
     parser.add_argument('--batch-size', type=int, default=4,
                         help='Training mini-batch size')
-    parser.add_argument('--dataset', type=str, default='voc',
+    parser.add_argument('--dataset', type=str, default='coco',
                         help='Training dataset.')
     parser.add_argument('--num-workers', '-j', dest='num_workers', type=int,
                         default=4, help='Number of data workers')

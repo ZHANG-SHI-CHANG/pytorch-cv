@@ -261,7 +261,7 @@ class ResNetV1b(nn.Module):
 # -----------------------------------------------------------------------------
 # Constructor
 # -----------------------------------------------------------------------------
-def resnet18_v1b(pretrained=False, root=os.path.join(os.path.expanduser('~'), '.torch/models'), **kwargs):
+def resnet18_v1b(pretrained=False, root=os.path.expanduser('~/.torch/models'), **kwargs):
     """Constructs a ResNetV1b-18 model.
 
     Parameters
@@ -295,7 +295,7 @@ def resnet18_v1b(pretrained=False, root=os.path.join(os.path.expanduser('~'), '.
     return model
 
 
-def resnet34_v1b(pretrained=False, root=os.path.join(os.path.expanduser('~'), '.torch/models'), **kwargs):
+def resnet34_v1b(pretrained=False, root=os.path.expanduser('~/.torch/models'), **kwargs):
     """Constructs a ResNetV1b-34 model.
 
     Parameters
@@ -329,7 +329,7 @@ def resnet34_v1b(pretrained=False, root=os.path.join(os.path.expanduser('~'), '.
     return model
 
 
-def resnet50_v1b(pretrained=False, root=os.path.join(os.path.expanduser('~'), '.torch/models'), **kwargs):
+def resnet50_v1b(pretrained=False, root=os.path.expanduser('~/.torch/models'), **kwargs):
     """Constructs a ResNetV1b-50 model.
 
     Parameters
@@ -362,7 +362,7 @@ def resnet50_v1b(pretrained=False, root=os.path.join(os.path.expanduser('~'), '.
     return model
 
 
-def resnet101_v1b(pretrained=False, root=os.path.join(os.path.expanduser('~'), '.torch/models'), **kwargs):
+def resnet101_v1b(pretrained=False, root=os.path.expanduser('~/.torch/models'), **kwargs):
     """Constructs a ResNetV1b-101 model.
 
     Parameters
@@ -396,7 +396,7 @@ def resnet101_v1b(pretrained=False, root=os.path.join(os.path.expanduser('~'), '
     return model
 
 
-def resnet152_v1b(pretrained=False, root=os.path.join(os.path.expanduser('~'), '.torch/models'), **kwargs):
+def resnet152_v1b(pretrained=False, root=os.path.expanduser('~/.torch/models'), **kwargs):
     """Constructs a ResNetV1b-152 model.
 
     Parameters
@@ -429,7 +429,7 @@ def resnet152_v1b(pretrained=False, root=os.path.join(os.path.expanduser('~'), '
     return model
 
 
-def resnet50_v1c(pretrained=False, root=os.path.join(os.path.expanduser('~'), '.torch/models'), **kwargs):
+def resnet50_v1c(pretrained=False, root=os.path.expanduser('~/.torch/models'), **kwargs):
     """Constructs a ResNetV1c-50 model.
 
     Parameters
@@ -457,7 +457,7 @@ def resnet50_v1c(pretrained=False, root=os.path.join(os.path.expanduser('~'), '.
     return model
 
 
-def resnet101_v1c(pretrained=False, root=os.path.join(os.path.expanduser('~'), '.torch/models'), **kwargs):
+def resnet101_v1c(pretrained=False, root=os.path.expanduser('~/.torch/models'), **kwargs):
     """Constructs a ResNetV1c-101 model.
 
     Parameters
@@ -485,7 +485,7 @@ def resnet101_v1c(pretrained=False, root=os.path.join(os.path.expanduser('~'), '
     return model
 
 
-def resnet152_v1c(pretrained=False, root=os.path.join(os.path.expanduser('~'), '.torch/models'), **kwargs):
+def resnet152_v1c(pretrained=False, root=os.path.expanduser('~/.torch/models'), **kwargs):
     """Constructs a ResNetV1b-152 model.
 
     Parameters
@@ -513,7 +513,7 @@ def resnet152_v1c(pretrained=False, root=os.path.join(os.path.expanduser('~'), '
     return model
 
 
-def resnet50_v1d(pretrained=False, root=os.path.join(os.path.expanduser('~'), '.torch/models'), **kwargs):
+def resnet50_v1d(pretrained=False, root=os.path.expanduser('~/.torch/models'), **kwargs):
     """Constructs a ResNetV1d-50 model.
 
     Parameters
@@ -541,7 +541,7 @@ def resnet50_v1d(pretrained=False, root=os.path.join(os.path.expanduser('~'), '.
     return model
 
 
-def resnet101_v1d(pretrained=False, root=os.path.join(os.path.expanduser('~'), '.torch/models'), **kwargs):
+def resnet101_v1d(pretrained=False, root=os.path.expanduser('~/.torch/models'), **kwargs):
     """Constructs a ResNetV1d-101 model.
 
     Parameters
@@ -569,7 +569,7 @@ def resnet101_v1d(pretrained=False, root=os.path.join(os.path.expanduser('~'), '
     return model
 
 
-def resnet152_v1d(pretrained=False, root=os.path.join(os.path.expanduser('~'), '.torch/models'), **kwargs):
+def resnet152_v1d(pretrained=False, root=os.path.expanduser('~/.torch/models'), **kwargs):
     """Constructs a ResNetV1d-152 model.
 
     Parameters
@@ -597,7 +597,7 @@ def resnet152_v1d(pretrained=False, root=os.path.join(os.path.expanduser('~'), '
     return model
 
 
-def resnet50_v1e(pretrained=False, root=os.path.join(os.path.expanduser('~'), '.torch/models'), **kwargs):
+def resnet50_v1e(pretrained=False, root=os.path.expanduser('~/.torch/models'), **kwargs):
     """Constructs a ResNetV1e-50 model.
 
     Parameters
@@ -626,7 +626,7 @@ def resnet50_v1e(pretrained=False, root=os.path.join(os.path.expanduser('~'), '.
     return model
 
 
-def resnet101_v1e(pretrained=False, root=os.path.join(os.path.expanduser('~'), '.torch/models'), **kwargs):
+def resnet101_v1e(pretrained=False, root=os.path.expanduser('~/.torch/models'), **kwargs):
     """Constructs a ResNetV1e-101 model.
 
     Parameters
@@ -655,7 +655,7 @@ def resnet101_v1e(pretrained=False, root=os.path.join(os.path.expanduser('~'), '
     return model
 
 
-def resnet152_v1e(pretrained=False, root=os.path.join(os.path.expanduser('~'), '.torch/models'), **kwargs):
+def resnet152_v1e(pretrained=False, root=os.path.expanduser('~/.torch/models'), **kwargs):
     """Constructs a ResNetV1e-152 model.
 
     Parameters
@@ -684,7 +684,7 @@ def resnet152_v1e(pretrained=False, root=os.path.join(os.path.expanduser('~'), '
     return model
 
 
-def resnet50_v1s(pretrained=False, root=os.path.join(os.path.expanduser('~'), '.torch/models'), **kwargs):
+def resnet50_v1s(pretrained=False, root=os.path.expanduser('~/.torch/models'), **kwargs):
     """Constructs a ResNetV1s-50 model.
 
     Parameters
@@ -712,7 +712,7 @@ def resnet50_v1s(pretrained=False, root=os.path.join(os.path.expanduser('~'), '.
     return model
 
 
-def resnet101_v1s(pretrained=False, root=os.path.join(os.path.expanduser('~'), '.torch/models'), **kwargs):
+def resnet101_v1s(pretrained=False, root=os.path.expanduser('~/.torch/models'), **kwargs):
     """Constructs a ResNetV1s-101 model.
 
     Parameters
@@ -746,7 +746,7 @@ if __name__ == '__main__':
     print(net)
 
 
-def resnet152_v1s(pretrained=False, root=os.path.join(os.path.expanduser('~'), '.torch/models'), **kwargs):
+def resnet152_v1s(pretrained=False, root=os.path.expanduser('~/.torch/models'), **kwargs):
     """Constructs a ResNetV1s-152 model.
 
     Parameters

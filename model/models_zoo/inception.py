@@ -80,8 +80,7 @@ class Inception3(nn.Module):
 
 
 # Constructor
-def inception_v3(pretrained=False, root=os.path.join(os.path.expanduser('~'), '.torch/models'),
-                 **kwargs):
+def inception_v3(pretrained=False, root=os.path.expanduser('~/.torch/models'), **kwargs):
     r"""Inception v3 model from
     `"Rethinking the Inception Architecture for Computer Vision"
     <http://arxiv.org/abs/1512.00567>`_ paper.

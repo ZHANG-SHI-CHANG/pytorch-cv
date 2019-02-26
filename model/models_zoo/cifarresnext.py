@@ -145,7 +145,7 @@ class CIFARResNext(nn.Module):
 # Constructor
 # -----------------------------------------------------------------------------
 def get_cifar_resnext(num_layers, cardinality=16, bottleneck_width=64, pretrained=False,
-                      root=os.path.join(os.path.expanduser('~'), '.torch', 'models'), **kwargs):
+                      root=os.path.expanduser('~/.torch/models'), **kwargs):
     r"""ResNext model from `"Aggregated Residual Transformations for Deep Neural Networks"
     <http://arxiv.org/abs/1611.05431>`_ paper.
 

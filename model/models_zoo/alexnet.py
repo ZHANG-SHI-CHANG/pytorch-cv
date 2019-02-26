@@ -57,7 +57,7 @@ class AlexNet(nn.Module):
 # -----------------------------------------------------------------------------
 # Constructor
 # -----------------------------------------------------------------------------
-def alexnet(pretrained=False, root=os.path.join(os.path.expanduser('~'), '.torch/models'), **kwargs):
+def alexnet(pretrained=False, root=os.path.expanduser('~/.torch/models'), **kwargs):
     r"""AlexNet model from the `"One weird trick..." <https://arxiv.org/abs/1404.5997>`_ paper.
 
     Parameters

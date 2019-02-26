@@ -39,13 +39,13 @@ if __name__ == '__main__':
     home = os.path.expanduser('~')
 
     parse = argparse.ArgumentParser(description='Convert gluon model to pytorch')
-    parse.add_argument('--name', type=str, default='deeplab_resnet101_ade', help='name of the model')
+    parse.add_argument('--name', type=str, default='CIFAR_WideResNet16_10', help='name of the model')
     parse.add_argument('--gluon-path', type=str, default=os.path.join(home, '.mxnet/models'),
                        help='path to the gluon models')
     parse.add_argument('--torch-path', type=str, default=os.path.join(home, '.torch/models'),
                        help='path to the pytorch models')
     # for detection and segmentation
-    parse.add_argument('--base', type=bool, default=True, help='use pretrained_base')
+    parse.add_argument('--base', type=bool, default=False, help='use pretrained_base')
     parse.add_argument('--reorder', type=bool, default=False, help='reorder keys')  # for ssd
 
     config = parse.parse_args()

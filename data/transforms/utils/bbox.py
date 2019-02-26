@@ -37,4 +37,3 @@ def resize(bbox, in_size, out_size):
     bbox[:, 0] = x_scale * bbox[:, 0]
     bbox[:, 2] = x_scale * bbox[:, 2]
     return bbox
-

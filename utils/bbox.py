@@ -94,7 +94,7 @@ def bbox_xyxy_to_xywh(xyxy):
                 "Bounding boxes must have 4 elements, given {}".format(len(xyxy)))
         x1, y1 = xyxy[0], xyxy[1]
         w, h = xyxy[2] - x1 + 1, xyxy[3] - y1 + 1
-        return (x1, y1, w, h)
+        return x1, y1, w, h
     elif isinstance(xyxy, np.ndarray):
         if not xyxy.size % 4 == 0:
             raise IndexError(
@@ -135,7 +135,7 @@ def bbox_clip_xyxy(xyxy, width, height):
         y1 = np.minimum(height - 1, np.maximum(0, xyxy[1]))
         x2 = np.minimum(width - 1, np.maximum(0, xyxy[2]))
         y2 = np.minimum(height - 1, np.maximum(0, xyxy[3]))
-        return (x1, y1, x2, y2)
+        return x1, y1, x2, y2
     elif isinstance(xyxy, np.ndarray):
         if not xyxy.size % 4 == 0:
             raise IndexError(

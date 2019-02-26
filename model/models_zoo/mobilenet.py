@@ -167,7 +167,7 @@ class MobileNetV2(nn.Module):
 # -----------------------------------------------------------------------------
 # Constructor
 # -----------------------------------------------------------------------------
-def get_mobilenet(multiplier, pretrained=False, root=os.path.join(os.path.expanduser('~'), '.torch/models'),
+def get_mobilenet(multiplier, pretrained=False, root=os.path.expanduser('~/.torch/models'),
                   norm_layer=nn.BatchNorm2d, norm_kwargs=None, **kwargs):
     r"""MobileNet model from the
     `"MobileNets: Efficient Convolutional Neural Networks for Mobile Vision Applications"
@@ -206,7 +206,7 @@ def get_mobilenet(multiplier, pretrained=False, root=os.path.join(os.path.expand
     return net
 
 
-def get_mobilenet_v2(multiplier, pretrained=False, root=os.path.join(os.path.expanduser('~'), '.torch/models'),
+def get_mobilenet_v2(multiplier, pretrained=False, root=os.path.expanduser('~/.torch/models'),
                      norm_layer=nn.BatchNorm2d, norm_kwargs=None, **kwargs):
     r"""MobileNetV2 model from the
     `"Inverted Residuals and Linear Bottlenecks:

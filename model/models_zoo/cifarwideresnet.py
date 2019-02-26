@@ -134,7 +134,7 @@ class CIFARWideResNet(nn.Module):
 # Constructor
 # -----------------------------------------------------------------------------
 def get_cifar_wide_resnet(num_layers, width_factor=1, drop_rate=0.0, pretrained=False,
-                          root=os.path.join(os.path.expanduser('~'), '.torch', 'models'), **kwargs):
+                          root=os.path.expanduser('~/.torch/models'), **kwargs):
     r"""ResNet V1 model from `"Deep Residual Learning for Image Recognition"
     <http://arxiv.org/abs/1512.03385>`_ paper.
     ResNet V2 model from `"Identity Mappings in Deep Residual Networks"

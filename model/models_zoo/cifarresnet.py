@@ -259,7 +259,7 @@ def _get_resnet_spec(num_layers):
 # Constructor
 # -----------------------------------------------------------------------------
 def get_cifar_resnet(version, num_layers, pretrained=False,
-                     root=os.path.join(os.path.expanduser('~'), '.torch', 'models'), **kwargs):
+                     root=os.path.expanduser('~/.torch/models'), **kwargs):
     r"""ResNet V1 model from `"Deep Residual Learning for Image Recognition"
     <http://arxiv.org/abs/1512.03385>`_ paper.
     ResNet V2 model from `"Identity Mappings in Deep Residual Networks"

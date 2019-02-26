@@ -82,8 +82,8 @@ densenet_spec = {121: (64, 32, [6, 12, 24, 16]),
 # -----------------------------------------------------------------------------
 # Constructor
 # -----------------------------------------------------------------------------
-def get_densenet(num_layers, pretrained=False, root=os.path.join(os.path.expanduser('~'), '.torch/models')
-                 , **kwargs):
+def get_densenet(num_layers, pretrained=False, root=os.path.expanduser('~/.torch/models'),
+                 **kwargs):
     r"""Densenet-BC model from the
     `"Densely Connected Convolutional Networks" <https://arxiv.org/pdf/1608.06993.pdf>`_ paper.
 
