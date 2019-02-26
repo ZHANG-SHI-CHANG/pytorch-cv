@@ -133,3 +133,13 @@
 - [x] deeplab_resnet50_ade
 - [x] deeplab_resnet101_ade
 
+# 2. Evaluation
+
+
+
+## SSD
+
+- [x] ssd_300_vgg16_atrous_voc
+- [x] ssd_512_vgg16_atrous_voc
+- [ ] ssd_512_resnet50_v1_voc
+- [ ] ssd_512_mobilenet1.0_voc

@@ -21,3 +21,6 @@
 6. 合并多个tensor（比如`a:2x2, b:3x2, c:4x2`希望合并为`d:9x2`）
    - `nd.concat(a, b, c, dim=0)`
    - `torch.cat([a,b,c], 0)`
+
+
+

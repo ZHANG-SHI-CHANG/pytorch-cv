@@ -1,11 +1,15 @@
 """Transforms for YOLO series."""
 from __future__ import absolute_import
 
+import torch
 import numpy as np
 from PIL import Image
 
 import torchvision.transforms.functional as vf
-from data.transforms.utils.image_pil import resize_short_within
+import data.transforms.utils.image_pil as timage
+import data.transforms.utils.bbox as tbbox
+
+type_map = {torch.float32: np.float32, torch.float64: np.float64}
 
 
 def transform_test(imgs, short=416, max_size=1024, stride=1, mean=(0.485, 0.456, 0.406),
@@ -49,7 +53,7 @@ def transform_test(imgs, short=416, max_size=1024, stride=1, mean=(0.485, 0.456,
     tensors = []
     origs = []
     for img in imgs:
-        img = resize_short_within(img, short, max_size, mult_base=stride)
+        img = timage.resize_short_within(img, short, max_size, mult_base=stride)
         orig_img = np.array(img).astype('uint8')
         img = vf.to_tensor(img)
         img = vf.normalize(img, mean=mean, std=std)
@@ -97,3 +101,37 @@ def load_test(filenames, short=416, max_size=1024, stride=1, mean=(0.485, 0.456,
         filenames = [filenames]
     imgs = [Image.open(f) for f in filenames]
     return transform_test(imgs, short, max_size, stride, mean, std)
+
+
+class YOLO3DefaultValTransform(object):
+    """Default YOLO validation transform.
+
+    Parameters
+    ----------
+    width : int
+        Image width.
+    height : int
+        Image height.
+    mean : array-like of size 3
+        Mean pixel values to be subtracted from image tensor. Default is [0.485, 0.456, 0.406].
+    std : array-like of size 3
+        Standard deviation to be divided from image. Default is [0.229, 0.224, 0.225].
+
+    """
+
+    def __init__(self, width, height, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)):
+        self._width = width
+        self._height = height
+        self._mean = mean
+        self._std = std
+
+    def __call__(self, src, label):
+        """Apply transform to validation image/label."""
+        # resize
+        w, h = src.size
+        img = timage.imresize(src, self._width, self._height, interp=Image.BILINEAR)
+        bbox = tbbox.resize(label, in_size=(w, h), out_size=(self._width, self._height))
+
+        img = vf.to_tensor(img)
+        img = vf.normalize(img, mean=self._mean, std=self._std)
+        return img, bbox.astype(type_map[img.dtype])

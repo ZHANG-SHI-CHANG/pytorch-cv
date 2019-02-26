@@ -62,13 +62,24 @@ def nms(boxes, scores, overlap=0.5, top_k=200):
     return keep, count
 
 
+# def box_nms(data, overlap_thresh=0.5, topk=-1, coord_start=2,
+#             score_index=1, id_index=-1):
+#     assert data.shape[0] == 1
+#     keep, count = nms(data[0, :, coord_start:coord_start + 4], data[0, :, score_index], overlap_thresh)
+#     if topk > 0:
+#         keep = keep[:topk]
+#     return data[:, keep, :]
+
 def box_nms(data, overlap_thresh=0.5, topk=-1, coord_start=2,
             score_index=1, id_index=-1):
-    assert data.shape[0] == 1
-    keep, count = nms(data[0, :, coord_start:coord_start + 4], data[0, :, score_index], overlap_thresh)
-    if topk > 0:
-        keep = keep[:topk]
-    return data[:, keep, :]
+    results = list()
+    b = data.shape[0]
+    for i in range(b):
+        keep, count = nms(data[i, :, coord_start:coord_start + 4], data[i, :, score_index], overlap_thresh)
+        if topk > 0:
+            keep = keep[:topk]
+        results.append(data[i:i+1, keep, :])
+    return torch.cat(results, 0)
 
 
 if __name__ == '__main__':
