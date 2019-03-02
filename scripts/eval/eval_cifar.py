@@ -36,7 +36,7 @@ def validate(net, val_data, device, metric):
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Eval CIFAR10 networks.')
-    parser.add_argument('--network', type=str, default='CIFAR_WideResNet16_10',
+    parser.add_argument('--network', type=str, default='CIFAR_ResNeXt29_16x64d',
                         help="Base network name")
     parser.add_argument('--batch-size', type=int, default=4,
                         help='Training mini-batch size')
@@ -68,7 +68,7 @@ if __name__ == '__main__':
     kwargs = {'classes': 10, 'pretrained': pretrained}
     net = model_zoo.get_model(model_name, **kwargs)
 
-    # training data
+    # testing data
     val_metric = Accuracy()
     val_data = get_dataloader(args.batch_size, args.num_workers)
 

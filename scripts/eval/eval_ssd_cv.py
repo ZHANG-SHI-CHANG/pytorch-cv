@@ -9,15 +9,15 @@ from torch.utils import data
 
 from model import model_zoo
 from data.batchify import Tuple, Stack, Pad
-from data.pascal_voc.detection import VOCDetection
-from data.mscoco.detection import COCODetection
+from data.pascal_voc.detection_cv import VOCDetection
+from data.mscoco.detection_cv import COCODetection
 from utils.metrics.voc_detection import VOC07MApMetric
 from utils.metrics.coco_detection import COCODetectionMetric
-from data.transforms.yolo import YOLO3DefaultValTransform
+from data.transforms.ssd_cv import SSDDefaultValTransform
 
 
 def get_dataset(dataset, data_shape):
-    transform = YOLO3DefaultValTransform(data_shape, data_shape)
+    transform = SSDDefaultValTransform(data_shape, data_shape)
     if dataset.lower() == 'voc':
         val_dataset = VOCDetection(splits=[(2007, 'test')], transform=transform)
         val_metric = VOC07MApMetric(iou_thresh=0.5, class_names=val_dataset.classes)
@@ -73,21 +73,19 @@ def validate(net, val_data, device, size, metric):
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='Eval YOLO networks.')
-    parser.add_argument('--network', type=str, default='darknet53',
+    parser = argparse.ArgumentParser(description='Eval SSD networks.')
+    parser.add_argument('--network', type=str, default='vgg16_atrous',
                         help="Base network name")
-    parser.add_argument('--algorithm', type=str, default='yolo3',
-                        help='YOLO version, default is yolo3')
-    parser.add_argument('--data-shape', type=int, default=608,
+    parser.add_argument('--data-shape', type=int, default=300,
                         help="Input data shape")
     parser.add_argument('--batch-size', type=int, default=4,
                         help='Training mini-batch size')
-    parser.add_argument('--dataset', type=str, default='coco',
+    parser.add_argument('--dataset', type=str, default='voc',
                         help='Training dataset.')
     parser.add_argument('--num-workers', '-j', dest='num_workers', type=int,
                         default=4, help='Number of data workers')
     parser.add_argument('--cuda', type=bool, default=True,
-                        help='Training with GPUs, you can specify 1,3 for example.')
+                        help='Training with GPUs.')
     parser.add_argument('--pretrained', type=str, default='True',
                         help='Load weights from previously saved parameters.')
     parser.add_argument('--save-prefix', type=str, default='',
@@ -106,7 +104,7 @@ if __name__ == '__main__':
         device = torch.device('cuda:0')
 
     # network
-    net_name = '_'.join((args.algorithm, args.network, args.dataset))
+    net_name = '_'.join(('ssd', str(args.data_shape), args.network, args.dataset))
     args.save_prefix += net_name
     if args.pretrained.lower() in ['true', '1', 'yes', 't']:
         net = model_zoo.get_model(net_name, pretrained=True)

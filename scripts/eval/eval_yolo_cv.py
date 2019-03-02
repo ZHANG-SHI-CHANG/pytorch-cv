@@ -9,11 +9,11 @@ from torch.utils import data
 
 from model import model_zoo
 from data.batchify import Tuple, Stack, Pad
-from data.pascal_voc.detection import VOCDetection
-from data.mscoco.detection import COCODetection
+from data.pascal_voc.detection_cv import VOCDetection
+from data.mscoco.detection_cv import COCODetection
 from utils.metrics.voc_detection import VOC07MApMetric
 from utils.metrics.coco_detection import COCODetectionMetric
-from data.transforms.yolo import YOLO3DefaultValTransform
+from data.transforms.yolo_cv import YOLO3DefaultValTransform
 
 
 def get_dataset(dataset, data_shape):
@@ -78,7 +78,7 @@ def parse_args():
                         help="Base network name")
     parser.add_argument('--algorithm', type=str, default='yolo3',
                         help='YOLO version, default is yolo3')
-    parser.add_argument('--data-shape', type=int, default=608,
+    parser.add_argument('--data-shape', type=int, default=320,
                         help="Input data shape")
     parser.add_argument('--batch-size', type=int, default=4,
                         help='Training mini-batch size')

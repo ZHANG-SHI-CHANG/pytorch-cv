@@ -137,20 +137,26 @@
 
 ## CIFAR10
 
-- [ ] CIFAR_ResNet20_v1
-- [ ] CIFAR_ResNet56_v1
-- [ ] CIFAR_ResNet110_v1
-- [ ] CIFAR_ResNet20_v2
-- [ ] CIFAR_ResNet56_v2
-- [ ] CIFAR_ResNet110_v2
-- [ ] CIFAR_WideResNet16_10
-- [ ] CIFAR_WideResNet28_10
-- [ ] CIFAR_WideResNet40_8
-- [ ] CIFAR_ResNeXt29_16x64d
+- [x] CIFAR_ResNet20_v1
+- [x] CIFAR_ResNet56_v1
+- [x] CIFAR_ResNet110_v1
+- [x] CIFAR_ResNet20_v2
+- [x] CIFAR_ResNet56_v2
+- [x] CIFAR_ResNet110_v2
+- [x] CIFAR_WideResNet16_10
+- [x] CIFAR_WideResNet28_10
+- [x] CIFAR_WideResNet40_8
+- [x] CIFAR_ResNeXt29_16x64d
 
 ## SSD
 
 - [x] ssd_300_vgg16_atrous_voc
 - [x] ssd_512_vgg16_atrous_voc
-- [ ] ssd_512_resnet50_v1_voc
-- [ ] ssd_512_mobilenet1.0_voc
+- [x] ssd_512_resnet50_v1_voc
+- [x] ssd_512_mobilenet1.0_voc
+
+
+
+#### Bug
+
+- [ ] label的结果不对！

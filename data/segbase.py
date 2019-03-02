@@ -1,5 +1,7 @@
 """Base segmentation dataset"""
+import torch
 import random
+import numpy as np
 from PIL import Image, ImageOps, ImageFilter
 
 from data.base import VisionDataset
@@ -77,12 +79,12 @@ class SegmentationDataset(VisionDataset):
         img, mask = self._img_transform(img), self._mask_transform(mask)
         return img, mask
 
-    # def _img_transform(self, img):
-    #     return F.array(np.array(img), cpu(0))
-    #
-    # def _mask_transform(self, mask):
-    #     return F.array(np.array(mask), cpu(0)).astype('int32')
-    #
+    def _img_transform(self, img):
+        return torch.from_numpy(np.array(img))
+
+    def _mask_transform(self, mask):
+        return torch.from_numpy(np.array(mask).astype('int32'))
+
     @property
     def num_class(self):
         """Number of categories."""
@@ -91,3 +93,13 @@ class SegmentationDataset(VisionDataset):
     @property
     def pred_offset(self):
         return 0
+
+
+def ms_batchify_fn(data):
+    """Multi-size batchify function"""
+    if isinstance(data[0], (str, torch.Tensor)):
+        return list(data)
+    elif isinstance(data[0], tuple):
+        data = zip(*data)
+        return [ms_batchify_fn(i) for i in data]
+    raise RuntimeError('unknown datatype')
