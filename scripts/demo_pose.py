@@ -14,7 +14,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Predict pose from a given image')
     parser.add_argument('--detector', type=str, default='yolo3_mobilenet1.0_coco',
                         help='name of the detection model to use')
-    parser.add_argument('--pose-model', type=str, default='simple_pose_resnet50_v1b',
+    parser.add_argument('--pose-model', type=str, default='simple_pose_resnet50_v1d',
                         help='name of the pose estimation model to use')
     parser.add_argument('--cuda', type=bool, default=False,
                         help='demo with GPU')

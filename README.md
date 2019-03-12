@@ -110,6 +110,14 @@ Convert the [gluon-cv](https://github.com/dmlc/gluon-cv/) to pytorch.
 
 > picture like 3x1600x1600 will out of memory (6GB)
 
+| VOC Dataset           | pixAcc(gluon-cv) | mIoU(gluon-cv) | pixAcc(pytorch-cv) | mIoU(pytorch-cv) |
+| --------------------- | ---------------- | -------------- | ------------------ | ---------------- |
+| fcn_resnet101_voc     |                  | 83.6           |                    |                  |
+| psp_resnet101_voc     |                  | 85.1           |                    |                  |
+| deeplab_resnet101_voc |                  | 86.2           |                    |                  |
+| deeplab_resnet152_voc |                  | 86.7           |                    |                  |
+| psp_resnet101_citys   |                  | 77.1           |                    |                  |
+
 ## TODO
 
 - [x] add GPU to demo

@@ -11,7 +11,7 @@
    - `a.narrow(1, 0, b.shape[1]).narrow(2, 0, b.shape[2])`（采用多个`narrow`来完成）
 3. 重复多次（比如`x:2x2`，行列分别重复2次和3次，那么得到的就是`x: 4x6`）
    - `nd.tile(a, reps=(2, 3))`
-   - `torch.repeat(2, 3)`
+   - `a.repeat(2, 3)`
 4. 重新"排列维度"（比如`a:2x3x4`，我们希望调整为`a:4x2x3`）
    - `nd.transpose(a, axes=(2, 0, 1))`
    - `a.permute(2, 0, 1)`

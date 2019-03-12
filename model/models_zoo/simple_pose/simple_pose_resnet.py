@@ -90,9 +90,9 @@ class SimplePoseResNet(nn.Module):
         return x
 
 
-def get_simple_pose_resnet(base_name, pretrained=False,
+def get_simple_pose_resnet(base_name, filters=(2048, 256, 256, 256), pretrained=False,
                            root=os.path.expanduser('~/.torch/models'), **kwargs):
-    net = SimplePoseResNet(base_name, **kwargs)
+    net = SimplePoseResNet(base_name, num_deconv_filters=filters, **kwargs)
 
     if pretrained:
         from model.model_store import get_model_file
@@ -112,7 +112,7 @@ def simple_pose_resnet18_v1b(**kwargs):
     root : str, default '$TORCH_HOME/models'
         Location for keeping the model parameters.
     """
-    return get_simple_pose_resnet('resnet18_v1b', **kwargs)
+    return get_simple_pose_resnet('resnet18_v1b', (512, 256, 256, 256), **kwargs)
 
 
 def simple_pose_resnet50_v1b(**kwargs):
@@ -126,7 +126,7 @@ def simple_pose_resnet50_v1b(**kwargs):
     root : str, default '$TORCH_HOME/models'
         Location for keeping the model parameters.
     """
-    return get_simple_pose_resnet('resnet50_v1b', **kwargs)
+    return get_simple_pose_resnet('resnet50_v1b', (2048, 256, 256, 256), **kwargs)
 
 
 def simple_pose_resnet101_v1b(**kwargs):
@@ -140,7 +140,7 @@ def simple_pose_resnet101_v1b(**kwargs):
     root : str, default '$TORCH_HOME/models'
         Location for keeping the model parameters.
     """
-    return get_simple_pose_resnet('resnet101_v1b', **kwargs)
+    return get_simple_pose_resnet('resnet101_v1b', (2048, 256, 256, 256), **kwargs)
 
 
 def simple_pose_resnet152_v1b(**kwargs):
