@@ -1,3 +1,4 @@
+import warnings
 import numpy as np
 
 import torch
@@ -160,25 +161,51 @@ class YOLOOutputV3(nn.Module):
         detections = detections.permute(1, 0, 2, 3, 4).contiguous().view(b, -1, 6)
         return detections
 
-    # def reset_class(self, classes):
-    #     """Reset class prediction.
-    #     Parameters
-    #     ----------
-    #     classes : type
-    #         Description of parameter `classes`.
-    #     Returns
-    #     -------
-    #     type
-    #         Description of returned object.
-    #     """
-    #     self._clear_cached_op()
-    #     self._classes = len(classes)
-    #     self._num_pred = 1 + 4 + len(classes)
-    #     all_pred = self._num_pred * self._num_anchors
-    #     # TODO(zhreshold): reuse box preds, objectness
-    #     self.prediction = nn.Conv2d(
-    #         all_pred, kernel_size=1, padding=0, strides=1, prefix=self.prediction.prefix)
-
+    def reset_class(self, classes, reuse_weights=None):
+        """Reset class prediction.
+        Parameters
+        ----------
+        classes : type
+            Description of parameter `classes`.
+        reuse_weights : dict
+            A {new_integer : old_integer} mapping dict that allows the new predictor to reuse the
+            previously trained weights specified by the integer index.
+        Returns
+        -------
+        type
+            Description of returned object.
+        """
+        # keep old records
+        old_classes = self._classes
+        old_pred = self.prediction
+        old_num_pred = self._num_pred
+        self._classes = len(classes)
+        self._num_pred = 1 + 4 + len(classes)
+        all_pred = self._num_pred * self._num_anchors
+        # to avoid deferred init, number of in_channels must be defined
+        in_channels = old_pred.weight.shape[1]
+        device = old_pred.weight.device
+        self.prediction = nn.Conv2d(in_channels, all_pred, kernel_size=1, padding=0, stride=1,).to(device)
+        if reuse_weights:
+            new_pred = self.prediction
+            assert isinstance(reuse_weights, dict)
+            for old_params, new_params in zip(old_pred.parameters(), new_pred.parameters()):
+                old_data = old_params.data
+                new_data = new_params.data
+                for k, v in reuse_weights.items():
+                    if k >= self._classes or v >= old_classes:
+                        warnings.warn("reuse mapping {}/{} -> {}/{} out of range".format(
+                            k, self._classes, v, old_classes))
+                        continue
+                    for i in range(self._num_anchors):
+                        off_new = i * self._num_pred
+                        off_old = i * old_num_pred
+                        # copy along the first dimension
+                        new_data[1 + 4 + k + off_new] = old_data[1 + 4 + v + off_old]
+                        # copy non-class weights as well
+                        new_data[off_new : 1 + 4 + off_new] = old_data[off_old : 1 + 4 + off_old]
+                # set data to new conv layers
+                new_params.data = new_data
 
 # if __name__ == '__main__':
 #     num_class = 20

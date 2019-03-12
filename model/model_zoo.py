@@ -16,6 +16,7 @@ from .models_zoo.yolo.yolo3 import *
 from .models_zoo.seg.fcn import *
 from .models_zoo.seg.pspnet import *
 from .models_zoo.seg.deeplabv3 import *
+from .models_zoo.simple_pose.simple_pose_resnet import *
 
 __all__ = ['get_model', 'get_model_list']
 
@@ -116,6 +117,14 @@ _models = {
     'deeplab_resnet152_voc': get_deeplab_resnet152_voc,
     'deeplab_resnet50_ade': get_deeplab_resnet50_ade,
     'deeplab_resnet101_ade': get_deeplab_resnet101_ade,
+    # simple pose
+    'simple_pose_resnet18_v1b': simple_pose_resnet18_v1b,
+    'simple_pose_resnet50_v1b': simple_pose_resnet50_v1b,
+    'simple_pose_resnet101_v1b': simple_pose_resnet101_v1b,
+    'simple_pose_resnet152_v1b': simple_pose_resnet152_v1b,
+    'simple_pose_resnet50_v1d': simple_pose_resnet50_v1d,
+    'simple_pose_resnet101_v1d': simple_pose_resnet101_v1d,
+    'simple_pose_resnet152_v1d': simple_pose_resnet152_v1d,
 }
 
 

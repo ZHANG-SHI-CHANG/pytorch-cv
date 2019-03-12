@@ -8,7 +8,6 @@ from torchvision import transforms
 
 from model import model_zoo
 from data import get_segmentation_dataset
-from data.segbase import ms_batchify_fn
 from model.models_zoo.seg.segbase import MultiEvalModel
 from utils.metrics.segmentation import SegmentationMetric
 
@@ -17,6 +16,7 @@ def validate(evaluator, val_data, metric, device):
     tbar = tqdm(val_data)
     for i, (data, targets) in enumerate(tbar):
         data, targets = data.to(device), targets.to(device)
+        print(data.shape)
         with torch.no_grad():
             predicts = evaluator.forward(data)
         metric.update(targets, predicts)
@@ -62,11 +62,6 @@ if __name__ == '__main__':
 
     val_data = data.DataLoader(val_dataset, args.batch_size, shuffle=False,
                                num_workers=args.num_workers)
-    # for i, (image, label) in enumerate(val_data):
-    #     print(image.shape)
-    #     print(label.shape)
-    #     if i == 5:
-    #         break
     evaluator = MultiEvalModel(model, val_dataset.num_class, device=device)
     metric = SegmentationMetric(val_dataset.num_class)
 

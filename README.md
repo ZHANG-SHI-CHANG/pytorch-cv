@@ -29,6 +29,10 @@ Convert the [gluon-cv](https://github.com/dmlc/gluon-cv/) to pytorch.
 - [x] PSPNet
 - [x] DeepLab
 
+### Pose Estimation
+
+- [x] simple pose
+
 ## Evaluation
 
 > Note: 
@@ -104,7 +108,7 @@ Convert the [gluon-cv](https://github.com/dmlc/gluon-cv/) to pytorch.
 | deeplab_resnet50_ade  | 80.5             | 42.5           |                    |                  |
 | deeplab_resnet101_ade | 81.1             | 44.1           |                    |                  |
 
-
+> picture like 3x1600x1600 will out of memory (6GB)
 
 ## TODO
 

@@ -99,7 +99,7 @@ def load_test(filenames, short=416, max_size=1024, stride=1, mean=(0.485, 0.456,
     """
     if isinstance(filenames, str):
         filenames = [filenames]
-    imgs = [Image.open(f) for f in filenames]
+    imgs = [Image.open(f).convert('RGB') for f in filenames]
     return transform_test(imgs, short, max_size, stride, mean, std)
 
 

@@ -21,6 +21,9 @@
 6. 合并多个tensor（比如`a:2x2, b:3x2, c:4x2`希望合并为`d:9x2`）
    - `nd.concat(a, b, c, dim=0)`
    - `torch.cat([a,b,c], 0)`
+7. 合并tensor到新的维度上面（比如`a:2x2, b=2x2, c:2x2`，希望合并为`d:3x2x2`）
+   - `nd.stack([a,b,c], 0)`
+   - `torch.stack([a,b,c], 0)`
 
 
 

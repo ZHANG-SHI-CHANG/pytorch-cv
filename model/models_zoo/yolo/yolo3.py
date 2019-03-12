@@ -3,6 +3,7 @@ from __future__ import absolute_import
 from __future__ import division
 
 import os
+import warnings
 
 import torch
 from torch import nn
@@ -12,6 +13,7 @@ from model.module.basic import _conv2d
 from model.models_zoo.yolo.darknet import darknet53
 from model.models_zoo.mobilenet import get_mobilenet
 from model.models_zoo.yolo.yolo_module import _upsample, YOLOOutputV3, YOLODetectionBlockV3
+from model.models_zoo.yolo.yolo_target import YOLOV3TargetMerger
 
 __all__ = ['YOLOV3', 'get_yolov3',
            'yolo3_darknet53_voc',
@@ -228,19 +230,68 @@ class YOLOV3(nn.Module):
         self.nms_topk = nms_topk
         self.post_nms = post_nms
 
-    # def reset_class(self, classes):
-    #     """Reset class categories and class predictors.
-    #     Parameters
-    #     ----------
-    #     classes : iterable of str
-    #         The new categories. ['apple', 'orange'] for example.
-    #     """
-    #     self._clear_cached_op()
-    #     self._classes = classes
-    #     if self._pos_iou_thresh >= 1:
-    #         self._target_generator = YOLOV3TargetMerger(len(classes), self._ignore_iou_thresh)
-    #     for outputs in self.yolo_outputs:
-    #         outputs.reset_class(classes)
+    def reset_class(self, classes, reuse_weights=None):
+        """Reset class categories and class predictors.
+        Parameters
+        ----------
+        classes : iterable of str
+            The new categories. ['apple', 'orange'] for example.
+        reuse_weights : dict
+            A {new_integer : old_integer} or mapping dict or {new_name : old_name} mapping dict,
+            or a list of [name0, name1,...] if class names don't change.
+            This allows the new predictor to reuse the
+            previously trained weights specified.
+
+        Example
+        -------
+        >>> net = model_zoo.get_model('yolo3_darknet53_voc', pretrained=True)
+        >>> # use direct name to name mapping to reuse weights
+        >>> net.reset_class(classes=['person'], reuse_weights={'person':'person'})
+        >>> # or use interger mapping, person is the 14th category in VOC
+        >>> net.reset_class(classes=['person'], reuse_weights={0:14})
+        >>> # you can even mix them
+        >>> net.reset_class(classes=['person'], reuse_weights={'person':14})
+        >>> # or use a list of string if class name don't change
+        >>> net.reset_class(classes=['person'], reuse_weights=['person'])
+
+        """
+        old_classes = self._classes
+        self._classes = classes
+        if self._pos_iou_thresh >= 1:
+            self._target_generator = YOLOV3TargetMerger(len(classes), self._ignore_iou_thresh)
+        if isinstance(reuse_weights, (dict, list)):
+            if isinstance(reuse_weights, dict):
+                # trying to replace str with indices
+                for k, v in reuse_weights.items():
+                    if isinstance(v, str):
+                        try:
+                            v = old_classes.index(v)  # raise ValueError if not found
+                        except ValueError:
+                            raise ValueError(
+                                "{} not found in old class names {}".format(v, old_classes))
+                        reuse_weights[k] = v
+                    if isinstance(k, str):
+                        try:
+                            new_idx = self._classes.index(k)  # raise ValueError if not found
+                        except ValueError:
+                            raise ValueError(
+                                "{} not found in new class names {}".format(k, self._classes))
+                        reuse_weights.pop(k)
+                        reuse_weights[new_idx] = v
+            else:
+                new_map = {}
+                for x in reuse_weights:
+                    try:
+                        new_idx = self._classes.index(x)
+                        old_idx = old_classes.index(x)
+                        new_map[new_idx] = old_idx
+                    except ValueError:
+                        warnings.warn("{} not found in old: {} or new class names: {}".format(
+                            x, old_classes, self._classes))
+                reuse_weights = new_map
+
+        for outputs in self.yolo_outputs:
+            outputs.reset_class(classes, reuse_weights=reuse_weights)
 
 
 def get_yolov3(name, stages, out_channels, block_channels, filters, anchors, strides, classes, dataset,
