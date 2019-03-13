@@ -80,10 +80,12 @@ class SegmentationDataset(VisionDataset):
         return img, mask
 
     def _img_transform(self, img):
-        return torch.from_numpy(np.array(img))
+        # return torch.from_numpy(np.array(img))
+        return np.array(img)
 
     def _mask_transform(self, mask):
-        return torch.from_numpy(np.array(mask).astype('int32'))
+        # return torch.from_numpy(np.array(mask).astype('int32'))
+        return np.array(mask).astype('int32')
 
     @property
     def num_class(self):

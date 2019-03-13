@@ -1,3 +1,5 @@
+import os
+import sys
 import argparse
 from PIL import Image
 
@@ -6,6 +8,8 @@ import torch.nn.functional as F
 from torch.backends import cudnn
 from torchvision import transforms
 
+cur_path = os.path.dirname(__file__)
+sys.path.insert(0, os.path.join(cur_path, '../..'))
 from model.model_zoo import get_model
 
 
@@ -17,7 +21,7 @@ def parse_args():
                         help='path to the saved model parameters')
     parser.add_argument('--cuda', type=bool, default=False,
                         help='demo with GPU')
-    parser.add_argument('--input-pic', type=str, default='./png/cat.jpg',
+    parser.add_argument('--input-pic', type=str, default=os.path.join(cur_path, '../png/cat.jpg'),
                         help='path to the input picture')
     opt = parser.parse_args()
     return opt

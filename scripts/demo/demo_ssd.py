@@ -1,9 +1,13 @@
+import os
+import sys
 import argparse
 import matplotlib.pyplot as plt
 
 import torch
 from torch.backends import cudnn
 
+cur_path = os.path.dirname(__file__)
+sys.path.insert(0, os.path.join(cur_path, '../..'))
 from model.model_zoo import get_model
 from data.transforms.ssd import load_test
 from utils.viz.bbox import plot_bbox
@@ -31,7 +35,7 @@ if __name__ == '__main__':
     if args.cuda:
         cudnn.benchmark = True
         device = torch.device('cuda:0')
-    image_list = ['png/street.jpg']
+    image_list = [os.path.join(cur_path, '../png/street.jpg')]
     net = get_model(args.network, pretrained=True).to(device)
     net.set_nms(0.45, 200)
     net.eval()

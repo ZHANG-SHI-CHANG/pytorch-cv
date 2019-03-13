@@ -1,9 +1,13 @@
+import os
+import sys
 import argparse
 import matplotlib.pyplot as plt
 
 import torch
 from torch.backends import cudnn
 
+cur_path = os.path.dirname(__file__)
+sys.path.insert(0, os.path.join(cur_path, '../..'))
 from model.model_zoo import get_model
 from data.transforms.yolo import load_test
 from data.transforms.pose import detector_to_simple_pose, heatmap_to_coord
@@ -14,11 +18,11 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Predict pose from a given image')
     parser.add_argument('--detector', type=str, default='yolo3_mobilenet1.0_coco',
                         help='name of the detection model to use')
-    parser.add_argument('--pose-model', type=str, default='simple_pose_resnet50_v1d',
+    parser.add_argument('--pose-model', type=str, default='simple_pose_resnet152_v1b',
                         help='name of the pose estimation model to use')
     parser.add_argument('--cuda', type=bool, default=False,
                         help='demo with GPU')
-    parser.add_argument('--input-pic', type=str, default='./png/soccer.png',
+    parser.add_argument('--input-pic', type=str, default=os.path.join(cur_path, '../png/soccer.png'),
                         help='path to the input picture')
     opt = parser.parse_args()
     return opt

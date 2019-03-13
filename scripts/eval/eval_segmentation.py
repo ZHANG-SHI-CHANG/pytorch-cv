@@ -8,7 +8,7 @@ from torchvision import transforms
 
 from model import model_zoo
 from data import get_segmentation_dataset
-from model.models_zoo.seg.segbase import MultiEvalModel
+from model.models_zoo.seg.segbase import SegEvalModel
 from utils.metrics.segmentation import SegmentationMetric
 
 
@@ -16,7 +16,6 @@ def validate(evaluator, val_data, metric, device):
     tbar = tqdm(val_data)
     for i, (data, targets) in enumerate(tbar):
         data, targets = data.to(device), targets.to(device)
-        print(data.shape)
         with torch.no_grad():
             predicts = evaluator.forward(data)
         metric.update(targets, predicts)
@@ -26,7 +25,7 @@ def validate(evaluator, val_data, metric, device):
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Eval Segmentation.')
-    parser.add_argument('--model_name', type=str, default='fcn_resnet50_ade',
+    parser.add_argument('--model_name', type=str, default='deeplab_resnet101_ade',
                         help="Base network name")
     parser.add_argument('--batch-size', type=int, default=1,
                         help='Training mini-batch size')
@@ -36,6 +35,11 @@ def parse_args():
                         help='Training with GPUs.')
     parser.add_argument('--dataset', type=str, default='ade20k',
                         help='Select dataset.')
+    # for data
+    parser.add_argument('--base-size', type=int, default=520,
+                        help='base image size')
+    parser.add_argument('--crop-size', type=int, default=480,
+                        help='crop image size')
     args = parser.parse_args()
     return args
 
@@ -57,12 +61,14 @@ if __name__ == '__main__':
         transforms.ToTensor(),
         transforms.Normalize([.485, .456, .406], [.229, .224, .225]),
     ])
-    val_dataset = get_segmentation_dataset(args.dataset, split='val', mode='testval',
-                                           transform=input_transform)
+    data_kwargs = {'transform': input_transform, 'base_size': args.base_size,
+                   'crop_size': args.crop_size}
+
+    val_dataset = get_segmentation_dataset(args.dataset, split='val', mode='val', **data_kwargs)
 
     val_data = data.DataLoader(val_dataset, args.batch_size, shuffle=False,
                                num_workers=args.num_workers)
-    evaluator = MultiEvalModel(model, val_dataset.num_class, device=device)
+    evaluator = SegEvalModel(model, device=device)
     metric = SegmentationMetric(val_dataset.num_class)
 
     validate(evaluator, val_data, metric, device)

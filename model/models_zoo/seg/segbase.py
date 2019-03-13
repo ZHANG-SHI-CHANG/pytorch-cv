@@ -85,6 +85,10 @@ class SegEvalModel(object):
         with torch.no_grad():
             return self.module.evaluate(*inputs, **kwargs)
 
+    # TODO: move to multiple gpu (gluon-cv without this forward)
+    def forward(self, *inputs, **kwargs):
+        return self(*inputs, **kwargs)
+
     def collect_params(self):
         return self.module.state_dict()
 
