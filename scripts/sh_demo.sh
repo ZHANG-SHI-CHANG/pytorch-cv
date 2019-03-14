@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# -----------------------------------------------------------------------------
+# Classification
+# -----------------------------------------------------------------------------
 # #----------------------------cifar10----------------------------
 #python demo/demo_cifar10.py --model CIFAR_ResNet20_v1
 #python demo/demo_cifar10.py --model CIFAR_ResNet56_v1
@@ -58,7 +61,7 @@
 #python demo/demo_imagenet.py --model VGG16
 #python demo/demo_imagenet.py --model VGG19
 #python demo/demo_imagenet.py --model VGG11_bn
-python demo/demo_imagenet.py --model VGG13_bn
+#python demo/demo_imagenet.py --model VGG13_bn
 #python demo/demo_imagenet.py --model VGG16_bn
 #python demo/demo_imagenet.py --model VGG19_bn
 
@@ -77,3 +80,68 @@ python demo/demo_imagenet.py --model VGG13_bn
 #python demo/demo_imagenet.py --model darknet53
 #python demo/demo_imagenet.py --model InceptionV3
 #python demo/demo_imagenet.py --model SENet_154
+
+
+# -----------------------------------------------------------------------------
+# Detection
+# -----------------------------------------------------------------------------
+# #----------------------------voc----------------------------
+## ssd
+#python demo/demo_ssd.py --network ssd_300_vgg16_atrous_voc
+#python demo/demo_ssd.py --network ssd_512_vgg16_atrous_voc
+#python demo/demo_ssd.py --network ssd_512_resnet50_v1_voc
+#python demo/demo_ssd.py --network ssd_512_mobilenet1.0_voc
+
+## yolo
+#python demo/demo_yolo.py --network yolo3_darknet53_voc
+#python demo/demo_yolo.py --network yolo3_mobilenet1.0_voc
+
+
+# #----------------------------coco----------------------------
+## ssd
+#python demo/demo_ssd.py --network ssd_300_vgg16_atrous_coco
+#python demo/demo_ssd.py --network ssd_512_vgg16_atrous_coco
+#python demo/demo_ssd.py --network ssd_512_resnet50_v1_coco
+#python demo/demo_ssd.py --network ssd_512_mobilenet1.0_coco
+
+## yolo
+#python demo/demo_yolo.py --network yolo3_darknet53_coco
+#python demo/demo_yolo.py --network yolo3_mobilenet1.0_coco
+
+
+# -----------------------------------------------------------------------------
+# Segmentation
+# -----------------------------------------------------------------------------
+# #----------------------------ade20k----------------------------
+#python demo/demo_segmentation.py --model fcn_resnet50_ade
+#python demo/demo_segmentation.py --model fcn_resnet101_ade
+#python demo/demo_segmentation.py --model psp_resnet50_ade
+#python demo/demo_segmentation.py --model psp_resnet101_ade
+#python demo/demo_segmentation.py --model deeplab_resnet50_ade
+#python demo/demo_segmentation.py --model deeplab_resnet101_ade
+
+
+# #----------------------------coco----------------------------
+#python demo/demo_segmentation.py --model fcn_resnet101_coco
+#python demo/demo_segmentation.py --model psp_resnet101_coco
+#python demo/demo_segmentation.py --model deeplab_resnet101_coco
+
+
+# #----------------------------voc----------------------------
+#python demo/demo_segmentation.py --model fcn_resnet101_voc
+#python demo/demo_segmentation.py --model psp_resnet101_voc
+#python demo/demo_segmentation.py --model deeplab_resnet101_voc
+#python demo/demo_segmentation.py --model deeplab_resnet152_voc
+#python demo/demo_segmentation.py --model psp_resnet101_citys
+
+
+# -----------------------------------------------------------------------------
+# Pose Estimation
+# -----------------------------------------------------------------------------
+#python demo/demo_pose.py --pose-model simple_pose_resnet18_v1b
+#python demo/demo_pose.py --pose-model simple_pose_resnet50_v1b
+#python demo/demo_pose.py --pose-model simple_pose_resnet50_v1d
+#python demo/demo_pose.py --pose-model simple_pose_resnet101_v1b
+#python demo/demo_pose.py --pose-model simple_pose_resnet101_v1d
+#python demo/demo_pose.py --pose-model simple_pose_resnet152_v1b
+python demo/demo_pose.py --pose-model simple_pose_resnet152_v1d

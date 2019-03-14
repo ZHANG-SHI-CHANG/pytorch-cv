@@ -8,8 +8,11 @@ Convert the [gluon-cv](https://github.com/dmlc/gluon-cv/) to pytorch.
 
 ### Using script (in scripts files)
 
-1. using [sh_convert.sh](./scripts/sh_convert.sh) convert model（choose the model you want）
-2. using [sh_demo.sh](./scripts/sh_convert.sh)（choose the model you want）
+1. using [sh_convert.sh](./scripts/sh_convert.sh) to convert model（choose the model you want）
+2. using [sh_demo.sh](./scripts/sh_convert.sh) to run demo（choose the model you want）
+3. using  [sh_eval.sh](./scripts/sh_eval.sh) to run evaluation（choose the model you want）
+
+Another way is follow **Demo** and **Evaluation**
 
 ### Demo
 

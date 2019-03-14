@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# -----------------------------------------------------------------------------
+# Classification
+# -----------------------------------------------------------------------------
 # #----------------------------cifar10----------------------------
 #python ../utils/gluon2torch.py --name CIFAR_ResNet20_v1
 #python ../utils/gluon2torch.py --name CIFAR_ResNet56_v1
@@ -58,6 +61,87 @@
 #python ../utils/gluon2torch.py --name VGG16
 #python ../utils/gluon2torch.py --name VGG19
 #python ../utils/gluon2torch.py --name VGG11_bn
-python ../utils/gluon2torch.py --name VGG13_bn
+#python ../utils/gluon2torch.py --name VGG13_bn
 #python ../utils/gluon2torch.py --name VGG16_bn
 #python ../utils/gluon2torch.py --name VGG19_bn
+
+## squeezenet
+#python ../utils/gluon2torch.py --name SqueezeNet1.0
+#python ../utils/gluon2torch.py --name SqueezeNet1.1
+
+## densenet
+#python ../utils/gluon2torch.py --name DenseNet121
+#python ../utils/gluon2torch.py --name DenseNet161
+#python ../utils/gluon2torch.py --name DenseNet169
+#python ../utils/gluon2torch.py --name DenseNet201
+
+## others
+#python ../utils/gluon2torch.py --name AlexNet
+#python ../utils/gluon2torch.py --name darknet53
+#python ../utils/gluon2torch.py --name InceptionV3
+#python ../utils/gluon2torch.py --name SENet_154
+
+
+# -----------------------------------------------------------------------------
+# Detection
+# -----------------------------------------------------------------------------
+# #----------------------------voc----------------------------
+## ssd
+#python ../utils/gluon2torch.py --name ssd_300_vgg16_atrous_voc --base
+#python ../utils/gluon2torch.py --name ssd_512_vgg16_atrous_voc --base
+#python ../utils/gluon2torch.py --name ssd_512_resnet50_v1_voc --base --reorder
+#python ../utils/gluon2torch.py --name ssd_512_mobilenet1.0_voc --base --reorder
+
+## yolo
+#python ../utils/gluon2torch.py --name yolo3_darknet53_voc --base
+#python ../utils/gluon2torch.py --name yolo3_mobilenet1.0_voc --base
+
+
+# #----------------------------coco----------------------------
+## ssd
+#python ../utils/gluon2torch.py --name ssd_300_vgg16_atrous_coco --base
+#python ../utils/gluon2torch.py --name ssd_512_vgg16_atrous_coco --base
+#python ../utils/gluon2torch.py --name ssd_512_resnet50_v1_coco --base --reorder
+#python ../utils/gluon2torch.py --name ssd_512_mobilenet1.0_coco --base --reorder
+
+## yolo
+#python ../utils/gluon2torch.py --name yolo3_darknet53_coco --base
+#python ../utils/gluon2torch.py --name yolo3_mobilenet1.0_coco --base
+
+
+# -----------------------------------------------------------------------------
+# Segmentation
+# -----------------------------------------------------------------------------
+# #----------------------------ade20k----------------------------
+#python ../utils/gluon2torch.py --name fcn_resnet50_ade --base
+#python ../utils/gluon2torch.py --name fcn_resnet101_ade --base
+#python ../utils/gluon2torch.py --name psp_resnet50_ade --base
+#python ../utils/gluon2torch.py --name psp_resnet101_ade --base
+#python ../utils/gluon2torch.py --name deeplab_resnet50_ade --base
+#python ../utils/gluon2torch.py --name deeplab_resnet101_ade --base
+
+
+# #----------------------------coco----------------------------
+#python ../utils/gluon2torch.py --name fcn_resnet101_coco --base
+#python ../utils/gluon2torch.py --name psp_resnet101_coco --base
+#python ../utils/gluon2torch.py --name deeplab_resnet101_coco --base
+
+
+# #----------------------------voc----------------------------
+#python ../utils/gluon2torch.py --name fcn_resnet101_voc --base
+#python ../utils/gluon2torch.py --name psp_resnet101_voc --base
+#python ../utils/gluon2torch.py --name deeplab_resnet101_voc --base
+#python ../utils/gluon2torch.py --name deeplab_resnet152_voc --base
+#python ../utils/gluon2torch.py --name psp_resnet101_citys --base
+
+
+# -----------------------------------------------------------------------------
+# Pose Estimation
+# -----------------------------------------------------------------------------
+#python ../utils/gluon2torch.py --name simple_pose_resnet18_v1b
+#python ../utils/gluon2torch.py --name simple_pose_resnet50_v1b
+#python ../utils/gluon2torch.py --name simple_pose_resnet50_v1d
+#python ../utils/gluon2torch.py --name simple_pose_resnet101_v1b
+#python ../utils/gluon2torch.py --name simple_pose_resnet101_v1d
+#python ../utils/gluon2torch.py --name simple_pose_resnet152_v1b
+python ../utils/gluon2torch.py --name simple_pose_resnet152_v1d

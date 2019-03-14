@@ -47,8 +47,7 @@ def parse_args():
                         help='Training mini-batch size')
     parser.add_argument('--num-workers', '-j', dest='num_workers', type=int,
                         default=4, help='Number of data workers')
-    parser.add_argument('--cuda', type=bool, default=True,
-                        help='Training with GPUs.')
+    parser.add_argument('--cuda', action='store_true', help='Training with GPUs.')
     parser.add_argument('--pretrained', type=str, default='True',
                         help='Load weights from previously saved parameters.')
     args = parser.parse_args()
@@ -80,5 +79,3 @@ if __name__ == '__main__':
     # testing
     names, values = validate(net, val_data, device, val_metric)
     print(names, values)
-
-

@@ -1,12 +1,16 @@
 from __future__ import division
 from __future__ import print_function
 
+import os
+import sys
 import argparse
 from tqdm import tqdm
 import torch
 from torch.backends import cudnn
 from torch.utils import data
 
+cur_path = os.path.dirname(__file__)
+sys.path.insert(0, os.path.join(cur_path, '../..'))
 from model import model_zoo
 from data.batchify import Tuple, Stack, Pad
 from data.pascal_voc.detection import VOCDetection
@@ -84,8 +88,7 @@ def parse_args():
                         help='Training dataset.')
     parser.add_argument('--num-workers', '-j', dest='num_workers', type=int,
                         default=4, help='Number of data workers')
-    parser.add_argument('--cuda', type=bool, default=True,
-                        help='Training with GPUs.')
+    parser.add_argument('--cuda', action='store_true', help='Training with GPUs.')
     parser.add_argument('--pretrained', type=str, default='True',
                         help='Load weights from previously saved parameters.')
     parser.add_argument('--save-prefix', type=str, default='',
