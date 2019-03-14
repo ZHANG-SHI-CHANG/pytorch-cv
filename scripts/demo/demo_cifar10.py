@@ -19,8 +19,7 @@ def parse_args():
                         help='name of the model to use')
     parser.add_argument('--saved-params', type=str, default='',
                         help='path to the saved model parameters')
-    parser.add_argument('--cuda', type=bool, default=False,
-                        help='demo with GPU')
+    parser.add_argument('--cuda', action='store_true', help='demo with GPU')
     parser.add_argument('--input-pic', type=str, default=os.path.join(cur_path, '../png/cat.jpg'),
                         help='path to the input picture')
     opt = parser.parse_args()

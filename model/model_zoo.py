@@ -4,6 +4,7 @@ from .models_zoo.cifarresnext import *
 from .models_zoo.vgg import *
 from .models_zoo.resnet import *
 from .models_zoo.resnetv1b import *
+from .models_zoo.resnext import *
 from .models_zoo.mobilenet import *
 from .models_zoo.squeezenet import *
 from .models_zoo.densenet import *
@@ -47,7 +48,9 @@ _models = {
     'resnet18_v1b': resnet18_v1b,
     'resnet34_v1b': resnet34_v1b,
     'resnet50_v1b': resnet50_v1b,
+    'resnet50_v1b_gn': resnet50_v1b_gn,
     'resnet101_v1b': resnet101_v1b,
+    'resnet101_v1b_gn': resnet101_v1b_gn,
     'resnet152_v1b': resnet152_v1b,
     'resnet50_v1c': resnet50_v1c,
     'resnet101_v1c': resnet101_v1c,
@@ -55,6 +58,14 @@ _models = {
     'resnet50_v1d': resnet50_v1d,
     'resnet101_v1d': resnet101_v1d,
     'resnet152_v1d': resnet152_v1d,
+    # imagenet - resnext
+    'resnext50_32x4d': resnext50_32x4d,
+    'resnext101_32x4d': resnext101_32x4d,
+    'resnext101_64x4d': resnext101_64x4d,
+    'se_resnext50_32x4d': se_resnext50_32x4d,
+    'se_resnext101_32x4d': se_resnext101_32x4d,
+    'se_resnext101_64x4d': se_resnext101_64x4d,
+
     # imagenet - mobilenet
     'mobilenet1.0': mobilenet1_0,
     'mobilenet0.75': mobilenet0_75,

@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-__all__ = ['_conv3x3', '_bn_no_affine']
+__all__ = ['_conv3x3', '_bn_no_affine', 'GroupNorm']
 
 
 def _conv3x3(in_channels, channels, stride):
@@ -249,6 +249,12 @@ def _bn_no_affine(channels, norm_layer=nn.BatchNorm2d, norm_kwargs=None):
 def _init_scale(scale=[0.229, 0.224, 0.225]):
     param = nn.Parameter(torch.Tensor(scale).view(1, 3, 1, 1) * 255, requires_grad=False)
     return param
+
+
+# group norm with default num_groups
+class GroupNorm(nn.GroupNorm):
+    def __init__(self, num_channels, num_groups=32, eps=1e-5, affine=True):
+        super(GroupNorm, self).__init__(num_groups, num_channels, eps, affine)
 
 
 if __name__ == '__main__':

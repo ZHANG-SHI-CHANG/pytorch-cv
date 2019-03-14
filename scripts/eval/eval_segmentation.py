@@ -25,7 +25,7 @@ def validate(evaluator, val_data, metric, device):
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Eval Segmentation.')
-    parser.add_argument('--model_name', type=str, default='deeplab_resnet101_ade',
+    parser.add_argument('--model_name', type=str, default='fcn_resnet101_coco',
                         help="Base network name")
     parser.add_argument('--batch-size', type=int, default=1,
                         help='Training mini-batch size')
@@ -33,7 +33,7 @@ def parse_args():
                         default=4, help='Number of data workers')
     parser.add_argument('--cuda', type=bool, default=True,
                         help='Training with GPUs.')
-    parser.add_argument('--dataset', type=str, default='ade20k',
+    parser.add_argument('--dataset', type=str, default='coco',
                         help='Select dataset.')
     # for data
     parser.add_argument('--base-size', type=int, default=520,

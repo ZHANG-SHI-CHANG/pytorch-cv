@@ -2,11 +2,13 @@
 from __future__ import division
 
 import os
+import torch
 from torch import nn
 import torch.nn.functional as F
 
 __all__ = ['ResNetV1b', 'resnet18_v1b', 'resnet34_v1b',
-           'resnet50_v1b', 'resnet101_v1b',
+           'resnet50_v1b', 'resnet50_v1b_gn',
+           'resnet101_v1b', 'resnet101_v1b_gn',
            'resnet152_v1b', 'BasicBlockV1b', 'BottleneckV1b',
            'resnet50_v1c', 'resnet101_v1c', 'resnet152_v1c',
            'resnet50_v1d', 'resnet101_v1d', 'resnet152_v1d',
@@ -284,7 +286,6 @@ def resnet18_v1b(pretrained=False, root=os.path.expanduser('~/.torch/models'), *
     """
     model = ResNetV1b(BasicBlockV1b, [2, 2, 2, 2], **kwargs)
     if pretrained:
-        import torch
         from model.model_store import get_model_file
         model.load_state_dict(torch.load(get_model_file('resnet%d_v%db' % (18, 1), root=root)))
         from data.imagenet import ImageNetAttr
@@ -318,7 +319,6 @@ def resnet34_v1b(pretrained=False, root=os.path.expanduser('~/.torch/models'), *
     """
     model = ResNetV1b(BasicBlockV1b, [3, 4, 6, 3], **kwargs)
     if pretrained:
-        import torch
         from model.model_store import get_model_file
         model.load_state_dict(torch.load(get_model_file('resnet%d_v%db' % (34, 1), root=root)))
         from data.imagenet import ImageNetAttr
@@ -351,9 +351,43 @@ def resnet50_v1b(pretrained=False, root=os.path.expanduser('~/.torch/models'), *
     """
     model = ResNetV1b(BottleneckV1b, [3, 4, 6, 3], **kwargs)
     if pretrained:
-        import torch
         from model.model_store import get_model_file
         model.load_state_dict(torch.load(get_model_file('resnet%d_v%db' % (50, 1), root=root)))
+        from data.imagenet import ImageNetAttr
+        attrib = ImageNetAttr()
+        model.synset = attrib.synset
+        model.classes = attrib.classes
+        model.classes_long = attrib.classes_long
+    return model
+
+
+def resnet50_v1b_gn(pretrained=False, root=os.path.expanduser('~/.torch/models'), **kwargs):
+    """Constructs a ResNetV1b-50 GroupNorm model.
+
+    Parameters
+    ----------
+    pretrained : bool or str
+        Boolean value controls whether to load the default pretrained weights for model.
+    root : str, default '~/.torch/models'
+        Location for keeping the model parameters.
+    dilated: bool, default False
+        Whether to apply dilation strategy to ResNetV1b, yielding a stride 8 model.
+    norm_layer : object
+        Normalization layer used (default: :class:`nn.BatchNorm`)
+        Can be :class:`nn.BatchNorm` or :class:`other normalization`.
+    last_gamma : bool, default False
+        Whether to initialize the gamma of the last BatchNorm layer in each bottleneck to zero.
+    use_global_stats : bool, default False
+        Whether forcing BatchNorm to use global statistics instead of minibatch statistics;
+        optionally set to True if finetuning using ImageNet classification pretrained models.
+    """
+    from model.module.basic import GroupNorm
+    model = ResNetV1b(BottleneckV1b, [3, 4, 6, 3], norm_layer=GroupNorm,
+                      norm_kwargs={'num_groups': 64}, **kwargs)
+    if pretrained:
+        from model.model_store import get_model_file
+        model.load_state_dict(torch.load(get_model_file('resnet%d_v%db_gn' % (50, 1),
+                                                        root=root)))
         from data.imagenet import ImageNetAttr
         attrib = ImageNetAttr()
         model.synset = attrib.synset
@@ -387,6 +421,41 @@ def resnet101_v1b(pretrained=False, root=os.path.expanduser('~/.torch/models'), 
         import torch
         from model.model_store import get_model_file
         model.load_state_dict(torch.load(get_model_file('resnet%d_v%db' % (101, 1),
+                                                        root=root)))
+        from data.imagenet import ImageNetAttr
+        attrib = ImageNetAttr()
+        model.synset = attrib.synset
+        model.classes = attrib.classes
+        model.classes_long = attrib.classes_long
+    return model
+
+
+def resnet101_v1b_gn(pretrained=False, root=os.path.expanduser('~/.torch/models'), **kwargs):
+    """Constructs a ResNetV1b-101 GroupNorm model.
+
+    Parameters
+    ----------
+    pretrained : bool or str
+        Boolean value controls whether to load the default pretrained weights for model.
+    root : str, default '~/.torch/models'
+        Location for keeping the model parameters.
+    dilated: bool, default False
+        Whether to apply dilation strategy to ResNetV1b, yielding a stride 8 model.
+    norm_layer : object
+        Normalization layer used (default: :class:`nn.BatchNorm`)
+        Can be :class:`nn.BatchNorm` or :class:`other normalization`.
+    last_gamma : bool, default False
+        Whether to initialize the gamma of the last BatchNorm layer in each bottleneck to zero.
+    use_global_stats : bool, default False
+        Whether forcing BatchNorm to use global statistics instead of minibatch statistics;
+        optionally set to True if finetuning using ImageNet classification pretrained models.
+    """
+    from model.module.basic import GroupNorm
+    model = ResNetV1b(BottleneckV1b, [3, 4, 23, 3], norm_layer=GroupNorm, **kwargs)
+    if pretrained:
+        import torch
+        from model.model_store import get_model_file
+        model.load_state_dict(torch.load(get_model_file('resnet%d_v%db_gn' % (101, 1),
                                                         root=root)))
         from data.imagenet import ImageNetAttr
         attrib = ImageNetAttr()

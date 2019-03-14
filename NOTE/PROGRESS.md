@@ -86,6 +86,11 @@
 
 ### Segmentation
 
+Note：
+
+1. value in () means after using base_size=520, crop_size=480.  
+2. pytorch-cv using PIL.Image
+
 | ADE20K Dataset        | pixAcc(gluon-cv) | mIoU(gluon-cv) | pixAcc(pytorch-cv) | mIoU(pytorch-cv) |
 | --------------------- | ---------------- | -------------- | ------------------ | ---------------- |
 | fcn_resnet50_ade      | 79.0 (75.8)      | 39.5 (36.4)    | (75.7)             | (36.2)           |
@@ -95,8 +100,11 @@
 | deeplab_resnet50_ade  | 80.5 (78.6)      | 42.5 (41.4)    | (78.6)             | (41.2)           |
 | deeplab_resnet101_ade | 81.1 (79.2)      | 44.1 (42.5)    | (79.1)             | (42.3)           |
 
-> 1. value in () means after using base_size=520, crop_size=480.  
-> 2. pytorch-cv using PIL.Image
+| COCO Dataset           | pixAcc(gluon-cv) | mIoU(gluon-cv) | pixAcc(pytorch-cv) | mIoU(pytorch-cv) |
+| ---------------------- | ---------------- | -------------- | ------------------ | ---------------- |
+| fcn_resnet101_coco     | 92.2 (91.1)      | 66.2 (60.3)    | (90.9)             | (59.8)           |
+| psp_resnet101_coco     | 92.4 (91.8)      | 70.4 (68.5)    | (91.7)             | (68.8)           |
+| deeplab_resnet101_coco | 92.5 (91.7)      | 70.4 (68.7)    | (91.6)             | (68.3)           |
 
 | VOC Dataset           | pixAcc(gluon-cv) | mIoU(gluon-cv) | pixAcc(pytorch-cv) | mIoU(pytorch-cv) |
 | --------------------- | ---------------- | -------------- | ------------------ | ---------------- |

@@ -1,5 +1,7 @@
 import os
+import sys
 import argparse
+from tqdm import tqdm
 
 import torch
 from torch.backends import cudnn
@@ -7,6 +9,8 @@ from torch.utils import data
 import torchvision.datasets as vdata
 from torchvision import transforms
 
+cur_path = os.path.dirname(__file__)
+sys.path.insert(0, os.path.join(cur_path, '../..'))
 from model import model_zoo
 from utils.metrics.metric_classification import Accuracy
 
@@ -26,7 +30,8 @@ def get_dataloader(batch_size, num_workers):
 def validate(net, val_data, device, metric):
     net = net.to(device)
     net.eval()
-    for i, (data, label) in enumerate(val_data):
+    tbar = tqdm(val_data)
+    for i, (data, label) in enumerate(tbar):
         data, label = data.to(device), label.to(device)
         with torch.no_grad():
             outputs = net(data)
