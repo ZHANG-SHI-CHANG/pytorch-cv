@@ -53,3 +53,26 @@
 #python eval/eval_yolo.py --network mobilenet1.0 --batch-size 4 --dataset coco --data-shape 608 --cuda
 
 
+
+# -----------------------------------------------------------------------------
+# Pose Estimation
+# -----------------------------------------------------------------------------
+## simple pose
+#python eval/eval_pose.py --model simple_pose_resnet18_v1b --batch-size 4 --cuda
+#python eval/eval_pose.py --model simple_pose_resnet18_v1b --batch-size 4 --cuda --flip-test
+#python eval/eval_pose.py --model simple_pose_resnet18_v1b --batch-size 4 --input-size 128,96 --cuda
+#python eval/eval_pose.py --model simple_pose_resnet18_v1b --batch-size 4 --input-size 128,96 --cuda --flip-test
+#python eval/eval_pose.py --model simple_pose_resnet50_v1b --batch-size 4 --cuda
+#python eval/eval_pose.py --model simple_pose_resnet50_v1b --batch-size 4 --cuda --flip-test
+#python eval/eval_pose.py --model simple_pose_resnet50_v1d --batch-size 4 --cuda
+#python eval/eval_pose.py --model simple_pose_resnet50_v1d --batch-size 4 --cuda --flip-test
+#python eval/eval_pose.py --model simple_pose_resnet101_v1b --batch-size 4 --cuda
+#python eval/eval_pose.py --model simple_pose_resnet101_v1b --batch-size 4 --cuda --flip-test
+#python eval/eval_pose.py --model simple_pose_resnet101_v1d --batch-size 4 --cuda
+#python eval/eval_pose.py --model simple_pose_resnet101_v1d --batch-size 4 --cuda --flip-test
+#python eval/eval_pose.py --model simple_pose_resnet152_v1b --batch-size 4 --cuda
+#python eval/eval_pose.py --model simple_pose_resnet152_v1b --batch-size 4 --cuda --flip-test
+#python eval/eval_pose.py --model simple_pose_resnet152_v1d --batch-size 4 --cuda
+#python eval/eval_pose.py --model simple_pose_resnet152_v1d --batch-size 4 --cuda --flip-test
+#python eval/eval_pose.py --model simple_pose_resnet152_v1d --batch-size 4 --input-size 384,288 --cuda
+#python eval/eval_pose.py --model simple_pose_resnet152_v1d --batch-size 4 --input-size 384,288 --cuda --flip-test

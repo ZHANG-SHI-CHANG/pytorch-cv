@@ -21,9 +21,14 @@
 6. 合并多个tensor（比如`a:2x2, b:3x2, c:4x2`希望合并为`d:9x2`）
    - `nd.concat(a, b, c, dim=0)`
    - `torch.cat([a,b,c], 0)`
+
+     > 对于0dim的情况（比如 `a=torch.Tensr([1.0]), b=torch.Tensor([2.0])`），无法使用`torch.cat`，可以利用`torch.Tensor([a, b])`来合并
 7. 合并tensor到新的维度上面（比如`a:2x2, b=2x2, c:2x2`，希望合并为`d:3x2x2`）
    - `nd.stack([a,b,c], 0)`
    - `torch.stack([a,b,c], 0)`
 
+8. 翻转某一维度：（比如`a: 2x3x4`）
 
+   - `a[:,:,::-1]`
+   - `a.flip(2)`（注：暂时不支持逆下标）
 
