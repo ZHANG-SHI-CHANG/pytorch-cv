@@ -6,7 +6,7 @@ from torch import nn
 import torch.nn.functional as F
 
 from model.models_zoo.resnetv1b import resnet50_v1s, resnet101_v1s, resnet152_v1s
-from utils.parallel import tuple_map
+from utils.distributed.parallel import tuple_map
 
 
 class SegBaseModel(nn.Module):

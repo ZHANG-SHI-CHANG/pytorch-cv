@@ -1,15 +1,15 @@
 """ResNets, implemented in PyTorch."""
 from __future__ import division
 
-__all__ = ['get_cifar_resnet',
-           'cifar_resnet20_v1', 'cifar_resnet56_v1', 'cifar_resnet110_v1',
-           'cifar_resnet20_v2', 'cifar_resnet56_v2', 'cifar_resnet110_v2']
-
 import os
 from torch import nn
 import torch.nn.functional as F
 
 from model.module.basic import _conv3x3, _bn_no_affine
+
+__all__ = ['get_cifar_resnet',
+           'cifar_resnet20_v1', 'cifar_resnet56_v1', 'cifar_resnet110_v1',
+           'cifar_resnet20_v2', 'cifar_resnet56_v2', 'cifar_resnet110_v2']
 
 
 # -----------------------------------------------------------------------------
@@ -289,7 +289,8 @@ def get_cifar_resnet(version, num_layers, pretrained=False,
     if pretrained:
         import torch
         from model.model_store import get_model_file
-        net.load_state_dict(torch.load(get_model_file('cifar_resnet%d_v%d' % (num_layers, version), root=root)))
+        net.load_state_dict(torch.load(get_model_file('cifar_resnet%d_v%d' % (num_layers, version), root=root),
+                                       map_location=lambda storage, loc: storage))
     return net
 
 
