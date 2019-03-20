@@ -451,7 +451,7 @@ def get_resnet(version, num_layers, pretrained=False,
         import torch
         from model.model_store import get_model_file
         net.load_state_dict(torch.load(get_model_file('resnet%d_v%d' % (num_layers, version),
-                                                      root=root)))
+                                                      root=root), map_location=lambda storage, loc: storage))
         from data.imagenet import ImageNetAttr
         attrib = ImageNetAttr()
         net.synset = attrib.synset

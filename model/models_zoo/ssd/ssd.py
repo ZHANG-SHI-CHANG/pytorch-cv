@@ -315,7 +315,8 @@ def get_ssd(name, base_size, features, filters, channels, sizes, ratios, steps, 
     if pretrained:
         from model.model_store import get_model_file
         full_name = '_'.join(('ssd', str(base_size), name, dataset))
-        net.load_state_dict(torch.load(get_model_file(full_name, root=root)))
+        net.load_state_dict(torch.load(get_model_file(full_name, root=root),
+                            map_location=lambda storage, loc: storage))
     return net
 
 

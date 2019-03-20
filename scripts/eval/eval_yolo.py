@@ -12,12 +12,14 @@ from torch.utils import data
 cur_path = os.path.dirname(__file__)
 sys.path.insert(0, os.path.join(cur_path, '../..'))
 from model import model_zoo
+from data.base import make_data_sampler
 from data.batchify import Tuple, Stack, Pad
 from data.pascal_voc.detection import VOCDetection
 from data.mscoco.detection import COCODetection
+from data.transforms.yolo import YOLO3DefaultValTransform
 from utils.metrics.voc_detection import VOC07MApMetric
 from utils.metrics.coco_detection import COCODetectionMetric
-from data.transforms.yolo import YOLO3DefaultValTransform
+from utils.distributed.parallel import synchronize, accumulate_prediction, is_main_process
 
 
 def get_dataset(dataset, data_shape):
@@ -35,22 +37,25 @@ def get_dataset(dataset, data_shape):
     return val_dataset, val_metric
 
 
-def get_dataloader(val_dataset, batch_size, num_workers):
+def get_dataloader(val_dataset, batch_size, num_workers, distributed):
     """Get dataloader."""
     batchify_fn = Tuple(Stack(), Pad(pad_val=-1))
-    val_loader = data.DataLoader(val_dataset, collate_fn=batchify_fn,
-                                 batch_size=batch_size, shuffle=False, num_workers=num_workers)
+    sampler = make_data_sampler(val_dataset, False, distributed)
+    batch_sampler = data.BatchSampler(sampler=sampler, batch_size=batch_size, drop_last=False)
+    val_loader = data.DataLoader(val_dataset, batch_sampler=batch_sampler, collate_fn=batchify_fn,
+                                 num_workers=num_workers)
     return val_loader
 
 
-# TODO: support multiple gpu
-def validate(net, val_data, device, size, metric):
-    net = net.to(device)
-    metric.reset()
-    net.set_nms(nms_thresh=0.45, nms_topk=400)
+def validate(net, val_data, device):
+    net.to(device)
     net.eval()
-    with tqdm(total=size) as pbar:
-        for ib, batch in enumerate(val_data):
+    net.set_nms(nms_thresh=0.45, nms_topk=400)
+    results = list()
+    tbar = tqdm(val_data)
+
+    with torch.no_grad():
+        for ib, batch in enumerate(tbar):
             data = batch[0].to(device)
             label = batch[1].to(device)
             det_bboxes = []
@@ -60,8 +65,7 @@ def validate(net, val_data, device, size, metric):
             gt_ids = []
             gt_difficults = []
             x, y = data, label
-            with torch.no_grad():
-                ids, scores, bboxes = net(x)
+            ids, scores, bboxes = net(x)
             det_ids.append(ids)
             det_scores.append(scores)
             # clip to image size
@@ -71,9 +75,8 @@ def validate(net, val_data, device, size, metric):
             gt_bboxes.append(y.narrow(-1, 0, 4))
             gt_difficults.append(y.narrow(-1, 5, 1) if y.shape[-1] > 5 else None)
 
-            metric.update(det_bboxes, det_ids, det_scores, gt_bboxes, gt_ids, gt_difficults)
-            pbar.update(batch[0].shape[0])
-    return metric.get()
+            results.append((det_bboxes, det_ids, det_scores, gt_bboxes, gt_ids, gt_difficults))
+    return results
 
 
 def parse_args():
@@ -92,6 +95,7 @@ def parse_args():
                         default=4, help='Number of data workers')
     parser.add_argument('--cuda', action='store_true',
                         help='Training with GPUs, you can specify 1,3 for example.')
+    parser.add_argument('--local_rank', type=int, default=0)
     parser.add_argument('--pretrained', type=str, default='True',
                         help='Load weights from previously saved parameters.')
     parser.add_argument('--save-prefix', type=str, default='',
@@ -103,11 +107,20 @@ def parse_args():
 if __name__ == '__main__':
     args = parse_args()
 
-    # training contexts
+    # device
     device = torch.device('cpu')
-    if args.cuda:
+    num_gpus = int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
+    distributed = num_gpus > 1
+    if args.cuda and torch.cuda.is_available():
         cudnn.benchmark = True
-        device = torch.device('cuda:0')
+        device = torch.device('cuda')
+    else:
+        distributed = False
+
+    if distributed:
+        torch.cuda.set_device(args.local_rank)
+        torch.distributed.init_process_group(backend="nccl", init_method="env://")
+        synchronize()
 
     # network
     net_name = '_'.join((args.algorithm, args.network, args.dataset))
@@ -118,12 +131,15 @@ if __name__ == '__main__':
         net = model_zoo.get_model(net_name, pretrained=False)
         net.load_parameters(args.pretrained.strip())
 
-    # training data
+    # testing data
     val_dataset, val_metric = get_dataset(args.dataset, args.data_shape)
-    val_data = get_dataloader(val_dataset, args.batch_size, args.num_workers)
+    val_data = get_dataloader(val_dataset, args.batch_size, args.num_workers, distributed)
     classes = val_dataset.classes  # class names
 
-    # training
-    names, values = validate(net, val_data, device, len(val_dataset), val_metric)
-    for k, v in zip(names, values):
-        print(k, v)
+    # testing
+    results = validate(net, val_data, device)
+    synchronize()
+    names, values = accumulate_prediction(results, val_metric)
+    if is_main_process():
+        for k, v in zip(names, values):
+            print(k, v)

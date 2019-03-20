@@ -1,4 +1,5 @@
 import pickle
+import itertools
 
 import torch
 import torch.distributed as dist
@@ -115,8 +116,27 @@ def reduce_dict(input_dict, average=True):
     return reduced_dict
 
 
+def accumulate_prediction(predict, metric):
+    all_predict = all_gather(predict)
+    if not is_main_process():
+        return None, None
+    for p in itertools.chain.from_iterable(all_predict):
+        metric.update(*p)
+    return metric.get()
+
+
+# TODO: may delete
 def reduce_list(input_list, average=True):
     if average:
         return sum(input_list) / len(input_list)
     else:
         return sum(input_list)
+
+
+# if __name__ == '__main__':
+#     from utils.metrics.metric_classification import Accuracy
+#
+#     metric = Accuracy()
+#     predicts = iter([(torch.LongTensor([3, 8, 8, 0]), torch.randn(4, 10))] * 2500)
+#     name, value = accumulate_prediction(predicts, metric)
+#     print(name, value)

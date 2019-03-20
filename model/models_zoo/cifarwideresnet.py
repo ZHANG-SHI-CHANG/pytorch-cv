@@ -169,7 +169,7 @@ def get_cifar_wide_resnet(num_layers, width_factor=1, drop_rate=0.0, pretrained=
         import torch
         from model.model_store import get_model_file
         net.load_state_dict(torch.load(get_model_file('cifar_wideresnet%d_%d' % (num_layers, width_factor),
-                                                      root=root)))
+                                                      root=root), map_location=lambda storage, loc: storage))
     return net
 
 

@@ -1,9 +1,14 @@
 """Prepare PASCAL VOC datasets"""
 import os
+import sys
 import shutil
 import argparse
 import tarfile
-from gluoncv.utils import download, makedirs
+
+cur_path = os.path.dirname(__file__)
+sys.path.insert(0, os.path.join(cur_path, '../..'))
+from utils.download import download
+from utils.filesystem import makedirs
 
 _TARGET_DIR = os.path.expanduser('~/.torch/datasets/voc')
 

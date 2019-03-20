@@ -132,3 +132,23 @@ Note：
 
 > Note：default input size is `256x192`
 
+## Training
+
+### Classification
+
+#### CIFAR10
+
+| Model1                 | 1-GPU | 4-GPU |
+| ---------------------- | ----- | ----- |
+| CIFAR_ResNet20_v1      | 92.0  | 91.1  |
+| CIFAR_ResNet56_v1      |       |       |
+| CIFAR_ResNet110_v1     |       |       |
+| CIFAR_ResNet20_v2      |       |       |
+| CIFAR_ResNet56_v2      |       |       |
+| CIFAR_ResNet110_v2     |       |       |
+| CIFAR_WideResNet16_10  |       |       |
+| CIFAR_WideResNet28_10  |       |       |
+| CIFAR_WideResNet40_8   |       |       |
+| CIFAR_ResNeXt29_16x64d |       |       |
+
+> Note：The multi-gpu using same arguments as one-gpu （so, it's a little "worse" than one-gpu）

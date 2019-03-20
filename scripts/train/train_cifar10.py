@@ -21,7 +21,7 @@ from model import model_zoo
 from data.base import make_data_sampler
 from utils.filesystem import makedirs
 from utils.plot_history import TrainingHistory
-from utils.distributed.parallel import synchronize, all_gather, is_main_process, reduce_list
+from utils.distributed.parallel import synchronize, all_gather, is_main_process, reduce_list, accumulate_prediction
 from utils.metrics.metric_classification import Accuracy
 from utils.optim_utils import get_learning_rate, set_learning_rate
 
@@ -87,6 +87,7 @@ class Solver(object):
             tic = time.time()
             train_metric.reset()
             metric.reset()
+            train_results = list()
             train_loss = 0
             num_batch = len(train_data)
 
@@ -104,17 +105,15 @@ class Solver(object):
                 loss.backward()
                 optimizer.step()
                 train_loss += loss.item()
-                train_metric.update(label, output)
-                train_metric.get()
+                train_results.append((label, output))
                 iteration += 1
 
-            name, val_acc = self.validate(val_data)
+            val_results = self.validate(val_data)
             synchronize()
             train_loss /= num_batch
-            name, acc = train_metric.get()
             train_loss = reduce_list(all_gather(train_loss))
-            acc = reduce_list(all_gather(acc))
-            val_acc = reduce_list(all_gather(val_acc))
+            name, acc = accumulate_prediction(train_results, train_metric)
+            name, val_acc = accumulate_prediction(val_results, metric)
             if is_main_process():
                 train_history.update([1 - acc, 1 - val_acc])
                 train_history.plot(save_path='%s/%s_history.png' % (self.plot_path, self.cfg.model))
@@ -134,15 +133,15 @@ class Solver(object):
 
     def validate(self, val_data):
         self.net.eval()
-        metric = Accuracy()
+        results = list()
         with torch.no_grad():
             for i, batch in enumerate(val_data):
                 image = batch[0].to(self.device)
                 label = batch[1].to(self.device)
                 outputs = self.net(image)
-                metric.update(label, outputs)
+                results.append((label, outputs))
         self.net.train()
-        return metric.get()
+        return iter(results)
 
 
 def parse_args():

@@ -8,9 +8,12 @@ Convert the [gluon-cv](https://github.com/dmlc/gluon-cv/) to pytorch.
 
 ### Using script (in scripts files)
 
-1. using [sh_convert.sh](./scripts/sh_convert.sh) to convert model（choose the model you want）
-2. using [sh_demo.sh](./scripts/sh_convert.sh) to run demo（choose the model you want）
-3. using  [sh_eval.sh](./scripts/sh_eval.sh) to run evaluation（choose the model you want）
+- using [sh_convert.sh](./scripts/sh_convert.sh) to convert model（choose the model you want）
+- using [sh_demo.sh](./scripts/sh_convert.sh) to run demo（choose the model you want）
+- using [sh_eval.sh](./scripts/sh_eval.sh) to run evaluation（choose the model you want）
+- using [sh_eval_distributed.sh](./scripts/sh_eval_distributed.sh) to run evaluation with multi-gpu (choose the model you want)
+- using [sh_train.sh](./scripts/sh_train.sh) to run training （choose the model you want）
+- using [sh_train_distributed.sh](./scripts/sh_train_distributed.sh) to run training （choose the model you want）
 
 Another way is follow **Demo** and **Evaluation**
 
@@ -65,6 +68,7 @@ You can see the performance (compare with gluon-cv) in [PROGRESS](./NOTE/PROGRES
 
 - [x] add GPU to demo
 - [ ] add evaluation (in progress)
+- [ ] add multi-gpu support (in progress)
 - [ ] add training
 - [ ] add tutorial
 - [ ] modify doc

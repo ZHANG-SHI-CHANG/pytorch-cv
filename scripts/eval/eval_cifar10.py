@@ -13,7 +13,7 @@ cur_path = os.path.dirname(__file__)
 sys.path.insert(0, os.path.join(cur_path, '../..'))
 from model import model_zoo
 from data.base import make_data_sampler
-from utils.distributed.parallel import synchronize, all_gather, is_main_process
+from utils.distributed.parallel import synchronize, accumulate_prediction, is_main_process
 from utils.metrics.metric_classification import Accuracy
 
 
@@ -31,23 +31,24 @@ def get_dataloader(batch_size, num_workers, distributed):
     return val_loader
 
 
-def validate(net, val_data, device, metric):
+def validate(net, val_data, device):
     net.to(device)
     net.eval()
     cpu_device = torch.device("cpu")
+    results = list()
     tbar = tqdm(val_data)
     for i, (data, label) in enumerate(tbar):
         data = data.to(device)
         with torch.no_grad():
             outputs = net(data)
             outputs = outputs.to(cpu_device)
-        metric.update(label, outputs)
-    return metric.get()
+        results.append((label, outputs))
+    return iter(results)
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Eval CIFAR10 networks.')
-    parser.add_argument('--network', type=str, default='CIFAR_ResNeXt29_16x64d',
+    parser.add_argument('--network', type=str, default='CIFAR_ResNet20_v1',
                         help="Base network name")
     parser.add_argument('--batch-size', type=int, default=4,
                         help='Training mini-batch size')
@@ -93,8 +94,8 @@ if __name__ == '__main__':
     val_data = get_dataloader(args.batch_size, args.num_workers, distributed)
 
     # testing
-    names, values = validate(net, val_data, device, val_metric)
+    results = validate(net, val_data, device)
     synchronize()
-    all_value = all_gather(values)
+    name, value = accumulate_prediction(results, val_metric)
     if is_main_process():
-        print(names, sum(all_value) / len(all_value))
+        print(name, value)
