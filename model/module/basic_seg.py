@@ -44,7 +44,7 @@ class _PyramidPooling(nn.Module):
         return F.adaptive_avg_pool2d(x, output_size=size)
 
     def upsample(self, x, h, w):
-        return F.interpolate(x, (h, w), mode='bilinear')
+        return F.interpolate(x, (h, w), mode='bilinear', align_corners=True)
 
     def forward(self, x):
         _, _, h, w = x.shape
@@ -97,7 +97,7 @@ class _AsppPooling(nn.Module):
 
     def forward(self, x):
         pool = self.gap(x)
-        return F.interpolate(pool, self._up_kwargs, mode='bilinear')
+        return F.interpolate(pool, self._up_kwargs, mode='bilinear', align_corners=True)
 
 
 class _ASPP(nn.Module):

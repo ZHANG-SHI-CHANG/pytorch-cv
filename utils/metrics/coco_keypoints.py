@@ -2,10 +2,11 @@
 from __future__ import absolute_import
 
 import os
+import warnings
 from os import path as osp
 from collections import OrderedDict
-import warnings
 from utils.metrics.metric import EvalMetric
+from utils.distributed.parallel import is_main_process
 from data.mscoco.utils import try_import_pycocotools
 
 
@@ -64,7 +65,7 @@ class COCOKeyPointsMetric(EvalMetric):
             f.close()
 
     def __del__(self):
-        if self._cleanup:
+        if self._cleanup and is_main_process():
             try:
                 os.remove(self._filename)
             except IOError as err:
@@ -76,10 +77,10 @@ class COCOKeyPointsMetric(EvalMetric):
 
     def _update(self):
         """Use coco to get real scores. """
-        if not self._current_id == len(self._img_ids):
-            warnings.warn(
-                'Recorded {} out of {} validation images, incompelete results'.format(
-                    self._current_id, len(self._img_ids)))
+        # if not self._current_id == len(self._img_ids):
+        #     warnings.warn(
+        #         'Recorded {} out of {} validation images, incompelete results'.format(
+        #             self._current_id, len(self._img_ids)))
         import json
         try:
             with open(self._filename, 'w') as f:
@@ -117,6 +118,7 @@ class COCOKeyPointsMetric(EvalMetric):
     # pylint: disable=arguments-differ, unused-argument, missing-docstring
     def update(self, preds, maxvals, score, imgid, *args, **kwargs):
         # import pdb; pdb.set_trace()
+        # self._current_id += preds.shape[0]
         num_joints = preds.shape[1]
         in_vis_thresh = self._in_vis_thresh
         for idx, kpt in enumerate(preds):
@@ -139,3 +141,7 @@ class COCOKeyPointsMetric(EvalMetric):
                                   'category_id': 1,
                                   'keypoints': kpt,
                                   'score': rescore})
+
+    def combine_metric(self, metric):
+        self._results += metric._results
+        # self._current_id += metric._current_id

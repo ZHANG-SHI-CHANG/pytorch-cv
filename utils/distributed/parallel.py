@@ -125,13 +125,22 @@ def accumulate_prediction(predict, metric):
     return metric.get()
 
 
+def accumulate_metric(metric):
+    all_metric = all_gather(metric)
+    if not is_main_process():
+        return None, None
+    metric_res = all_metric[0]
+    for i in range(1, len(all_metric)):
+        metric_res.combine_metric(all_metric[i])
+    return metric_res.get()
+
+
 # TODO: may delete
 def reduce_list(input_list, average=True):
     if average:
         return sum(input_list) / len(input_list)
     else:
         return sum(input_list)
-
 
 # if __name__ == '__main__':
 #     from utils.metrics.metric_classification import Accuracy

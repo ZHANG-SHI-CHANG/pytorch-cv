@@ -13,7 +13,7 @@ cur_path = os.path.dirname(__file__)
 sys.path.insert(0, os.path.join(cur_path, '../..'))
 from model import model_zoo
 from data.base import make_data_sampler
-from utils.distributed.parallel import synchronize, accumulate_prediction, is_main_process
+from utils.distributed.parallel import synchronize, accumulate_metric, is_main_process
 from utils.metrics.metric_classification import Accuracy
 
 
@@ -31,19 +31,17 @@ def get_dataloader(batch_size, num_workers, distributed):
     return val_loader
 
 
-def validate(net, val_data, device):
-    net.to(device)
+def validate(net, val_data, device, metric):
     net.eval()
     cpu_device = torch.device("cpu")
-    results = list()
     tbar = tqdm(val_data)
     for i, (data, label) in enumerate(tbar):
         data = data.to(device)
         with torch.no_grad():
             outputs = net(data)
-            outputs = outputs.to(cpu_device)
-        results.append((label, outputs))
-    return iter(results)
+        outputs = outputs.to(cpu_device)
+        metric.update(label, outputs)
+    return metric
 
 
 def parse_args():
@@ -54,7 +52,7 @@ def parse_args():
                         help='Training mini-batch size')
     parser.add_argument('--num-workers', '-j', dest='num_workers', type=int,
                         default=4, help='Number of data workers')
-    parser.add_argument('--cuda', action='store_true', help='Training with GPUs.')
+    parser.add_argument('--cuda', action='store_true', help='Evaluate with GPUs.')
     parser.add_argument('--local_rank', type=int, default=0)
     parser.add_argument('--pretrained', type=str, default='True',
                         help='Load weights from previously saved parameters.')
@@ -88,14 +86,15 @@ if __name__ == '__main__':
         pretrained = False
     kwargs = {'classes': 10, 'pretrained': pretrained}
     net = model_zoo.get_model(model_name, **kwargs)
+    net.to(device)
 
     # testing data
     val_metric = Accuracy()
     val_data = get_dataloader(args.batch_size, args.num_workers, distributed)
 
     # testing
-    results = validate(net, val_data, device)
+    metric = validate(net, val_data, device, val_metric)
     synchronize()
-    name, value = accumulate_prediction(results, val_metric)
+    name, value = accumulate_metric(metric)
     if is_main_process():
         print(name, value)

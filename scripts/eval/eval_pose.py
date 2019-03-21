@@ -13,16 +13,18 @@ cur_path = os.path.dirname(__file__)
 sys.path.insert(0, os.path.join(cur_path, '../..'))
 from model import model_zoo
 from data.mscoco.keypoints import COCOKeyPoints
+from data.base import make_data_sampler
 from data.transforms.pose import flip_heatmap, get_final_preds
 from data.transforms.simple_pose import SimplePoseDefaultValTransform
 from utils.metrics.coco_keypoints import COCOKeyPointsMetric
+from utils.distributed.parallel import synchronize, accumulate_metric, is_main_process
 
 
-def get_dataloader(data_dir, batch_size, num_workers, input_size, mean, std):
+def get_dataloader(data_dir, batch_size, num_workers, input_size, mean, std, distributed):
     """Get dataloader."""
 
     def val_batch_fn(batch, device):
-        data = [batch[0].to(device)]
+        data = batch[0].to(device)
         scale = batch[1]
         center = batch[2]
         score = batch[3]
@@ -39,8 +41,10 @@ def get_dataloader(data_dir, batch_size, num_workers, input_size, mean, std):
                                                   image_size=input_size,
                                                   mean=meanvec,
                                                   std=stdvec)
-    val_data = data.DataLoader(val_dataset.transform(transform_val),
-                               batch_size=batch_size, shuffle=False, num_workers=num_workers)
+    val_tmp = val_dataset.transform(transform_val)
+    sampler = make_data_sampler(val_tmp, False, distributed)
+    batch_sampler = data.BatchSampler(sampler=sampler, batch_size=batch_size, drop_last=False)
+    val_data = data.DataLoader(val_tmp, batch_sampler=batch_sampler, num_workers=num_workers)
 
     return val_dataset, val_data, val_batch_fn
 
@@ -52,22 +56,19 @@ def validate(val_loader, net, val_metric, device, flip_test=False):
     for batch in tqdm(val_data):
         data, scale, center, score, imgid = val_batch_fn(batch, device)
 
-        outputs = [net(X) for X in data]
+        outputs = net(data)
         if flip_test:
-            data_flip = [X.flip(3) for X in data]
-            outputs_flip = [net(X) for X in data_flip]
-            outputs_flipback = [flip_heatmap(o, val_dataset.joint_pairs, shift=True) for o in outputs_flip]
-            outputs = [(o + o_flip) / 2 for o, o_flip in zip(outputs, outputs_flipback)]
+            data_flip = data.flip(3)
+            outputs_flip = net(data_flip)
+            outputs_flipback = flip_heatmap(outputs_flip, val_dataset.joint_pairs, shift=True)
+            outputs = (outputs + outputs_flipback) / 2
 
-        if len(outputs) > 1:
-            outputs_stack = torch.cat([o.to(torch.device('cpu')) for o in outputs], dim=0)
-        else:
-            outputs_stack = outputs[0].to(torch.device('cpu'))
+        outputs = outputs.to(torch.device('cpu'))
 
-        preds, maxvals = get_final_preds(outputs_stack, center.numpy(), scale.numpy())
+        preds, maxvals = get_final_preds(outputs, center.numpy(), scale.numpy())
         val_metric.update(preds, maxvals, score, imgid)
 
-    val_metric.get()
+    return val_metric
 
 
 def parse_args():
@@ -95,6 +96,8 @@ def parse_args():
                         help='std vector for normalization')
     parser.add_argument('--score-threshold', type=float, default=0,
                         help='threshold value for predicted score.')
+    parser.add_argument('--local_rank', type=int, default=0)
+
     opt = parser.parse_args()
     return opt
 
@@ -102,20 +105,33 @@ def parse_args():
 if __name__ == '__main__':
     args = parse_args()
 
-    # training contexts
+    # device
     device = torch.device('cpu')
-    if args.cuda:
+    num_gpus = int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
+    distributed = num_gpus > 1
+    if args.cuda and torch.cuda.is_available():
         cudnn.benchmark = True
-        device = torch.device('cuda:0')
+        device = torch.device('cuda')
+    else:
+        distributed = False
+
+    if distributed:
+        torch.cuda.set_device(args.local_rank)
+        torch.distributed.init_process_group(backend="nccl", init_method="env://")
+        synchronize()
 
     input_size = [int(i) for i in args.input_size.split(',')]
     val_list = get_dataloader(args.data_dir, args.batch_size, args.num_workers,
-                              input_size, args.mean, args.std)
+                              input_size, args.mean, args.std, distributed)
     val_metric = COCOKeyPointsMetric(val_list[0], 'coco_keypoints',
                                      data_shape=tuple(input_size),
-                                     in_vis_thresh=args.score_threshold)
+                                     in_vis_thresh=args.score_threshold, cleanup=True)
     use_pretrained = True if not args.params_file else False
     net = model_zoo.get_model(args.model, num_joints=args.num_joints, pretrained=use_pretrained).to(device)
     net.eval()
 
-    validate(val_list, net, val_metric, device, args.flip_test)
+    val_metric = validate(val_list, net, val_metric, device, args.flip_test)
+    synchronize()
+    name, value = accumulate_metric(val_metric)
+    if is_main_process():
+        print(name, value)

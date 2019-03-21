@@ -21,7 +21,7 @@ from model import model_zoo
 from data.base import make_data_sampler
 from utils.filesystem import makedirs
 from utils.plot_history import TrainingHistory
-from utils.distributed.parallel import synchronize, all_gather, is_main_process, reduce_list, accumulate_prediction
+from utils.distributed.parallel import synchronize, all_gather, is_main_process, reduce_list, accumulate_metric
 from utils.metrics.metric_classification import Accuracy
 from utils.optim_utils import get_learning_rate, set_learning_rate
 
@@ -87,7 +87,6 @@ class Solver(object):
             tic = time.time()
             train_metric.reset()
             metric.reset()
-            train_results = list()
             train_loss = 0
             num_batch = len(train_data)
 
@@ -105,15 +104,15 @@ class Solver(object):
                 loss.backward()
                 optimizer.step()
                 train_loss += loss.item()
-                train_results.append((label, output))
+                train_metric.update(label, output)
                 iteration += 1
 
-            val_results = self.validate(val_data)
+            metric = self.validate(val_data, metric)
             synchronize()
             train_loss /= num_batch
             train_loss = reduce_list(all_gather(train_loss))
-            name, acc = accumulate_prediction(train_results, train_metric)
-            name, val_acc = accumulate_prediction(val_results, metric)
+            name, acc = accumulate_metric(train_metric)
+            name, val_acc = accumulate_metric(metric)
             if is_main_process():
                 train_history.update([1 - acc, 1 - val_acc])
                 train_history.plot(save_path='%s/%s_history.png' % (self.plot_path, self.cfg.model))
@@ -131,17 +130,16 @@ class Solver(object):
             torch.save(self.net.state_dict(), '%s/cifar10-%s-%d.pth'
                        % (self.save_dir, self.cfg.model, self.cfg.num_epochs - 1))
 
-    def validate(self, val_data):
+    def validate(self, val_data, metric):
         self.net.eval()
-        results = list()
         with torch.no_grad():
             for i, batch in enumerate(val_data):
                 image = batch[0].to(self.device)
                 label = batch[1].to(self.device)
                 outputs = self.net(image)
-                results.append((label, outputs))
+                metric.update(label, outputs)
         self.net.train()
-        return iter(results)
+        return metric
 
 
 def parse_args():

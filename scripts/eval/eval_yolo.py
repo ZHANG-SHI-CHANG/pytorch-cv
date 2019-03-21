@@ -19,7 +19,7 @@ from data.mscoco.detection import COCODetection
 from data.transforms.yolo import YOLO3DefaultValTransform
 from utils.metrics.voc_detection import VOC07MApMetric
 from utils.metrics.coco_detection import COCODetectionMetric
-from utils.distributed.parallel import synchronize, accumulate_prediction, is_main_process
+from utils.distributed.parallel import synchronize, accumulate_metric, is_main_process
 
 
 def get_dataset(dataset, data_shape):
@@ -47,11 +47,8 @@ def get_dataloader(val_dataset, batch_size, num_workers, distributed):
     return val_loader
 
 
-def validate(net, val_data, device):
-    net.to(device)
+def validate(net, val_data, device, metric):
     net.eval()
-    net.set_nms(nms_thresh=0.45, nms_topk=400)
-    results = list()
     tbar = tqdm(val_data)
 
     with torch.no_grad():
@@ -75,8 +72,8 @@ def validate(net, val_data, device):
             gt_bboxes.append(y.narrow(-1, 0, 4))
             gt_difficults.append(y.narrow(-1, 5, 1) if y.shape[-1] > 5 else None)
 
-            results.append((det_bboxes, det_ids, det_scores, gt_bboxes, gt_ids, gt_difficults))
-    return results
+            metric.update(det_bboxes, det_ids, det_scores, gt_bboxes, gt_ids, gt_difficults)
+    return metric
 
 
 def parse_args():
@@ -85,11 +82,11 @@ def parse_args():
                         help="Base network name")
     parser.add_argument('--algorithm', type=str, default='yolo3',
                         help='YOLO version, default is yolo3')
-    parser.add_argument('--data-shape', type=int, default=608,
+    parser.add_argument('--data-shape', type=int, default=320,
                         help="Input data shape")
     parser.add_argument('--batch-size', type=int, default=4,
                         help='Training mini-batch size')
-    parser.add_argument('--dataset', type=str, default='voc',
+    parser.add_argument('--dataset', type=str, default='coco',
                         help='Training dataset.')
     parser.add_argument('--num-workers', '-j', dest='num_workers', type=int,
                         default=4, help='Number of data workers')
@@ -131,15 +128,18 @@ if __name__ == '__main__':
         net = model_zoo.get_model(net_name, pretrained=False)
         net.load_parameters(args.pretrained.strip())
 
+    net.to(device)
+    net.set_nms(nms_thresh=0.45, nms_topk=400)
+
     # testing data
     val_dataset, val_metric = get_dataset(args.dataset, args.data_shape)
     val_data = get_dataloader(val_dataset, args.batch_size, args.num_workers, distributed)
     classes = val_dataset.classes  # class names
 
     # testing
-    results = validate(net, val_data, device)
+    val_metric = validate(net, val_data, device, val_metric)
     synchronize()
-    names, values = accumulate_prediction(results, val_metric)
+    names, values = accumulate_metric(val_metric)
     if is_main_process():
         for k, v in zip(names, values):
             print(k, v)

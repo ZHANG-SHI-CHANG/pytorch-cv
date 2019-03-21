@@ -1,15 +1,21 @@
-from tqdm import tqdm
+import os
+import sys
 import argparse
+from tqdm import tqdm
 
 import torch
 from torch.utils import data
 from torch.backends import cudnn
 from torchvision import transforms
 
+cur_path = os.path.dirname(__file__)
+sys.path.insert(0, os.path.join(cur_path, '../..'))
 from model import model_zoo
 from data import get_segmentation_dataset
-from model.models_zoo.seg.segbase import SegEvalModel
+from data.base import make_data_sampler
+from model.models_zoo.seg.segbase import MultiEvalModel
 from utils.metrics.segmentation import SegmentationMetric
+from utils.distributed.parallel import synchronize, is_main_process, accumulate_metric
 
 
 def validate(evaluator, val_data, metric, device):
@@ -19,8 +25,7 @@ def validate(evaluator, val_data, metric, device):
         with torch.no_grad():
             predicts = evaluator.forward(data)
         metric.update(targets, predicts)
-        pixAcc, mIoU = metric.get()
-        tbar.set_description('pixAcc: %.4f, mIoU: %.4f' % (pixAcc, mIoU))
+    return metric
 
 
 def parse_args():
@@ -31,15 +36,12 @@ def parse_args():
                         help='Training mini-batch size')
     parser.add_argument('--num-workers', '-j', dest='num_workers', type=int,
                         default=4, help='Number of data workers')
-    parser.add_argument('--cuda', type=bool, default=True,
+    parser.add_argument('--cuda', action='store_true',
                         help='Training with GPUs.')
+    parser.add_argument('--local_rank', type=int, default=0)
     parser.add_argument('--dataset', type=str, default='coco',
                         help='Select dataset.')
-    # for data
-    parser.add_argument('--base-size', type=int, default=520,
-                        help='base image size')
-    parser.add_argument('--crop-size', type=int, default=480,
-                        help='crop image size')
+
     args = parser.parse_args()
     return args
 
@@ -47,28 +49,42 @@ def parse_args():
 if __name__ == '__main__':
     args = parse_args()
 
-    # training contexts
     device = torch.device('cpu')
-    if args.cuda:
+    num_gpus = int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
+    distributed = num_gpus > 1
+    if args.cuda and torch.cuda.is_available():
         cudnn.benchmark = True
-        device = torch.device('cuda:0')
+        device = torch.device('cuda')
+    else:
+        distributed = False
+
+    if distributed:
+        torch.cuda.set_device(args.local_rank)
+        torch.distributed.init_process_group(backend="nccl", init_method="env://")
+        synchronize()
 
     # Load Model
     model = model_zoo.get_model(args.model_name, pretrained=True, pretrained_base=False)
+    model.to(device)
 
     # testing data
     input_transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize([.485, .456, .406], [.229, .224, .225]),
     ])
-    data_kwargs = {'transform': input_transform, 'base_size': args.base_size,
-                   'crop_size': args.crop_size}
 
-    val_dataset = get_segmentation_dataset(args.dataset, split='val', mode='val', **data_kwargs)
+    data_kwargs = {'transform': input_transform}
 
-    val_data = data.DataLoader(val_dataset, args.batch_size, shuffle=False,
+    val_dataset = get_segmentation_dataset(args.dataset, split='val', mode='testval', **data_kwargs)
+    sampler = make_data_sampler(val_dataset, False, distributed)
+    batch_sampler = data.BatchSampler(sampler=sampler, batch_size=args.batch_size, drop_last=False)
+    val_data = data.DataLoader(val_dataset, shuffle=False, batch_sampler=batch_sampler,
                                num_workers=args.num_workers)
-    evaluator = SegEvalModel(model, device=device)
+    evaluator = MultiEvalModel(model, val_dataset.num_class)
     metric = SegmentationMetric(val_dataset.num_class)
 
-    validate(evaluator, val_data, metric, device)
+    metric = validate(evaluator, val_data, metric, device)
+    synchronize()
+    pixAcc, mIoU = accumulate_metric(metric)
+    if is_main_process():
+        print('pixAcc: %.4f, mIoU: %.4f' % (pixAcc, mIoU))

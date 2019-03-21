@@ -1,4 +1,5 @@
 """Evaluation Metrics for Semantic Segmentation"""
+import threading
 import numpy as np
 import torch
 from utils.metrics.metric import EvalMetric
@@ -14,6 +15,7 @@ class SegmentationMetric(EvalMetric):
     def __init__(self, nclass):
         super(SegmentationMetric, self).__init__('pixAcc & mIoU')
         self.nclass = nclass
+        self.lock = threading.Lock()
         self.reset()
 
     def update(self, labels, preds):
@@ -31,16 +33,21 @@ class SegmentationMetric(EvalMetric):
         def evaluate_worker(self, label, pred):
             correct, labeled = batch_pix_accuracy(pred, label)
             inter, union = batch_intersection_union(pred, label, self.nclass)
-            self.total_correct += correct
-            self.total_label += labeled
-            self.total_inter += inter
-            self.total_union += union
+            with self.lock:
+                self.total_correct += correct
+                self.total_label += labeled
+                self.total_inter += inter
+                self.total_union += union
 
         if isinstance(preds, torch.Tensor):
             evaluate_worker(self, labels, preds)
         elif isinstance(preds, (list, tuple)):
-            for (label, pred) in zip(labels, preds):
-                evaluate_worker(self, label, pred)
+            threads = [threading.Thread(target=evaluate_worker, args=(self, label, pred), )
+                       for (label, pred) in zip(labels, preds)]
+            for thread in threads:
+                thread.start()
+            for thread in threads:
+                thread.join()
 
     def get(self):
         """Gets the current evaluation result.

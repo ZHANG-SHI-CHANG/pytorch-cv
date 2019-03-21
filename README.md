@@ -67,10 +67,15 @@ You can see the performance (compare with gluon-cv) in [PROGRESS](./NOTE/PROGRES
 ## TODO
 
 - [x] add GPU to demo
-- [ ] add evaluation (in progress)
+- [x] add evaluation (in progress)
 - [ ] add multi-gpu support (in progress)
+- [x] rewrite metric（more efficient for distributed）
 - [ ] add training
 - [ ] add tutorial
 - [ ] modify doc
 - [ ] add python opencv version (check the "difference" --- note, it's still different with mxnet.image)
 
+### BUG
+
+- [ ] evaluation:  distributed version is slow
+- [ ] segmentation: evaluation is slow（gluon-cv is also slow）

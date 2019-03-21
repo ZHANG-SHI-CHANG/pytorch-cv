@@ -6,7 +6,6 @@ from torch import nn
 import torch.nn.functional as F
 
 from model.models_zoo.resnetv1b import resnet50_v1s, resnet101_v1s, resnet152_v1s
-from utils.distributed.parallel import tuple_map
 
 
 class SegBaseModel(nn.Module):
@@ -76,16 +75,14 @@ class SegBaseModel(nn.Module):
 class SegEvalModel(object):
     """Segmentation Eval Module"""
 
-    def __init__(self, module, device):
+    def __init__(self, module):
         self.module = module
-        self.module = self.module.to(device)
         self.module.eval()
 
     def __call__(self, *inputs, **kwargs):
         with torch.no_grad():
             return self.module.evaluate(*inputs, **kwargs)
 
-    # TODO: move to multiple gpu (gluon-cv without this forward)
     def forward(self, *inputs, **kwargs):
         return self(*inputs, **kwargs)
 
@@ -96,20 +93,14 @@ class SegEvalModel(object):
 class MultiEvalModel(object):
     """Multi-size Segmentation Evaluator"""
 
-    def __init__(self, module, nclass, device, flip=True,
+    def __init__(self, module, nclass, flip=True,
                  scales=[0.5, 0.75, 1.0, 1.25, 1.5, 1.75]):
         self.flip = flip
-        self.device = device
         self.base_size = module.base_size
         self.crop_size = module.crop_size
         self.nclass = nclass
         self.scales = scales
-        self.evalmodule = SegEvalModel(module, device)
-
-    # TODO: support multiple gpu
-    def parallel_forward(self, inputs, device):
-        inputs = tuple([tuple([x.to(device)]) for x in inputs])
-        return tuple_map(self(*inputs[0]))
+        self.evalmodule = SegEvalModel(module)
 
     def forward(self, inputs):
         return self(inputs)
@@ -189,7 +180,7 @@ class MultiEvalModel(object):
 
 
 def _resize_image(img, h, w):
-    return F.interpolate(img, (h, w), mode='bilinear')
+    return F.interpolate(img, (h, w), mode='bilinear', align_corners=True)
 
 
 def _crop_image(img, h0, h1, w0, w1):

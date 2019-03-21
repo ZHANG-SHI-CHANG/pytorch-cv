@@ -13,6 +13,7 @@ import warnings
 import torch
 import numpy as np
 from utils.metrics.metric import EvalMetric
+from utils.distributed.parallel import is_main_process
 from data.mscoco.utils import try_import_pycocotools
 
 
@@ -71,7 +72,7 @@ class COCODetectionMetric(EvalMetric):
             f.close()
 
     def __del__(self):
-        if self._cleanup:
+        if self._cleanup and is_main_process():
             try:
                 os.remove(self._filename)
             except IOError as err:
@@ -160,7 +161,7 @@ class COCODetectionMetric(EvalMetric):
         return names, values
 
     # pylint: disable=arguments-differ, unused-argument
-    def update(self, pred_bboxes, pred_labels, pred_scores, *args, **kwargs):
+    def update(self, pred_bboxes, pred_labels, pred_scores, img_ids, *args, **kwargs):
         """Update internal buffer with latest predictions.
         Note that the statistics are not available until you call self.get() to return
         the metrics.
@@ -186,14 +187,13 @@ class COCODetectionMetric(EvalMetric):
                 a = a.cpu().numpy()
             return a
 
-        for pred_bbox, pred_label, pred_score in zip(
-                *[as_numpy(x) for x in [pred_bboxes, pred_labels, pred_scores]]):
+        for pred_bbox, pred_label, pred_score, imgid in zip(
+                *[as_numpy(x) for x in [pred_bboxes, pred_labels, pred_scores]], img_ids):
             valid_pred = np.where(pred_label.flat >= 0)[0]
             pred_bbox = pred_bbox[valid_pred, :].astype(np.float)
             pred_label = pred_label.flat[valid_pred].astype(int)
             pred_score = pred_score.flat[valid_pred].astype(np.float)
 
-            imgid = self._img_ids[self._current_id]
             self._current_id += 1
             if self._data_shape is not None:
                 entry = self.dataset.coco.loadImgs(imgid)[0]
@@ -220,3 +220,7 @@ class COCODetectionMetric(EvalMetric):
                                       'category_id': category_id,
                                       'bbox': bbox[:4].tolist(),
                                       'score': score})
+
+    def combine_metric(self, metric):
+        self._results += metric._results
+        self._current_id += metric._current_id

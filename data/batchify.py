@@ -276,11 +276,24 @@ class Tuple(object):
         return tuple(ret)
 
 
-if __name__ == '__main__':
-    import torch
+class Empty(object):
+    """
+    From a list of samples from the dataset,
+    returns the batched images and targets.
+    This should be passed to the DataLoader
+    """
 
-    a = ([1, 2, 3, 4], 0)
-    b = ([5, 7], 1)
-    c = ([1, 2, 3, 4, 5, 6, 7], 0)
-    out = Tuple(Pad(), Stack())([a, b])
-    print(out)
+    def __init__(self):
+        pass
+
+    def __call__(self, data):
+        return data
+
+# if __name__ == '__main__':
+#     import torch
+#
+#     a = ([1, 2, 3, 4], 0)
+#     b = ([5, 7], 1)
+#     c = ([1, 2, 3, 4, 5, 6, 7], 0)
+#     out = Tuple(Pad(), Stack())([a, b])
+#     print(out)

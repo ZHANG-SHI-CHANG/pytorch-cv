@@ -173,6 +173,26 @@ class VOCMApMetric(EvalMetric):
                     else:
                         self._match[l].append(0)
 
+    def combine_metric(self, metric):
+        assert isinstance(metric, VOCMApMetric) and metric.num == self.num
+        for key, value in metric._n_pos.items():
+            if key in self._n_pos:
+                self._n_pos[key] += value
+            else:
+                self._n_pos[key] = value
+
+        for key, value in metric._score.items():
+            if key in self._score:
+                self._score[key] += value
+            else:
+                self._score[key] = value
+
+        for key, value in metric._match.items():
+            if key in self._match:
+                self._match[key] += value
+            else:
+                self._match[key] = value
+
     def _update(self):
         """ update num_inst and sum_metric """
         aps = []

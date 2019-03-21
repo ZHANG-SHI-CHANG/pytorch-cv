@@ -144,4 +144,4 @@
 #python demo/demo_pose.py --pose-model simple_pose_resnet101_v1b
 #python demo/demo_pose.py --pose-model simple_pose_resnet101_v1d
 #python demo/demo_pose.py --pose-model simple_pose_resnet152_v1b
-python demo/demo_pose.py --pose-model simple_pose_resnet152_v1d
+#python demo/demo_pose.py --pose-model simple_pose_resnet152_v1d

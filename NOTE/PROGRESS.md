@@ -93,18 +93,18 @@ Note：
 
 | ADE20K Dataset        | pixAcc(gluon-cv) | mIoU(gluon-cv) | pixAcc(pytorch-cv) | mIoU(pytorch-cv) |
 | --------------------- | ---------------- | -------------- | ------------------ | ---------------- |
-| fcn_resnet50_ade      | 79.0 (75.8)      | 39.5 (36.4)    | (75.7)             | (36.2)           |
-| fcn_resnet101_ade     | 80.6 (78.0)      | 41.6 (39.3)    | (77.9)             | (39.0)           |
-| psp_resnet50_ade      | 80.1 (78.2)      | 41.5 (40.6)    | (78.0)             | (40.1)           |
-| psp_resnet101_ade     | 80.8 (78.9)      | 43.3 (40.9)    | (78.8)             | (40.9)           |
-| deeplab_resnet50_ade  | 80.5 (78.6)      | 42.5 (41.4)    | (78.6)             | (41.2)           |
-| deeplab_resnet101_ade | 81.1 (79.2)      | 44.1 (42.5)    | (79.1)             | (42.3)           |
+| fcn_resnet50_ade      | 79.0             | 39.5           |                    |                  |
+| fcn_resnet101_ade     | 80.6             | 41.6           |                    |                  |
+| psp_resnet50_ade      | 80.1             | 41.5           |                    |                  |
+| psp_resnet101_ade     | 80.8             | 43.3           |                    |                  |
+| deeplab_resnet50_ade  | 80.5             | 42.5           |                    |                  |
+| deeplab_resnet101_ade | 81.1             | 44.1           |                    |                  |
 
 | COCO Dataset           | pixAcc(gluon-cv) | mIoU(gluon-cv) | pixAcc(pytorch-cv) | mIoU(pytorch-cv) |
 | ---------------------- | ---------------- | -------------- | ------------------ | ---------------- |
-| fcn_resnet101_coco     | 92.2 (91.1)      | 66.2 (60.3)    | (90.9)             | (59.8)           |
-| psp_resnet101_coco     | 92.4 (91.8)      | 70.4 (68.5)    | (91.7)             | (68.8)           |
-| deeplab_resnet101_coco | 92.5 (91.7)      | 70.4 (68.7)    | (91.6)             | (68.3)           |
+| fcn_resnet101_coco     | 92.2 (91.1)      | 66.2 (60.3)    | 92.2 (90.9)        | 66.2 (59.8)      |
+| psp_resnet101_coco     | 92.4 (91.8)      | 70.4 (68.5)    | 92.4 (91.7)        | 70.4 (68.8)      |
+| deeplab_resnet101_coco | 92.5 (91.7)      | 70.4 (68.7)    | 92.5 (91.6)        | 70.4 (68.3)      |
 
 | VOC Dataset           | pixAcc(gluon-cv) | mIoU(gluon-cv) | pixAcc(pytorch-cv) | mIoU(pytorch-cv) |
 | --------------------- | ---------------- | -------------- | ------------------ | ---------------- |
@@ -151,4 +151,4 @@ Note：
 | CIFAR_WideResNet40_8   |       |       |
 | CIFAR_ResNeXt29_16x64d |       |       |
 
-> Note：The multi-gpu using same arguments as one-gpu （so, it's a little "worse" than one-gpu）
+> Note：The difference between 1-GPU and 4-GPU is mainly caused by arguments

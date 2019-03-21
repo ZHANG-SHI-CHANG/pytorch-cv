@@ -1,9 +1,13 @@
 """Prepare MS COCO datasets"""
 import os
+import sys
 import argparse
 import zipfile
-from gluoncv.utils import download, makedirs
-from gluoncv.data.mscoco.utils import try_import_pycocotools
+
+cur_path = os.path.dirname(__file__)
+sys.path.insert(0, os.path.join(cur_path, '../..'))
+from utils import download, makedirs
+from data.mscoco.utils import try_import_pycocotools
 
 _TARGET_DIR = os.path.expanduser('~/.torch/datasets/coco')
 

@@ -13,13 +13,13 @@ cur_path = os.path.dirname(__file__)
 sys.path.insert(0, os.path.join(cur_path, '../..'))
 from model import model_zoo
 from data.base import make_data_sampler
-from data.batchify import Tuple, Stack, Pad
+from data.batchify import Tuple, Stack, Pad, Empty
 from data.pascal_voc.detection import VOCDetection
 from data.mscoco.detection import COCODetection
 from data.transforms.ssd import SSDDefaultValTransform
 from utils.metrics.voc_detection import VOC07MApMetric
 from utils.metrics.coco_detection import COCODetectionMetric
-from utils.distributed.parallel import synchronize, accumulate_prediction, is_main_process
+from utils.distributed.parallel import synchronize, accumulate_metric, is_main_process
 
 
 def get_dataset(dataset, data_shape):
@@ -28,7 +28,7 @@ def get_dataset(dataset, data_shape):
         val_dataset = VOCDetection(splits=[(2007, 'test')], transform=transform)
         val_metric = VOC07MApMetric(iou_thresh=0.5, class_names=val_dataset.classes)
     elif dataset.lower() == 'coco':
-        val_dataset = COCODetection(splits='instances_val2017', skip_empty=False, transform=transform)
+        val_dataset = COCODetection(splits='instances_val2017', skip_empty=False, transform=transform, keep_idx=True)
         val_metric = COCODetectionMetric(
             val_dataset, args.save_prefix + '_eval', cleanup=True,
             data_shape=(data_shape, data_shape))
@@ -37,9 +37,12 @@ def get_dataset(dataset, data_shape):
     return val_dataset, val_metric
 
 
-def get_dataloader(val_dataset, batch_size, num_workers, distributed):
+def get_dataloader(val_dataset, batch_size, num_workers, distributed, coco=False):
     """Get dataloader."""
-    batchify_fn = Tuple(Stack(), Pad(pad_val=-1))
+    if coco:
+        batchify_fn = Tuple(Stack(), Pad(pad_val=-1), Empty())
+    else:
+        batchify_fn = Tuple(Stack(), Pad(pad_val=-1))
     sampler = make_data_sampler(val_dataset, False, distributed)
     batch_sampler = data.BatchSampler(sampler=sampler, batch_size=batch_size, drop_last=False)
     val_loader = data.DataLoader(val_dataset, batch_sampler=batch_sampler, collate_fn=batchify_fn,
@@ -47,11 +50,8 @@ def get_dataloader(val_dataset, batch_size, num_workers, distributed):
     return val_loader
 
 
-def validate(net, val_data, device):
-    net.to(device)
+def validate(net, val_data, device, metric, coco=False):
     net.eval()
-    net.set_nms(nms_thresh=0.45, nms_topk=400)
-    results = list()
     tbar = tqdm(val_data)
 
     for ib, batch in enumerate(tbar):
@@ -74,9 +74,11 @@ def validate(net, val_data, device):
         gt_ids.append(y.narrow(-1, 4, 1))
         gt_bboxes.append(y.narrow(-1, 0, 4))
         gt_difficults.append(y.narrow(-1, 5, 1) if y.shape[-1] > 5 else None)
-
-        results.append((det_bboxes, det_ids, det_scores, gt_bboxes, gt_ids, gt_difficults))
-    return iter(results)
+        if coco:
+            metric.update(det_bboxes, det_ids, det_scores, batch[2], gt_bboxes, gt_ids, gt_difficults)
+        else:
+            metric.update(det_bboxes, det_ids, det_scores, gt_bboxes, gt_ids, gt_difficults)
+    return metric
 
 
 def parse_args():
@@ -127,16 +129,18 @@ if __name__ == '__main__':
     else:
         net = model_zoo.get_model(net_name, pretrained=False)
         net.load_parameters(args.pretrained.strip())
+    net.to(device)
+    net.set_nms(nms_thresh=0.45, nms_topk=400)
 
     # testing data
     val_dataset, val_metric = get_dataset(args.dataset, args.data_shape)
-    val_data = get_dataloader(val_dataset, args.batch_size, args.num_workers, distributed)
+    val_data = get_dataloader(val_dataset, args.batch_size, args.num_workers, distributed, args.dataset == 'coco')
     classes = val_dataset.classes  # class names
 
     # testing
-    results = validate(net, val_data, device)
+    val_metric = validate(net, val_data, device, val_metric, args.dataset == 'coco')
     synchronize()
-    names, values = accumulate_prediction(results, val_metric)
+    names, values = accumulate_metric(val_metric)
     if is_main_process():
         for k, v in zip(names, values):
             print(k, v)

@@ -88,5 +88,73 @@
 #python -m torch.distributed.launch --nproc_per_node=$NGPUS eval/eval_yolo.py --network mobilenet1.0 --batch-size 4 --dataset coco --data-shape 320 --cuda
 #export NGPUS=4
 #python -m torch.distributed.launch --nproc_per_node=$NGPUS eval/eval_yolo.py --network mobilenet1.0 --batch-size 4 --dataset coco --data-shape 416 --cuda
+
+
+# -----------------------------------------------------------------------------
+# Segmentation
+# -----------------------------------------------------------------------------
+# #----------------------------ade20k----------------------------
 #export NGPUS=4
-#python -m torch.distributed.launch --nproc_per_node=$NGPUS eval/eval_yolo.py --network mobilenet1.0 --batch-size 4 --dataset coco --data-shape 608 --cuda
+#python -m torch.distributed.launch --nproc_per_node=$NGPUS eval/eval_segmentation.py --model_name fcn_resnet50_ade --dataset ade20k --batch-size 1 -j 4 --cuda
+#export NGPUS=4
+#python -m torch.distributed.launch --nproc_per_node=$NGPUS eval/eval_segmentation.py --model_name fcn_resnet101_ade --dataset ade20k --batch-size 1 -j 4 --cuda
+#export NGPUS=4
+#python -m torch.distributed.launch --nproc_per_node=$NGPUS eval/eval_segmentation.py --model_name psp_resnet50_ade --dataset ade20k --batch-size 1 -j 4 --cuda
+#export NGPUS=4
+#python -m torch.distributed.launch --nproc_per_node=$NGPUS eval/eval_segmentation.py --model_name psp_resnet101_ade --dataset ade20k --batch-size 1 -j 4 --cuda
+#export NGPUS=4
+#python -m torch.distributed.launch --nproc_per_node=$NGPUS eval/eval_segmentation.py --model_name deeplab_resnet50_ade --dataset ade20k --batch-size 1 -j 4 --cuda
+#export NGPUS=4
+#python -m torch.distributed.launch --nproc_per_node=$NGPUS eval/eval_segmentation.py --model_name deeplab_resnet101_ade --dataset ade20k --batch-size 1 -j 4 --cuda
+
+
+# #----------------------------coco----------------------------
+#export NGPUS=4
+#python -m torch.distributed.launch --nproc_per_node=$NGPUS eval/eval_segmentation.py --model_name fcn_resnet101_coco --dataset coco --batch-size 1 -j 4 --cuda
+#export NGPUS=4
+#python -m torch.distributed.launch --nproc_per_node=$NGPUS eval/eval_segmentation.py --model_name psp_resnet101_coco --dataset coco --batch-size 1 -j 4 --cuda
+#export NGPUS=4
+#python -m torch.distributed.launch --nproc_per_node=$NGPUS eval/eval_segmentation.py --model_name deeplab_resnet101_coco --dataset coco --batch-size 1 -j 4 --cuda
+
+
+
+# -----------------------------------------------------------------------------
+# Pose Estimation
+# -----------------------------------------------------------------------------
+## simple pose
+#export NGPUS=4
+#python -m torch.distributed.launch --nproc_per_node=$NGPUS eval/eval_pose.py --model simple_pose_resnet18_v1b --batch-size 4 --cuda
+#export NGPUS=4
+#python -m torch.distributed.launch --nproc_per_node=$NGPUS eval/eval_pose.py --model simple_pose_resnet18_v1b --batch-size 4 --cuda --flip-test
+#export NGPUS=4
+#python -m torch.distributed.launch --nproc_per_node=$NGPUS eval/eval_pose.py --model simple_pose_resnet18_v1b --batch-size 4 --input-size 128,96 --cuda
+#export NGPUS=4
+#python -m torch.distributed.launch --nproc_per_node=$NGPUS eval/eval_pose.py --model simple_pose_resnet18_v1b --batch-size 4 --input-size 128,96 --cuda --flip-test
+#export NGPUS=4
+#python -m torch.distributed.launch --nproc_per_node=$NGPUS eval/eval_pose.py --model simple_pose_resnet50_v1b --batch-size 4 --cuda
+#export NGPUS=4
+#python -m torch.distributed.launch --nproc_per_node=$NGPUS eval/eval_pose.py --model simple_pose_resnet50_v1b --batch-size 4 --cuda --flip-test
+#export NGPUS=4
+#python -m torch.distributed.launch --nproc_per_node=$NGPUS eval/eval_pose.py --model simple_pose_resnet50_v1d --batch-size 4 --cuda
+#export NGPUS=4
+#python -m torch.distributed.launch --nproc_per_node=$NGPUS eval/eval_pose.py --model simple_pose_resnet50_v1d --batch-size 4 --cuda --flip-test
+#export NGPUS=4
+#python -m torch.distributed.launch --nproc_per_node=$NGPUS eval/eval_pose.py --model simple_pose_resnet101_v1b --batch-size 4 --cuda
+#export NGPUS=4
+#python -m torch.distributed.launch --nproc_per_node=$NGPUS eval/eval_pose.py --model simple_pose_resnet101_v1b --batch-size 4 --cuda --flip-test
+#export NGPUS=4
+#python -m torch.distributed.launch --nproc_per_node=$NGPUS eval/eval_pose.py --model simple_pose_resnet101_v1d --batch-size 4 --cuda
+#export NGPUS=4
+#python -m torch.distributed.launch --nproc_per_node=$NGPUS eval/eval_pose.py --model simple_pose_resnet101_v1d --batch-size 4 --cuda --flip-test
+#export NGPUS=4
+#python -m torch.distributed.launch --nproc_per_node=$NGPUS eval/eval_pose.py --model simple_pose_resnet152_v1b --batch-size 4 --cuda
+#export NGPUS=4
+#python -m torch.distributed.launch --nproc_per_node=$NGPUS eval/eval_pose.py --model simple_pose_resnet152_v1b --batch-size 4 --cuda --flip-test
+#export NGPUS=4
+#python -m torch.distributed.launch --nproc_per_node=$NGPUS eval/eval_pose.py --model simple_pose_resnet152_v1d --batch-size 4 --cuda
+#export NGPUS=4
+#python -m torch.distributed.launch --nproc_per_node=$NGPUS eval/eval_pose.py --model simple_pose_resnet152_v1d --batch-size 4 --cuda --flip-test
+#export NGPUS=4
+#python -m torch.distributed.launch --nproc_per_node=$NGPUS eval/eval_pose.py --model simple_pose_resnet152_v1d --batch-size 4 --input-size 384,288 --cuda
+#export NGPUS=4
+#python -m torch.distributed.launch --nproc_per_node=$NGPUS eval/eval_pose.py --model simple_pose_resnet152_v1d --batch-size 4 --input-size 384,288 --cuda --flip-test

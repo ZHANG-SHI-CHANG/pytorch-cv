@@ -36,12 +36,13 @@ if __name__ == '__main__':
         cudnn.benchmark = True
         device = torch.device('cuda:0')
     image_list = [os.path.join(cur_path, '../png/street.jpg')]
-    net = get_model(args.network, pretrained=True).to(device)
+    net = get_model(args.network, pretrained=True)
+    net.to(device)
     net.set_nms(0.45, 200)
     net.eval()
 
-    ax = None
     for image in image_list:
+        ax = None
         x, img = load_test(image, short=512)
         x = x.to(device)
         with torch.no_grad():

@@ -7,8 +7,7 @@ import tarfile
 
 cur_path = os.path.dirname(__file__)
 sys.path.insert(0, os.path.join(cur_path, '../..'))
-from utils.download import download
-from utils.filesystem import makedirs
+from utils import download, makedirs
 
 _TARGET_DIR = os.path.expanduser('~/.torch/datasets/voc')
 

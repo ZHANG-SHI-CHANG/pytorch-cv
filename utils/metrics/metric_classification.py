@@ -73,10 +73,18 @@ class Accuracy(EvalMetric):
             self.num_inst += len(pred_label)
             self.global_num_inst += len(pred_label)
 
+    def combine_metric(self, metric):
+        assert isinstance(metric, Accuracy)
+        self.sum_metric += metric.sum_metric
+        self.num_inst += metric.num_inst
+
 
 if __name__ == '__main__':
     predicts = [torch.tensor([[0.3, 0.7], [0, 1.], [0.4, 0.6]])]
     labels = [torch.tensor([0, 1, 1])]
     acc = Accuracy()
     acc.update(preds=predicts, labels=labels)
+    acc2 = Accuracy()
+    acc2.update(preds=predicts, labels=labels)
+    acc.combine_metric(acc2)
     print(acc.get())

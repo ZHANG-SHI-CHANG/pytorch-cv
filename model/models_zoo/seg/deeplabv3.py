@@ -53,12 +53,12 @@ class DeepLabV3(SegBaseModel):
         c3, c4 = self.base_forward(x)
         outputs = []
         x = self.head(c4)
-        x = F.interpolate(x, self._up_kwargs, mode='bilinear')
+        x = F.interpolate(x, self._up_kwargs, mode='bilinear', align_corners=True)
         outputs.append(x)
 
         if self.aux:
             auxout = self.auxlayer(c3)
-            auxout = F.interpolate(auxout, self._up_kwargs, mode='bilinear')
+            auxout = F.interpolate(auxout, self._up_kwargs, mode='bilinear', align_corners=True)
             outputs.append(auxout)
         return tuple(outputs)
 
