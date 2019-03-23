@@ -1,23 +1,23 @@
-from .models_zoo.cifarresnet import *
-from .models_zoo.cifarwideresnet import *
-from .models_zoo.cifarresnext import *
-from .models_zoo.vgg import *
-from .models_zoo.resnet import *
-from .models_zoo.resnetv1b import *
-from .models_zoo.resnext import *
-from .models_zoo.mobilenet import *
-from .models_zoo.squeezenet import *
-from .models_zoo.densenet import *
-from .models_zoo.alexnet import *
-from .models_zoo.senet import *
-from .models_zoo.inception import *
-from .models_zoo.yolo.darknet import *
-from .models_zoo.ssd.ssd import *
-from .models_zoo.yolo.yolo3 import *
-from .models_zoo.seg.fcn import *
-from .models_zoo.seg.pspnet import *
-from .models_zoo.seg.deeplabv3 import *
-from .models_zoo.simple_pose.simple_pose_resnet import *
+from model.models_zoo.cifarresnet import *
+from model.models_zoo.cifarwideresnet import *
+from model.models_zoo.cifarresnext import *
+from model.models_zoo.vgg import *
+from model.models_zoo.resnet import *
+from model.models_zoo.resnetv1b import *
+from model.models_zoo.resnext import *
+from model.models_zoo.mobilenet import *
+from model.models_zoo.squeezenet import *
+from model.models_zoo.densenet import *
+from model.models_zoo.alexnet import *
+from model.models_zoo.senet import *
+from model.models_zoo.inception import *
+from model.models_zoo.yolo.darknet import *
+from model.models_zoo.ssd.ssd import *
+from model.models_zoo.yolo.yolo3 import *
+from model.models_zoo.seg.fcn import *
+from model.models_zoo.seg.pspnet import *
+from model.models_zoo.seg.deeplabv3 import *
+from model.models_zoo.simple_pose.simple_pose_resnet import *
 
 __all__ = ['get_model', 'get_model_list']
 
@@ -58,6 +58,9 @@ _models = {
     'resnet50_v1d': resnet50_v1d,
     'resnet101_v1d': resnet101_v1d,
     'resnet152_v1d': resnet152_v1d,
+    'resnet50_v1s': resnet50_v1s,
+    'resnet101_v1s': resnet101_v1s,
+    'resnet152_v1s': resnet152_v1s,
     # imagenet - resnext
     'resnext50_32x4d': resnext50_32x4d,
     'resnext101_32x4d': resnext101_32x4d,

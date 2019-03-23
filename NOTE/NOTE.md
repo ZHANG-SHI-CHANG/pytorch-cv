@@ -43,7 +43,11 @@
    - `b=a.copy()`
    - `b=a.clone()`
 
+10. 寻找指定维度下，某些下标对应的值：
+    - `nd.pick(x, index, axis=)`
+    - `torch.gather(x, dim, index)`
 
+11. 
 
 ### torchvision
 

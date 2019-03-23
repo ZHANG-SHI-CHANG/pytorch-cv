@@ -7,6 +7,20 @@ import torch.nn.functional as F
 
 from model.models_zoo.resnetv1b import resnet50_v1s, resnet101_v1s, resnet152_v1s
 
+__all__ = ['get_segmentation_model', 'SegBaseModel', 'SegEvalModel', 'MultiEvalModel']
+
+
+def get_segmentation_model(model, **kwargs):
+    from .fcn import get_fcn
+    from .pspnet import get_psp
+    from .deeplabv3 import get_deeplab
+    models = {
+        'fcn': get_fcn,
+        'psp': get_psp,
+        'deeplab': get_deeplab,
+    }
+    return models[model](**kwargs)
+
 
 class SegBaseModel(nn.Module):
     r"""Base Model for Semantic Segmentation

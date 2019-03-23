@@ -1,8 +1,8 @@
-from data.ade2k.segmentation import ADE20KSegmentation
-from data.pascal_voc.segmentation import VOCSegmentation
-from data.pascal_aug.segmentation import VOCAugSegmentation
-from data.mscoco.segmentation import COCOSegmentation
-from data.cityscapes.segmentation import CitySegmentation
+from .ade2k.segmentation import ADE20KSegmentation
+from .pascal_voc.segmentation import VOCSegmentation
+from .pascal_aug.segmentation import VOCAugSegmentation
+from .mscoco.segmentation import COCOSegmentation
+from .cityscapes.segmentation import CitySegmentation
 
 datasets = {
     'ade20k': ADE20KSegmentation,

@@ -42,7 +42,7 @@ if __name__ == '__main__':
     home = os.path.expanduser('~')
 
     parse = argparse.ArgumentParser(description='Convert gluon model to pytorch')
-    parse.add_argument('--name', type=str, default='simple_pose_resnet152_v1b', help='name of the model')
+    parse.add_argument('--name', type=str, default='ResNet50_v1s', help='name of the model')
     parse.add_argument('--gluon-path', type=str, default=os.path.join(home, '.mxnet/models'),
                        help='path to the gluon models')
     parse.add_argument('--torch-path', type=str, default=os.path.join(home, '.torch/models'),

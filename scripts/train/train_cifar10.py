@@ -207,7 +207,7 @@ if __name__ == '__main__':
         kwargs = {'classes': classes}
 
     net = model_zoo.get_model(model_name, norm_layer=BatchNorm2d, **kwargs)
-    net = net.to(device)
+    net.to(device)
 
     if args.resume_from:
         net.load_state_dict(torch.load(args.resume_from))

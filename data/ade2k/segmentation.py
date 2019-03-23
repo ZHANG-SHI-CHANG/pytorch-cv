@@ -118,7 +118,7 @@ class ADE20KSegmentation(SegmentationDataset):
         return img, mask
 
     def _mask_transform(self, mask):
-        return torch.from_numpy(np.array(mask).astype('int32')) - 1
+        return torch.from_numpy(np.array(mask).astype('long')) - 1
 
     def __len__(self):
         return len(self.images)

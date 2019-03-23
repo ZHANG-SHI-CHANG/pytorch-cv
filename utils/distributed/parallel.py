@@ -116,15 +116,6 @@ def reduce_dict(input_dict, average=True):
     return reduced_dict
 
 
-def accumulate_prediction(predict, metric):
-    all_predict = all_gather(predict)
-    if not is_main_process():
-        return None, None
-    for p in itertools.chain.from_iterable(all_predict):
-        metric.update(*p)
-    return metric.get()
-
-
 def accumulate_metric(metric):
     all_metric = all_gather(metric)
     if not is_main_process():

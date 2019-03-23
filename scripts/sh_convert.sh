@@ -38,6 +38,8 @@
 #python ../utils/gluon2torch.py --name ResNet101_v2
 #python ../utils/gluon2torch.py --name ResNet152_v2
 
+python ../utils/gluon2torch.py --name ResNet50_v1s
+
 ## resnext
 #python ../utils/gluon2torch.py --name ResNext50_32x4d
 #python ../utils/gluon2torch.py --name ResNext101_32x4d
@@ -144,4 +146,4 @@
 #python ../utils/gluon2torch.py --name simple_pose_resnet101_v1b
 #python ../utils/gluon2torch.py --name simple_pose_resnet101_v1d
 #python ../utils/gluon2torch.py --name simple_pose_resnet152_v1b
-python ../utils/gluon2torch.py --name simple_pose_resnet152_v1d
+#python ../utils/gluon2torch.py --name simple_pose_resnet152_v1d

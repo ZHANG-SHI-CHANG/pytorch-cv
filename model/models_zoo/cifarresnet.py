@@ -408,20 +408,20 @@ def cifar_resnet110_v2(**kwargs):
     return get_cifar_resnet(2, 110, **kwargs)
 
 
-if __name__ == '__main__':
-    import torch
-
-    a = torch.randn(2, 3, 40, 40)
-
-    net1 = cifar_resnet20_v1()
-    net2 = cifar_resnet20_v2()
-    net3 = cifar_resnet56_v1()
-    net4 = cifar_resnet56_v2()
-    net5 = cifar_resnet110_v1()
-    net6 = cifar_resnet110_v2()
-    net1(a)
-    net2(a)
-    net3(a)
-    net4(a)
-    net5(a)
-    net6(a)
+# if __name__ == '__main__':
+#     import torch
+#
+#     a = torch.randn(2, 3, 40, 40)
+#
+#     net1 = cifar_resnet20_v1()
+#     net2 = cifar_resnet20_v2()
+#     net3 = cifar_resnet56_v1()
+#     net4 = cifar_resnet56_v2()
+#     net5 = cifar_resnet110_v1()
+#     net6 = cifar_resnet110_v2()
+#     net1(a)
+#     net2(a)
+#     net3(a)
+#     net4(a)
+#     net5(a)
+#     net6(a)
