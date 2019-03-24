@@ -23,9 +23,10 @@ from model.models_zoo import get_segmentation_model
 
 
 class Trainer(object):
-    def __init__(self, args, device, distributed):
+    def __init__(self, args, device, distributed, logger):
         self.args = args
         self.device, self.distributed = device, distributed
+        self.logger = logger
         # image transform
         input_transform = transforms.Compose([
             transforms.ToTensor(),
@@ -100,23 +101,22 @@ class Trainer(object):
             train_loss += losses.item()
 
             if ptutil.is_main_process():
-                tbar.set_description('Epoch %d, training loss %.3f' % \
-                                     (epoch, train_loss / (i + 1)))
+                self.logger.info('Epoch {}, training loss {:.4f}'.format(epoch, train_loss / (i + 1)))
         # save every epoch
         if ptutil.is_main_process():
             self.save_checkpoint(False)
         return train_loss
 
+    # TODO
     def validation(self):
         # total_inter, total_union, total_correct, total_label = 0, 0, 0, 0
         self.metric.reset()
-        net = self.net.modules() if self.distributed else self.net
-        net.eval()
+        self.net.eval()
         tbar = tqdm(self.eval_data)
         for i, (image, target) in enumerate(tbar):
             image, target = image.to(self.device), target.to(self.device)
             with torch.no_grad():
-                outputs = net.evaluate(image)
+                outputs = self.net.module(image)[0] if self.distributed else self.net(image)[0]
             self.metric.update(target, outputs)
         return self.metric
 
@@ -159,7 +159,7 @@ def parse_args():
                         help='number of epochs to train (default: 50)')
     parser.add_argument('--start_epoch', type=int, default=0,
                         metavar='N', help='start epochs (default:0)')
-    parser.add_argument('--batch-size', type=int, default=2,
+    parser.add_argument('--batch-size', type=int, default=1,
                         metavar='N', help='input batch size for \
                         training (default: 16)')
     parser.add_argument('--test-batch-size', type=int, default=1,
@@ -174,6 +174,8 @@ def parse_args():
     parser.add_argument('--no-wd', action='store_true',
                         help='whether to remove weight decay on bias, \
                         and beta/gamma for batchnorm layers.')
+    parser.add_argument('--val-inter', type=int, default=120,
+                        help='validate interval')
     # cuda and logging
     parser.add_argument('--no-cuda', action='store_true', default=False,
                         help='disables CUDA training')
@@ -215,26 +217,26 @@ if __name__ == "__main__":
         torch.distributed.init_process_group(backend="nccl", init_method="env://")
         ptutil.synchronize()
 
-    trainer = Trainer(args, device, distributed)
+    logger = ptutil.setup_logger('Segmentation', cur_path, ptutil.get_rank(), 'log_seg.txt', 'w')
+
+    logger.info(args)
+    trainer = Trainer(args, device, distributed, logger)
     if args.eval:
-        if ptutil.is_main_process():
-            print('Evaluating model: ', args.resume)
+        logger.info('Evaluating model: {}'.format(args.resume))
         trainer.validation(args.start_epoch)
     else:
-        if ptutil.is_main_process():
-            print('Starting Epoch:', args.start_epoch)
-            print('Total Epochs:', args.epochs)
+        logger.info('Starting Epoch: {}'.format(args.start_epoch))
+        logger.info('Total Epochs: {}'.format(args.epochs))
         for epoch in range(args.start_epoch, args.epochs):
-            # train_loss = trainer.training(epoch)
-            if not args.no_val:
+            train_loss = trainer.training(epoch)
+            if not args.no_val and (epoch + 1) % args.val_inter == 0:
                 metric = trainer.validation()
             ptutil.synchronize()
             train_loss = ptutil.reduce_list(ptutil.all_gather(train_loss), average=False)
-            if ptutil.is_main_process():
-                print(('Epoch %d, training loss %.3f' % \
-                       (epoch, train_loss / len(trainer.train_data.dataset))))
-            if not args.no_val:
+            logger.info('Epoch {}, training loss {:.4f}'.format(
+                epoch, train_loss / (len(trainer.train_data.dataset) / args.batch_size)))
+            if not args.no_val and (epoch + 1) % args.val_inter == 0:
                 pixAcc, mIoU = ptutil.accumulate_metric(metric)
                 if ptutil.is_main_process():
-                    print('Epoch %d, validation pixAcc: %.3f, mIoU: %.3f' % \
-                          (epoch, pixAcc, mIoU))
+                    logger.info('Epoch {}, validation pixAcc: {:.3f}, mIoU: {:.3f}'.format(
+                        epoch, pixAcc, mIoU))

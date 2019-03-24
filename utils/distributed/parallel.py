@@ -1,16 +1,7 @@
 import pickle
-import itertools
 
 import torch
 import torch.distributed as dist
-
-
-def tuple_map(obj):
-    if isinstance(obj, torch.Tensor):
-        return (obj,)
-    if isinstance(obj, list) and len(obj) > 0:
-        return tuple(obj)
-    return obj
 
 
 def get_world_size():
@@ -116,6 +107,7 @@ def reduce_dict(input_dict, average=True):
     return reduced_dict
 
 
+# TODO: fix bug
 def accumulate_metric(metric):
     all_metric = all_gather(metric)
     if not is_main_process():
@@ -124,6 +116,17 @@ def accumulate_metric(metric):
     for i in range(1, len(all_metric)):
         metric_res.combine_metric(all_metric[i])
     return metric_res.get()
+
+
+# def accumulate_values(values, metric):
+#     for i in range(len(values)):
+#         values[i] = all_gather(values[i])
+#     if not is_main_process():
+#         return None, None
+#     for i in range(len(values)):
+#         values[i] = reduce_list(values[i], average=False)
+#     metric.set(*values)
+#     return metric.get()
 
 
 # TODO: may delete

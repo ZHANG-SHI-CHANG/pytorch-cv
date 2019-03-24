@@ -65,7 +65,7 @@ class EvalMetric(object):
         self.label_names = label_names
         self._has_global_stats = kwargs.pop("has_global_stats", False)
         self._kwargs = kwargs
-        self.reset()
+        # self.reset()
 
     def __str__(self):
         return "EvalMetric: {}".format(dict(self.get_name_value()))

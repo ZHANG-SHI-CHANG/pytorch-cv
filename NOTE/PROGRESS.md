@@ -93,12 +93,12 @@ Note：
 
 | ADE20K Dataset        | pixAcc(gluon-cv) | mIoU(gluon-cv) | pixAcc(pytorch-cv) | mIoU(pytorch-cv) |
 | --------------------- | ---------------- | -------------- | ------------------ | ---------------- |
-| fcn_resnet50_ade      | 79.0             | 39.5           |                    |                  |
-| fcn_resnet101_ade     | 80.6             | 41.6           |                    |                  |
-| psp_resnet50_ade      | 80.1             | 41.5           |                    |                  |
-| psp_resnet101_ade     | 80.8             | 43.3           |                    |                  |
-| deeplab_resnet50_ade  | 80.5             | 42.5           |                    |                  |
-| deeplab_resnet101_ade | 81.1             | 44.1           |                    |                  |
+| fcn_resnet50_ade      | 79.0             | 39.5           | 79.0               | 39.5             |
+| fcn_resnet101_ade     | 80.6             | 41.6           | 80.6               | 41.6             |
+| psp_resnet50_ade      | 80.1             | 41.5           | 80.1               | 41.5             |
+| psp_resnet101_ade     | 80.8             | 43.3           | 80.8               | 43.3             |
+| deeplab_resnet50_ade  | 80.5             | 42.5           | 80.5               | 42.5             |
+| deeplab_resnet101_ade | 81.1             | 44.1           | 81.1               | 44.1             |
 
 | COCO Dataset           | pixAcc(gluon-cv) | mIoU(gluon-cv) | pixAcc(pytorch-cv) | mIoU(pytorch-cv) |
 | ---------------------- | ---------------- | -------------- | ------------------ | ---------------- |

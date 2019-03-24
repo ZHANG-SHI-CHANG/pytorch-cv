@@ -2,7 +2,9 @@
 
 Convert the [gluon-cv](https://github.com/dmlc/gluon-cv/) to pytorch. 
 
-**You can see more detail results in [PROGRESS](./NOTE/PROGRESS.md)**
+**You can see more detail results in [PROGRESS](./NOTE/PROGRESS.md) and [TRAIN](./NOTE/TRAIN.md)** 
+
+> Note: use pytorch-nightly （due to nn.SyncBatchNorm）
 
 ## Usage
 
@@ -64,18 +66,23 @@ Another way is follow **Demo** and **Evaluation**
 
 You can see the performance (compare with gluon-cv) in [PROGRESS](./NOTE/PROGRESS.md).
 
+### Training
+
+Recommend use [sh_train_distributed.sh](./scripts/sh_train_distributed.sh)
+
 ## TODO
 
 - [x] add GPU to demo
 - [x] add evaluation (in progress)
-- [ ] add multi-gpu support (in progress)
+- [x] add multi-gpu support (in progress)
 - [x] rewrite metric（more efficient for distributed）
 - [ ] add training
+- [ ] add mixup
 - [ ] add tutorial
 - [ ] modify doc
 - [ ] add python opencv version (check the "difference" --- note, it's still different with mxnet.image)
 
 ### BUG
 
-- [ ] evaluation:  distributed version is slow
-- [ ] segmentation: evaluation is slow（gluon-cv is also slow）
+- [x] ~~evaluation:  distributed version is slow~~（rewrite metric in pytorch）
+- [ ] Training with validate in new metric have bug (number of GPU=8 will out of memory, nGPU=4 without this problem, guess caused by move between gpu) 

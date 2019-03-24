@@ -145,3 +145,11 @@ def intersectionAndUnion(imPred, imLab, numClass):
     (area_lab, _) = np.histogram(imLab, bins=numClass, range=(1, numClass))
     area_union = area_pred + area_lab - area_intersection
     return area_intersection, area_union
+
+
+if __name__ == '__main__':
+    a = torch.Tensor([[1.0, 2.0], [3.0, 4.0]])
+    b = torch.LongTensor([[1, 3], [3, 4]])
+    metric = SegmentationMetric(4)
+    metric.update(a, b)
+    print(metric.get())

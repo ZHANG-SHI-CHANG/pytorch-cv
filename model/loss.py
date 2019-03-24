@@ -21,3 +21,11 @@ class MixSoftmaxCrossEntropyLoss(nn.Module):
             return self._aux_forward(*preds, target)
         else:
             return self.criterion1(*preds, target)
+
+
+if __name__ == '__main__':
+    import torch
+    a = torch.Tensor([[1.0, 2.0], [3.0, 4.0]])
+    b = torch.Tensor([0, 1]).long()
+    loss = MixSoftmaxCrossEntropyLoss(aux=False)
+    print(loss([a], b))

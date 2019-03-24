@@ -14,7 +14,7 @@ from model import model_zoo
 from data import get_segmentation_dataset
 from data.base import make_data_sampler
 from model.models_zoo.seg.segbase import MultiEvalModel
-from utils.metrics.segmentation import SegmentationMetric
+from utils.metrics.segmentation_pt import SegmentationMetric
 from utils.distributed.parallel import synchronize, is_main_process, accumulate_metric
 
 
@@ -36,7 +36,7 @@ def parse_args():
                         help='Training mini-batch size')
     parser.add_argument('--num-workers', '-j', dest='num_workers', type=int,
                         default=4, help='Number of data workers')
-    parser.add_argument('--cuda', action='store_true',
+    parser.add_argument('--cuda', action='store_true', default=True,
                         help='Training with GPUs.')
     parser.add_argument('--local_rank', type=int, default=0)
     parser.add_argument('--dataset', type=str, default='coco',
@@ -61,6 +61,7 @@ if __name__ == '__main__':
     if distributed:
         torch.cuda.set_device(args.local_rank)
         torch.distributed.init_process_group(backend="nccl", init_method="env://")
+        # torch.distributed.init_process_group(backend="nccl", init_method="env://127.0.0.1:2950")
         synchronize()
 
     # Load Model
