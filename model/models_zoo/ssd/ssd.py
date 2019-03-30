@@ -2,6 +2,7 @@
 from __future__ import absolute_import
 
 import os
+import math
 import torch
 from torch import nn
 import torch.nn.functional as F
@@ -10,6 +11,7 @@ from model.models_zoo.ssd.anchor import SSDAnchorGenerator
 from model.module.predictor import ConvPredictor
 from model.module.features import FeatureExpander
 from model.module.nms import box_nms
+from model.loss import SSDMultiBoxLoss
 from model.module.coder import MultiPerClassDecoder, NormalizedBoxCenterDecoder
 from model.models_zoo.ssd.vgg_atrous import vgg16_atrous_300, vgg16_atrous_512
 from data.pascal_voc.detection import VOCDetection
@@ -116,6 +118,7 @@ class SSD(nn.Module):
             "Mismatched (number of layers) vs (sizes) vs (ratios): {}, {}, {}".format(
                 num_layers, len(sizes), len(ratios))
         assert num_layers > 0, "SSD require at least one layer, suggest multiple."
+        self.base_size = base_size
         self._num_layers = num_layers
         self.classes = classes
         self.nms_thresh = nms_thresh
@@ -156,6 +159,7 @@ class SSD(nn.Module):
             self.box_predictors.append(ConvPredictor(channel, num_anchors * 4))
         self.bbox_decoder = NormalizedBoxCenterDecoder(stds)
         self.cls_decoder = MultiPerClassDecoder(len(self.classes) + 1, thresh=0.01)
+        self.criterion = SSDMultiBoxLoss(3.0)
 
     @property
     def num_classes(self):
@@ -168,6 +172,18 @@ class SSD(nn.Module):
 
         """
         return len(self.classes)
+
+    def anchors(self):
+        features, s = list(), self.base_size / 8
+        while s // 2 > 0:
+            features.append(torch.zeros(1, 1, math.ceil(s), math.ceil(s)))
+            s /= 2
+        features.append(torch.zeros(1, 1, 1, 1))
+
+        anchors = [ag(feat).view(1, -1)
+                   for feat, ag in zip(features, self.anchor_generators)]
+        anchors = torch.cat(anchors, dim=1).view((1, -1, 4))
+        return anchors
 
     def set_nms(self, nms_thresh=0.45, nms_topk=400, post_nms=100):
         """Set non-maximum suppression parameters.
@@ -194,20 +210,23 @@ class SSD(nn.Module):
         self.nms_topk = nms_topk
         self.post_nms = post_nms
 
-    def forward(self, x):
+    def forward(self, x, targets=None):
         features = self.features(x)
         b = x.shape[0]
         cls_preds = [(cp(feat).permute(0, 2, 3, 1)).flatten(1)
                      for feat, cp in zip(features, self.class_predictors)]
         box_preds = [(bp(feat).permute(0, 2, 3, 1)).flatten(1)
                      for feat, bp in zip(features, self.box_predictors)]
-        anchors = [ag(feat).view(1, -1)
-                   for feat, ag in zip(features, self.anchor_generators)]
+
         cls_preds = torch.cat(cls_preds, dim=1).view((b, -1, self.num_classes + 1))
         box_preds = torch.cat(box_preds, dim=1).view((b, -1, 4))
-        anchors = torch.cat(anchors, dim=1).view((1, -1, 4))
         if self.training:
-            return [cls_preds, box_preds, anchors]
+            cls_target, box_target = targets
+            regs_loss, cls_loss = self.criterion(cls_preds, box_preds, cls_target, box_target)
+            return regs_loss, cls_loss
+        anchors = [ag(feat).view(1, -1)
+                   for feat, ag in zip(features, self.anchor_generators)]
+        anchors = torch.cat(anchors, dim=1).view((1, -1, 4))
         bboxes = self.bbox_decoder(box_preds, anchors)
         cls_ids, scores = self.cls_decoder(F.softmax(cls_preds, -1))
         results = []
@@ -316,7 +335,7 @@ def get_ssd(name, base_size, features, filters, channels, sizes, ratios, steps, 
         from model.model_store import get_model_file
         full_name = '_'.join(('ssd', str(base_size), name, dataset))
         net.load_state_dict(torch.load(get_model_file(full_name, root=root),
-                            map_location=lambda storage, loc: storage))
+                                       map_location=lambda storage, loc: storage))
     return net
 
 

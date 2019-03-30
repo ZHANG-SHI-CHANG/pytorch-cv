@@ -54,6 +54,7 @@ def parse_args():
                         default=4, help='Number of data workers')
     parser.add_argument('--cuda', action='store_true', help='Evaluate with GPUs.')
     parser.add_argument('--local_rank', type=int, default=0)
+    parser.add_argument('--init-method', type=str, default="env://")
     parser.add_argument('--pretrained', type=str, default='True',
                         help='Load weights from previously saved parameters.')
     args = parser.parse_args()
@@ -75,7 +76,7 @@ if __name__ == '__main__':
 
     if distributed:
         torch.cuda.set_device(args.local_rank)
-        torch.distributed.init_process_group(backend="nccl", init_method="env://")
+        torch.distributed.init_process_group(backend="nccl", init_method=args.init_method)
         synchronize()
 
     # Load Model

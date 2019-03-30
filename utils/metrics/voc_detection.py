@@ -4,8 +4,8 @@ from __future__ import division
 import torch
 from collections import defaultdict
 import numpy as np
-from .metric import EvalMetric
-from ..bbox import bbox_iou
+from utils.metrics.metric import EvalMetric
+from utils.bbox import bbox_iou
 
 
 class VOCMApMetric(EvalMetric):
@@ -268,6 +268,17 @@ class VOCMApMetric(EvalMetric):
         ap = np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])
         return ap
 
+
+if __name__ == '__main__':
+    metric = VOCMApMetric(class_names=['person'])
+    pred_bboxes = torch.Tensor([[1.0, 2.0, 3.0, 4.0], [3.1, 3.0, 4.1, 4.2]]).view(1, 2, 4)
+    pred_labels = torch.Tensor([[1], [0]]).view(1, 2, 1)
+    pred_scores = torch.Tensor([[0.6], [0.8]]).view(1, 2, 1)
+    gt_bboxes = torch.Tensor([[1.2, 2.1, 3.4, 4.1]]).view(1, 1, 4)
+    gt_labels = torch.Tensor([[1]])
+
+    metric.update([pred_bboxes], [pred_labels], [pred_scores], [gt_bboxes], [gt_labels])
+    print(metric._n_pos)
 
 class VOC07MApMetric(VOCMApMetric):
     """ Mean average precision metric for PASCAL V0C 07 dataset

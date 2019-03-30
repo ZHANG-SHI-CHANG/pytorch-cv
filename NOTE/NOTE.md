@@ -44,10 +44,29 @@
    - `b=a.clone()`
 
 10. 寻找指定维度下，某些下标对应的值：
-    - `nd.pick(x, index, axis=)`
-    - `torch.gather(x, dim, index)`
+  - `nd.pick(x, index, axis=)`（注意：对于越界情况默认采用截断！！！）
+  - `torch.gather(x, dim, index)`
 
-11. 
+11. "histogram"：
+
+    - `np.histogram`
+    - `torch.histc`
+
+12. 两者取大
+
+    - `np.maximum(a, b)`
+    - `torch.max(a, b)`
+
+13. 类型改变
+
+    - `nd.cast(a, 某种类型)`
+
+    - pytorch：`a.type(b.dtype)`
+
+14. 获得"形状"张量：
+
+    - `nd.shape_array(a)`
+    - `a.shape`
 
 ### torchvision
 

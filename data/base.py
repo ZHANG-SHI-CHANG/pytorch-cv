@@ -33,10 +33,15 @@ class SimpleDataset(data.Dataset):
         return self._data[idx]
 
 
+from PIL import Image
+import numpy as np
+
+
 class _LazyTransformDataset(data.Dataset):
     """Lazily transformed dataset."""
 
     def __init__(self, data, fn):
+        super(_LazyTransformDataset, self).__init__()
         self._data = data
         self._fn = fn
 
@@ -48,6 +53,54 @@ class _LazyTransformDataset(data.Dataset):
         if isinstance(item, tuple):
             return self._fn(*item)
         return self._fn(item)
+
+    def transform(self, fn):
+        self._fn = fn
+
+
+# For debug
+class DemoDataset(data.Dataset):
+    """Simple Dataset wrapper for lists and arrays.
+
+    Parameters
+    ----------
+    data : dataset-like object
+        Any object that implements `len()` and `[]`.
+    """
+
+    def __init__(self, num):
+        self._num = num
+
+    def __len__(self):
+        return self._num
+
+    def __getitem__(self, idx):
+        return Image.fromarray(np.random.randint(0, 255, size=(60, 60, 3)).astype(np.uint8))
+
+    def transform(self, fn, lazy=True):
+        """Returns a new dataset with each sample transformed by the
+        transformer function `fn`.
+
+        Parameters
+        ----------
+        fn : callable
+            A transformer function that takes a sample as input and
+            returns the transformed sample.
+        lazy : bool, default True
+            If False, transforms all samples at once. Otherwise,
+            transforms each sample on demand. Note that if `fn`
+            is stochastic, you must set lazy to True or you will
+            get the same result on all epochs.
+
+        Returns
+        -------
+        Dataset
+            The transformed dataset.
+        """
+        trans = _LazyTransformDataset(self, fn)
+        if lazy:
+            return trans
+        return SimpleDataset([i for i in trans])
 
 
 class VisionDataset(data.Dataset):
@@ -61,6 +114,7 @@ class VisionDataset(data.Dataset):
     """
 
     def __init__(self, root):
+        super(VisionDataset, self).__init__()
         if not os.path.isdir(os.path.expanduser(root)):
             helper_msg = "{} is not a valid dir. Did you forget to initialize \
                          datasets described in: \

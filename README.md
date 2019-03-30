@@ -81,6 +81,7 @@ Recommend use [sh_train_distributed.sh](./scripts/sh_train_distributed.sh)
 - [ ] add tutorial
 - [ ] modify doc
 - [ ] add python opencv version (check the "difference" --- note, it's still different with mxnet.image)
+- [ ] delete duplicated code
 
 ### BUG
 

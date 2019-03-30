@@ -127,7 +127,7 @@ class Trainer(object):
             os.makedirs(directory)
         filename = 'checkpoint.params'
         filename = directory + filename
-        torch.save(self.net.state_dict(), filename)
+        torch.save(self.net.module.state_dict() if self.distributed else self.net.state_dict(), filename)
         if is_best:
             shutil.copyfile(filename, directory + 'model_best.params')
 
@@ -138,9 +138,9 @@ def parse_args():
     # model and dataset
     parser.add_argument('--model', type=str, default='fcn',
                         help='model name (default: fcn)')
-    parser.add_argument('--backbone', type=str, default='resnet50',
+    parser.add_argument('--backbone', type=str, default='resnet101',
                         help='backbone name (default: resnet50)')
-    parser.add_argument('--dataset', type=str, default='ade20k',
+    parser.add_argument('--dataset', type=str, default='coco',
                         help='dataset name (default: ade20k)')
     parser.add_argument('--workers', '-j', type=int, default=4,
                         metavar='N', help='dataloader threads')
@@ -180,6 +180,7 @@ def parse_args():
     parser.add_argument('--no-cuda', action='store_true', default=False,
                         help='disables CUDA training')
     parser.add_argument('--local_rank', type=int, default=0)
+    parser.add_argument('--init-method', type=str, default="env://")
     parser.add_argument('--dtype', type=str, default='float32',
                         help='data type for training. default is float32')
     # checking point
@@ -214,7 +215,7 @@ if __name__ == "__main__":
 
     if distributed:
         torch.cuda.set_device(args.local_rank)
-        torch.distributed.init_process_group(backend="nccl", init_method="env://")
+        torch.distributed.init_process_group(backend="nccl", init_method=args.init_method)
         ptutil.synchronize()
 
     logger = ptutil.setup_logger('Segmentation', cur_path, ptutil.get_rank(), 'log_seg.txt', 'w')
@@ -234,7 +235,7 @@ if __name__ == "__main__":
             ptutil.synchronize()
             train_loss = ptutil.reduce_list(ptutil.all_gather(train_loss), average=False)
             logger.info('Epoch {}, training loss {:.4f}'.format(
-                epoch, train_loss / (len(trainer.train_data.dataset) / args.batch_size)))
+                epoch, train_loss / len(trainer.train_data.dataset) * args.batch_size))
             if not args.no_val and (epoch + 1) % args.val_inter == 0:
                 pixAcc, mIoU = ptutil.accumulate_metric(metric)
                 if ptutil.is_main_process():

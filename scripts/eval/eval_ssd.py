@@ -17,7 +17,7 @@ from data.batchify import Tuple, Stack, Pad, Empty
 from data.pascal_voc.detection import VOCDetection
 from data.mscoco.detection import COCODetection
 from data.transforms.ssd import SSDDefaultValTransform
-from utils.metrics.voc_detection import VOC07MApMetric
+from utils.metrics.voc_detection_pt import VOC07MApMetric
 from utils.metrics.coco_detection import COCODetectionMetric
 from utils.distributed.parallel import synchronize, accumulate_metric, is_main_process
 
@@ -89,12 +89,14 @@ def parse_args():
                         help="Input data shape")
     parser.add_argument('--batch-size', type=int, default=4,
                         help='Training mini-batch size')
-    parser.add_argument('--dataset', type=str, default='coco',
+    parser.add_argument('--dataset', type=str, default='voc',
                         help='Training dataset.')
     parser.add_argument('--num-workers', '-j', dest='num_workers', type=int,
                         default=4, help='Number of data workers')
-    parser.add_argument('--cuda', action='store_true', help='Training with GPUs.')
+    parser.add_argument('--cuda', action='store_true', default=True,
+                        help='Training with GPUs.')
     parser.add_argument('--local_rank', type=int, default=0)
+    parser.add_argument('--init-method', type=str, default="env://")
     parser.add_argument('--pretrained', type=str, default='True',
                         help='Load weights from previously saved parameters.')
     parser.add_argument('--save-prefix', type=str, default='',
@@ -118,7 +120,7 @@ if __name__ == '__main__':
 
     if distributed:
         torch.cuda.set_device(args.local_rank)
-        torch.distributed.init_process_group(backend="nccl", init_method="env://")
+        torch.distributed.init_process_group(backend="nccl", init_method=args.init_method)
         synchronize()
 
     # network

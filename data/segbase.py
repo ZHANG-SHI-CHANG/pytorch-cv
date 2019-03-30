@@ -85,7 +85,7 @@ class SegmentationDataset(VisionDataset):
 
     def _mask_transform(self, mask):
         # return torch.from_numpy(np.array(mask).astype('int32'))
-        return np.array(mask).astype('int32')
+        return np.array(mask).astype('int64')
 
     @property
     def num_class(self):

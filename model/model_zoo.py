@@ -13,6 +13,7 @@ from model.models_zoo.senet import *
 from model.models_zoo.inception import *
 from model.models_zoo.yolo.darknet import *
 from model.models_zoo.ssd.ssd import *
+from model.models_zoo.ssd.vgg_atrous import *
 from model.models_zoo.yolo.yolo3 import *
 from model.models_zoo.seg.fcn import *
 from model.models_zoo.seg.pspnet import *
@@ -101,6 +102,8 @@ _models = {
     'inceptionv3': inception_v3,
     'senet_154': senet_154,
     # ssd
+    'vgg16_atrous_300': vgg16_atrous_300,
+    # 'vgg16_atrous_512': vgg16_atrous_512,
     'ssd_300_vgg16_atrous_voc': ssd_300_vgg16_atrous_voc,
     'ssd_512_vgg16_atrous_voc': ssd_512_vgg16_atrous_voc,
     'ssd_512_resnet50_v1_voc': ssd_512_resnet50_v1_voc,

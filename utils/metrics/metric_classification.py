@@ -41,6 +41,7 @@ class Accuracy(EvalMetric):
             name, axis=axis, output_names=output_names,
             label_names=label_names, has_global_stats=True)
         self.axis = axis
+        self.reset()
 
     def update(self, labels, preds):
         """Updates the internal evaluation result.

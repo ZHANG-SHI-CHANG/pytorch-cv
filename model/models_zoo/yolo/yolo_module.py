@@ -25,10 +25,22 @@ def _upsample(x, stride=2):
     return x.expand(*dims_expand).contiguous().view(*dims)
 
 
-if __name__ == '__main__':
-    a = torch.arange(12).view(1, 2, 3, 2)
-    out = _upsample(a)
-    print(out)
+def prefetch(anchors, h, w):
+    h_list = [h // 32, h // 16, h // 8]
+    w_list = [w // 32, w // 16, w // 8]
+    anchors_, offsets_, feat_maps_ = list(), list(), list()
+    for h_, w_, anchor in zip(h_list, w_list, anchors[::-1]):
+        anchor = torch.tensor(anchor, dtype=torch.float)
+        anchor = anchor.view(1, 1, -1, 2)
+        grid_x, grid_y = torch.arange(w_, dtype=torch.float), torch.arange(h_, dtype=torch.float)
+        grid_x, grid_y = torch.meshgrid(grid_x, grid_y)
+        offset = torch.cat([grid_y.unsqueeze(2), grid_x.unsqueeze(2)], 2)
+        offset = offset.view(1, -1, 1, 2)
+        feat_map = torch.zeros(1, 1, h_, w_, dtype=torch.float)
+        anchors_.append(anchor)
+        offsets_.append(offset)
+        feat_maps_.append(feat_map)
+    return anchors_, offsets_, feat_maps_
 
 
 class YOLODetectionBlockV3(nn.Module):
@@ -72,6 +84,7 @@ class YOLODetectionBlockV3(nn.Module):
         return route, tip
 
 
+# TODO: get offset and anchors
 class YOLOOutputV3(nn.Module):
     """YOLO output layer V3.
     Parameters
@@ -149,8 +162,7 @@ class YOLOOutputV3(nn.Module):
 
         if self.training:
             # during training, we don't need to convert whole bunch of info to detection results
-            return (bbox.reshape((0, -1, 4)), raw_box_centers, raw_box_scales,
-                    objness, class_pred, self.anchors, offsets)
+            return (bbox.reshape((bbox.shape[0], -1, 4)), raw_box_centers, raw_box_scales, objness, class_pred)
 
         # prediction per class
         bboxes = bbox.repeat(self._classes, 1, 1, 1, 1)
@@ -185,7 +197,7 @@ class YOLOOutputV3(nn.Module):
         # to avoid deferred init, number of in_channels must be defined
         in_channels = old_pred.weight.shape[1]
         device = old_pred.weight.device
-        self.prediction = nn.Conv2d(in_channels, all_pred, kernel_size=1, padding=0, stride=1,).to(device)
+        self.prediction = nn.Conv2d(in_channels, all_pred, kernel_size=1, padding=0, stride=1, ).to(device)
         if reuse_weights:
             new_pred = self.prediction
             assert isinstance(reuse_weights, dict)
@@ -203,7 +215,7 @@ class YOLOOutputV3(nn.Module):
                         # copy along the first dimension
                         new_data[1 + 4 + k + off_new] = old_data[1 + 4 + v + off_old]
                         # copy non-class weights as well
-                        new_data[off_new : 1 + 4 + off_new] = old_data[off_old : 1 + 4 + off_old]
+                        new_data[off_new: 1 + 4 + off_new] = old_data[off_old: 1 + 4 + off_old]
                 # set data to new conv layers
                 new_params.data = new_data
 

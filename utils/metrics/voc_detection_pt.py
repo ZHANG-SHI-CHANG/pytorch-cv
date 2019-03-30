@@ -4,8 +4,8 @@ from __future__ import division
 import torch
 from collections import defaultdict
 import numpy as np
-from .metric import EvalMetric
-from ..bbox import bbox_iou
+from utils.metrics.metric import EvalMetric
+from utils.bbox_pt import bbox_iou
 
 
 class VOCMApMetric(EvalMetric):
@@ -93,44 +93,44 @@ class VOCMApMetric(EvalMetric):
 
         """
 
-        def as_numpy(a):
-            """Convert a (list of) mx.NDArray into numpy.ndarray"""
+        def as_tensor(a):
             if isinstance(a, (list, tuple)):
-                out = [x.cpu().numpy() if isinstance(x, torch.Tensor) else x for x in a]
+                out = [x for x in a]
                 try:
-                    out = np.concatenate(out, axis=0)
-                except ValueError:
-                    out = np.array(out)
+                    out = torch.cat(out, 0)
+                except TypeError:
+                    out = out
                 return out
             elif isinstance(a, torch.Tensor):
-                a = a.cpu().numpy()
+                return a
             return a
 
         if gt_difficults is None:
-            gt_difficults = [None for _ in as_numpy(gt_labels)]
+            gt_difficults = [None for _ in gt_labels]
 
         for pred_bbox, pred_label, pred_score, gt_bbox, gt_label, gt_difficult in zip(
-                *[as_numpy(x) for x in [pred_bboxes, pred_labels, pred_scores,
-                                        gt_bboxes, gt_labels, gt_difficults]]):
+                *[as_tensor(x) for x in [pred_bboxes, pred_labels, pred_scores,
+                                         gt_bboxes, gt_labels, gt_difficults]]):
             # strip padding -1 for pred and gt
-            valid_pred = np.where(pred_label.flat >= 0)[0]
-            pred_bbox = pred_bbox[valid_pred, :]
-            pred_label = pred_label.flat[valid_pred].astype(int)
-            pred_score = pred_score.flat[valid_pred]
-            valid_gt = np.where(gt_label.flat >= 0)[0]
-            gt_bbox = gt_bbox[valid_gt, :]
-            gt_label = gt_label.flat[valid_gt].astype(int)
+            valid_pred = (pred_label.flatten() >= 0).nonzero()
+            pred_bbox = pred_bbox[valid_pred.squeeze(1), :]
+            pred_label = pred_label[valid_pred].flatten().long()
+            pred_score = pred_score[valid_pred].flatten()
+            valid_gt = (gt_label.flatten() >= 0).nonzero()
+            gt_bbox = gt_bbox[valid_gt.squeeze(1), :]
+            gt_label = gt_label[valid_gt].flatten().long()
             if gt_difficult is None:
-                gt_difficult = np.zeros(gt_bbox.shape[0])
+                gt_difficult = torch.zeros_like(gt_label)
             else:
-                gt_difficult = gt_difficult.flat[valid_gt]
+                gt_difficult = gt_difficult[valid_gt]
 
-            for l in np.unique(np.concatenate((pred_label, gt_label)).astype(int)):
+            for l in torch.unique(torch.cat([pred_label, gt_label]).long()):
+                l = l.item()
                 pred_mask_l = pred_label == l
                 pred_bbox_l = pred_bbox[pred_mask_l]
                 pred_score_l = pred_score[pred_mask_l]
                 # sort by score
-                order = pred_score_l.argsort()[::-1]
+                order = torch.argsort(pred_score_l, descending=True)
                 pred_bbox_l = pred_bbox_l[order]
                 pred_score_l = pred_score_l[order]
 
@@ -138,7 +138,7 @@ class VOCMApMetric(EvalMetric):
                 gt_bbox_l = gt_bbox[gt_mask_l]
                 gt_difficult_l = gt_difficult[gt_mask_l]
 
-                self._n_pos[l] += np.logical_not(gt_difficult_l).sum()
+                self._n_pos[l] += (gt_difficult_l == 0).sum().item()
                 self._score[l].extend(pred_score_l)
 
                 if len(pred_bbox_l) == 0:
@@ -148,18 +148,18 @@ class VOCMApMetric(EvalMetric):
                     continue
 
                 # VOC evaluation follows integer typed bounding boxes.
-                pred_bbox_l = pred_bbox_l.copy()
+                pred_bbox_l = pred_bbox_l.clone()
                 pred_bbox_l[:, 2:] += 1
-                gt_bbox_l = gt_bbox_l.copy()
+                gt_bbox_l = gt_bbox_l.clone()
                 gt_bbox_l[:, 2:] += 1
 
                 iou = bbox_iou(pred_bbox_l, gt_bbox_l)
-                gt_index = iou.argmax(axis=1)
+                iou_max, gt_index = iou.max(dim=1)
                 # set -1 if there is no matching ground truth
-                gt_index[iou.max(axis=1) < self.iou_thresh] = -1
+                gt_index[iou_max < self.iou_thresh] = -1
                 del iou
 
-                selec = np.zeros(gt_bbox_l.shape[0], dtype=bool)
+                selec = torch.zeros(gt_bbox_l.shape[0], dtype=torch.uint8)
                 for gt_idx in gt_index:
                     if gt_idx >= 0:
                         if gt_difficult_l[gt_idx]:
@@ -169,7 +169,7 @@ class VOCMApMetric(EvalMetric):
                                 self._match[l].append(1)
                             else:
                                 self._match[l].append(0)
-                        selec[gt_idx] = True
+                        selec[gt_idx] = 1
                     else:
                         self._match[l].append(0)
 
@@ -267,6 +267,18 @@ class VOCMApMetric(EvalMetric):
         # sum (\delta recall) * prec
         ap = np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])
         return ap
+
+
+if __name__ == '__main__':
+    metric = VOCMApMetric(class_names=['person'])
+    pred_bboxes = torch.Tensor([[1.0, 2.0, 3.0, 4.0], [3.1, 3.0, 4.1, 4.2]]).view(1, 2, 4)
+    pred_labels = torch.Tensor([[1], [0]]).view(1, 2, 1)
+    pred_scores = torch.Tensor([[0.6], [0.8]]).view(1, 2, 1)
+    gt_bboxes = torch.Tensor([[1.2, 2.1, 3.4, 4.1]]).view(1, 1, 4)
+    gt_labels = torch.Tensor([[1]])
+
+    metric.update([pred_bboxes], [pred_labels], [pred_scores], [gt_bboxes], [gt_labels])
+    print(metric._n_pos)
 
 
 class VOC07MApMetric(VOCMApMetric):

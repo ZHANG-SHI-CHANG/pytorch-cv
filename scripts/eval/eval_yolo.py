@@ -93,6 +93,7 @@ def parse_args():
     parser.add_argument('--cuda', action='store_true',
                         help='Training with GPUs, you can specify 1,3 for example.')
     parser.add_argument('--local_rank', type=int, default=0)
+    parser.add_argument('--init-method', type=str, default="env://")
     parser.add_argument('--pretrained', type=str, default='True',
                         help='Load weights from previously saved parameters.')
     parser.add_argument('--save-prefix', type=str, default='',
@@ -116,7 +117,7 @@ if __name__ == '__main__':
 
     if distributed:
         torch.cuda.set_device(args.local_rank)
-        torch.distributed.init_process_group(backend="nccl", init_method="env://")
+        torch.distributed.init_process_group(backend="nccl", init_method=args.init_method)
         synchronize()
 
     # network

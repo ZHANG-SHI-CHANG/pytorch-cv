@@ -39,7 +39,12 @@ def parse_args():
     parser.add_argument('--cuda', action='store_true', default=True,
                         help='Training with GPUs.')
     parser.add_argument('--local_rank', type=int, default=0)
+    parser.add_argument('--init-method', type=str, default="env://")
     parser.add_argument('--dataset', type=str, default='coco',
+                        help='Select dataset.')
+    # parser.add_argument('--model_root', type=str, default=os.path.expanduser('~/.torch/models'),
+    #                     help='Select dataset.')
+    parser.add_argument('--model_root', type=str, default='../train',
                         help='Select dataset.')
 
     args = parser.parse_args()
@@ -60,12 +65,12 @@ if __name__ == '__main__':
 
     if distributed:
         torch.cuda.set_device(args.local_rank)
-        torch.distributed.init_process_group(backend="nccl", init_method="env://")
+        torch.distributed.init_process_group(backend="nccl", init_method=args.init_method)
         # torch.distributed.init_process_group(backend="nccl", init_method="env://127.0.0.1:2950")
         synchronize()
 
     # Load Model
-    model = model_zoo.get_model(args.model_name, pretrained=True, pretrained_base=False)
+    model = model_zoo.get_model(args.model_name, pretrained=True, pretrained_base=False, root=args.model_root)
     model.to(device)
 
     # testing data

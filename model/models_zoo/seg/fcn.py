@@ -71,7 +71,7 @@ class FCN(SegBaseModel):
 
 
 def get_fcn(dataset='pascal_voc', backbone='resnet50', pretrained=False,
-            root=os.path.join(os.path.expanduser('~'), '.torch/models'), pretrained_base=True, **kwargs):
+            root=os.path.expanduser('~/.torch/models'), pretrained_base=True, **kwargs):
     r"""FCN model from the paper `"Fully Convolutional Network for semantic segmentation"
     <https://people.eecs.berkeley.edu/~jonlong/long_shelhamer_fcn.pdf>`_
 

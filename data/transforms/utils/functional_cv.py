@@ -42,7 +42,7 @@ def to_tensor(pic):
         raise TypeError('pic should be ndarray. Got {}'.format(type(pic)))
 
     # handle numpy array
-    img = torch.from_numpy(pic.transpose((2, 0, 1)))
+    img = torch.from_numpy(pic.transpose((2, 0, 1)).copy())
     # backward compatibility
     if isinstance(img, torch.ByteTensor) or img.dtype == torch.uint8:
         return img.float().div(255)

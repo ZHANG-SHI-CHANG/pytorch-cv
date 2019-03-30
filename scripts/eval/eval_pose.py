@@ -97,6 +97,7 @@ def parse_args():
     parser.add_argument('--score-threshold', type=float, default=0,
                         help='threshold value for predicted score.')
     parser.add_argument('--local_rank', type=int, default=0)
+    parser.add_argument('--init-method', type=str, default="env://")
 
     opt = parser.parse_args()
     return opt
@@ -117,7 +118,7 @@ if __name__ == '__main__':
 
     if distributed:
         torch.cuda.set_device(args.local_rank)
-        torch.distributed.init_process_group(backend="nccl", init_method="env://")
+        torch.distributed.init_process_group(backend="nccl", init_method=args.init_method)
         synchronize()
 
     input_size = [int(i) for i in args.input_size.split(',')]

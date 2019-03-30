@@ -118,7 +118,7 @@ class VOCDetection(VisionDataset):
             except AssertionError as e:
                 raise RuntimeError("Invalid label at {}, {}".format(anno_path, e))
             label.append([xmin, ymin, xmax, ymax, cls_id, difficult])
-        return np.array(label)
+        return np.array(label).astype(np.float32)
 
     def _validate_label(self, xmin, ymin, xmax, ymax, width, height):
         """Validate labels."""

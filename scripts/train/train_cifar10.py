@@ -22,7 +22,7 @@ from data.base import make_data_sampler
 from utils.filesystem import makedirs
 from utils.plot_history import TrainingHistory
 from utils.distributed.parallel import synchronize, all_gather, is_main_process, reduce_list, accumulate_metric
-from utils.metrics.metric_classification import Accuracy
+from utils.metrics import Accuracy
 from utils.optim_utils import get_learning_rate, set_learning_rate
 
 
@@ -124,11 +124,12 @@ class Solver(object):
                              (epoch, acc, val_acc, train_loss, time.time() - tic))
 
                 if self.save_period and self.cfg.save_dir and (epoch + 1) % self.save_period == 0:
-                    torch.save(self.net.state_dict(), '%s/cifar10-%s-%d.pth' % (self.save_dir, self.cfg.model, epoch))
+                    torch.save(self.net.module.state_dict() if self.distributed else self.net.state_dict(),
+                               '%s/cifar10-%s-%d.pth' % (self.save_dir, self.cfg.model, epoch))
 
         if is_main_process() and self.save_period and self.save_dir:
-            torch.save(self.net.state_dict(), '%s/cifar10-%s-%d.pth'
-                       % (self.save_dir, self.cfg.model, self.cfg.num_epochs - 1))
+            torch.save(self.net.module.state_dict() if self.distributed else self.net.state_dict(),
+                       '%s/cifar10-%s-%d.pth' % (self.save_dir, self.cfg.model, self.cfg.num_epochs - 1))
 
     def validate(self, val_data, metric):
         self.net.eval()
@@ -146,9 +147,10 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Train a model for image classification.')
     parser.add_argument('--batch-size', type=int, default=128,
                         help='training batch size per device (CPU/GPU).')
-    parser.add_argument('--cuda', action='store_true', help='Training with GPUs.')
+    parser.add_argument('--cuda', action='store_true', default=True, help='Training with GPUs.')
     parser.add_argument('--local_rank', type=int, default=0)
-    parser.add_argument('--model', type=str, default='cifar_resnet20_v1',
+    parser.add_argument('--init-method', type=str, default="env://")
+    parser.add_argument('--model', type=str, default='CIFAR_WideResNet28_10',
                         help='model to use. options are resnet and wrn. default is resnet.')
     parser.add_argument('-j', '--num-data-workers', dest='num_workers', default=4, type=int,
                         help='number of preprocessing workers')
@@ -195,7 +197,7 @@ if __name__ == '__main__':
 
     if distributed:
         torch.cuda.set_device(args.local_rank)
-        torch.distributed.init_process_group(backend="nccl", init_method="env://")
+        torch.distributed.init_process_group(backend="nccl", init_method=args.init_method)
         synchronize()
 
     BatchNorm2d = nn.SyncBatchNorm if distributed else nn.BatchNorm2d

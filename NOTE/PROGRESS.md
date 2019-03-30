@@ -102,9 +102,9 @@ Note：
 
 | COCO Dataset           | pixAcc(gluon-cv) | mIoU(gluon-cv) | pixAcc(pytorch-cv) | mIoU(pytorch-cv) |
 | ---------------------- | ---------------- | -------------- | ------------------ | ---------------- |
-| fcn_resnet101_coco     | 92.2 (91.1)      | 66.2 (60.3)    | 92.2 (90.9)        | 66.2 (59.8)      |
-| psp_resnet101_coco     | 92.4 (91.8)      | 70.4 (68.5)    | 92.4 (91.7)        | 70.4 (68.8)      |
-| deeplab_resnet101_coco | 92.5 (91.7)      | 70.4 (68.7)    | 92.5 (91.6)        | 70.4 (68.3)      |
+| fcn_resnet101_coco     | 92.2             | 66.2           | 92.2               | 66.2             |
+| psp_resnet101_coco     | 92.4             | 70.4           | 92.4               | 70.4             |
+| deeplab_resnet101_coco | 92.5             | 70.4           | 92.5               | 70.4             |
 
 | VOC Dataset           | pixAcc(gluon-cv) | mIoU(gluon-cv) | pixAcc(pytorch-cv) | mIoU(pytorch-cv) |
 | --------------------- | ---------------- | -------------- | ------------------ | ---------------- |

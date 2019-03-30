@@ -28,7 +28,7 @@ class BBoxCornerToCenter(nn.Module):
         self._axis = axis
 
     def forward(self, x):
-        xmin, ymin, xmax, ymax = torch.split(x, 1, axis=self._axis)
+        xmin, ymin, xmax, ymax = torch.split(x, 1, dim=self._axis)
         width = xmax - xmin
         height = ymax - ymin
         x = xmin + width / 2
@@ -62,7 +62,7 @@ class BBoxCenterToCorner(nn.Module):
         self._axis = axis
 
     def forward(self, x):
-        x, y, w, h = torch.split(x, 1, axis=self._axis)
+        x, y, w, h = torch.split(x, 1, dim=self._axis)
         hw = w / 2
         hh = h / 2
         xmin = x - hw
@@ -168,6 +168,9 @@ class BBoxBatchIOU(nn.Module):
         union = area_a + area_b - i
 
         return i / (union + self._eps)
+
+def box_iou(lhs, rhs):
+    n, m = a.shape[0], a.shape[1], b.shape[1]
 
 
 if __name__ == '__main__':
