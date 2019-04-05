@@ -1,0 +1,8 @@
+name: pt
+dependencies:
+- python=3.6
+- pip:
+  - requests
+  - tqdm
+  - Pillow
+

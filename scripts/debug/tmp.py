@@ -83,7 +83,7 @@ if __name__ == '__main__':
     BatchNorm2d = nn.SyncBatchNorm if distributed else nn.BatchNorm2d
 
     base = Stage()
-    stage = [base[:2], base[2:4]]
+    stage = [base.features[:2], base.features[2:4]]
     net = Net(stage, norm_layer=BatchNorm2d)
     net.to(device)
 

@@ -58,6 +58,7 @@ class Trainer(object):
         BatchNorm2d = torch.nn.SyncBatchNorm if distributed else torch.nn.BatchNorm2d
 
         self.net = get_model(net_name, pretrained_base=True, norm_layer=BatchNorm2d)
+        self.net.set_nms(nms_thresh=0.45, nms_topk=400)
         self.net.to(device)
         if args.resume.strip():
             self.net.load_state_dict(torch.load(args.resume.strip()))
@@ -143,7 +144,6 @@ class Trainer(object):
 
     def validate(self):
         self.metric.reset()
-        self.net.set_nms(nms_thresh=0.45, nms_topk=400)
         self.net.eval()
         tbar = tqdm(self.val_loader)
         for i, batch in enumerate(tbar):
@@ -271,7 +271,7 @@ if __name__ == '__main__':
     logger.info('Starting Epoch: {}'.format(args.start_epoch))
     logger.info('Total Epochs: {}'.format(args.epochs))
     for epoch in range(args.start_epoch, args.epochs):
-        # trainer.training(epoch)
+        trainer.training(epoch)
         if not (epoch + 1) % args.val_interval:
             metric = trainer.validate()
             ptutil.synchronize()

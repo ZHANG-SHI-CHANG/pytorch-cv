@@ -182,6 +182,8 @@ class VOCMApMetric(EvalMetric):
                 self._n_pos[key] = value
 
         for key, value in metric._score.items():
+            if len(value) > 0 and value[0].is_cuda:
+                value = [v.to('cuda') for v in value]
             if key in self._score:
                 self._score[key] += value
             else:
