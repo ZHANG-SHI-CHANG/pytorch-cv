@@ -17,8 +17,70 @@
 #python eval/eval_cifar10.py --network CIFAR_ResNeXt29_16x64d --batch-size 8 --cuda
 
 
-# #----------------------------imagenet: resnet----------------------------
+# #----------------------------imagenet----------------------------
+## resnet
+#python eval/eval_imagenet.py --model ResNet18_v1 --batch-size 64 --cuda
+#python eval/eval_imagenet.py --model ResNet34_v1 --batch-size 64 --cuda
+#python eval/eval_imagenet.py --model ResNet50_v1 --batch-size 64 --cuda
+#python eval/eval_imagenet.py --model ResNet101_v1 --batch-size 64 --cuda
+#python eval/eval_imagenet.py --model ResNet152_v1 --batch-size 64 --cuda
+#python eval/eval_imagenet.py --model ResNet18_v1b --batch-size 64 --cuda
+#python eval/eval_imagenet.py --model ResNet34_v1b --batch-size 64 --cuda
+#python eval/eval_imagenet.py --model ResNet50_v1b --batch-size 64 --cuda
+#python eval/eval_imagenet.py --model ResNet50_v1b_gn --batch-size 64 --cuda
+#python eval/eval_imagenet.py --model ResNet101_v1b --batch-size 64 --cuda
+#python eval/eval_imagenet.py --model ResNet152_v1b --batch-size 64 --cuda
+#python eval/eval_imagenet.py --model ResNet50_v1c --batch-size 64 --cuda
+#python eval/eval_imagenet.py --model ResNet101_v1c --batch-size 64 --cuda
+#python eval/eval_imagenet.py --model ResNet152_v1c --batch-size 64 --cuda
+#python eval/eval_imagenet.py --model ResNet18_v2 --batch-size 64 --cuda
+#python eval/eval_imagenet.py --model ResNet34_v2 --batch-size 64 --cuda
+#python eval/eval_imagenet.py --model ResNet50_v2 --batch-size 64 --cuda
+#python eval/eval_imagenet.py --model ResNet101_v2 --batch-size 64 --cuda
+#python eval/eval_imagenet.py --model ResNet152_v2 --batch-size 64 --cuda
 
+## resnext
+#python eval/eval_imagenet.py --model ResNext50_32x4d --batch-size 64 --cuda
+#python eval/eval_imagenet.py --model ResNext101_32x4d --batch-size 64 --cuda
+#python eval/eval_imagenet.py --model SE_ResNext50_32x4d --batch-size 64 --cuda
+#python eval/eval_imagenet.py --model SE_ResNext101_32x4d --batch-size 64 --cuda
+#python eval/eval_imagenet.py --model SE_ResNext101_64x4d --batch-size 64 --cuda
+
+## mobilenet
+#python eval/eval_imagenet.py --model MobileNet1.0 --batch-size 64 --cuda
+#python eval/eval_imagenet.py --model MobileNet0.75 --batch-size 64 --cuda
+#python eval/eval_imagenet.py --model MobileNet0.5 --batch-size 64 --cuda
+#python eval/eval_imagenet.py --model MobileNet0.25 --batch-size 64 --cuda
+#python eval/eval_imagenet.py --model MobileNetV2_1.0 --batch-size 64 --cuda
+#python eval/eval_imagenet.py --model MobileNetV2_0.75 --batch-size 64 --cuda
+#python eval/eval_imagenet.py --model MobileNetV2_0.5 --batch-size 64 --cuda
+#python eval/eval_imagenet.py --model MobileNetV2_0.25 --batch-size 64 --cuda
+
+## vgg
+#python eval/eval_imagenet.py --model VGG11 --batch-size 64 --cuda
+#python eval/eval_imagenet.py --model VGG13 --batch-size 64 --cuda
+#python eval/eval_imagenet.py --model VGG16 --batch-size 64 --cuda
+#python eval/eval_imagenet.py --model VGG19 --batch-size 64 --cuda
+#python eval/eval_imagenet.py --model VGG11_bn --batch-size 64 --cuda
+#python eval/eval_imagenet.py --model VGG13_bn --batch-size 64 --cuda
+#python eval/eval_imagenet.py --model VGG16_bn --batch-size 64 --cuda
+#python eval/eval_imagenet.py --model VGG19_bn --batch-size 64 --cuda
+
+## squeezenet
+#python eval/eval_imagenet.py --model SqueezeNet1.0 --batch-size 64 --cuda
+#python eval/eval_imagenet.py --model SqueezeNet1.1 --batch-size 64 --cuda
+
+## densenet
+#python eval/eval_imagenet.py --model DenseNet121 --batch-size 64 --cuda
+#python eval/eval_imagenet.py --model DenseNet161 --batch-size 64 --cuda
+#python eval/eval_imagenet.py --model DenseNet169 --batch-size 64 --cuda
+#python eval/eval_imagenet.py --model DenseNet201 --batch-size 64 --cuda
+
+## others
+#python eval/eval_imagenet.py --model AlexNet --batch-size 64 --cuda
+#python eval/eval_imagenet.py --model darknet53 --batch-size 64 --cuda
+#python eval/eval_imagenet.py --model InceptionV3 --batch-size 64 --cuda
+#python eval/eval_imagenet.py --model SENet_154 --batch-size 64 --cuda
 
 
 # -----------------------------------------------------------------------------

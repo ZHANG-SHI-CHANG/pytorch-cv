@@ -1,4 +1,4 @@
-name: pt
+name: ptcv
 dependencies:
 - python=3.6
 - pip:

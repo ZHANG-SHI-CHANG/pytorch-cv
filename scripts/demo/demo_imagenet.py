@@ -15,7 +15,7 @@ from model.model_zoo import get_model
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Predict ImageNet classes from a given image')
-    parser.add_argument('--model', type=str, default='InceptionV3',
+    parser.add_argument('--model', type=str, default='ResNet50_v1b_gn',
                         help='name of the model to use')
     parser.add_argument('--saved-params', type=str, default='',
                         help='path to the saved model parameters')

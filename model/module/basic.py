@@ -258,6 +258,8 @@ class GroupNorm(nn.GroupNorm):
 
 
 if __name__ == '__main__':
-    bn = _bn_no_affine(10)
-    print(bn.weight.requires_grad)
-    print(bn)
+    # bn = _bn_no_affine(10)
+    # print(bn.weight.requires_grad)
+    # print(bn)
+    m = GroupNorm(6)
+    print(m)

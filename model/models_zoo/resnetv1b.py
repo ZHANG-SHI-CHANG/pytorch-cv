@@ -383,7 +383,7 @@ def resnet50_v1b_gn(pretrained=False, root=os.path.expanduser('~/.torch/models')
     """
     from model.module.basic import GroupNorm
     model = ResNetV1b(BottleneckV1b, [3, 4, 6, 3], norm_layer=GroupNorm,
-                      norm_kwargs={'num_groups': 64}, **kwargs)
+                      norm_kwargs={'num_groups': 32}, **kwargs)
     if pretrained:
         from model.model_store import get_model_file
         model.load_state_dict(torch.load(get_model_file('resnet%d_v%db_gn' % (50, 1),

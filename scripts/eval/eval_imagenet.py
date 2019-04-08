@@ -55,7 +55,7 @@ def validate(net, val_data, device, acc_top1, acc_top5):
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Eval ImageNet networks.')
-    parser.add_argument('--model', type=str, default='ResNet101_v1d',
+    parser.add_argument('--model', type=str, default='MobileNetV2_0.75',
                         help="Base network name")
     parser.add_argument('--input-size', type=int, default=224,
                         help='size of the input image size. default is 224')

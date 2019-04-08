@@ -9,13 +9,24 @@ Convert the [gluon-cv](https://github.com/dmlc/gluon-cv/) to pytorch.
 ## Schedule
 
 - [x] CIFAR10：Demo+Eval+Train
-
-
 - [x] ImageNet：Demo+Eval
 - [x] Segmentation：Demo+Eval+Train
 - [x] SSD：Demo+Eval+Train
 - [x] YOLOv3：Demo+Eval+Train
 - [x] Simple Pose Estimation：Demo+Eval
+
+## Enviroment
+
+```shell
+# 1. create new enviroment
+conda env create -f environment.yml
+conda activate ptcv
+# 2. install pytorch (https://pytorch.org/get-started/locally/)
+conda install pytorch-nightly cudatoolkit=9.0 -c pytorch  # choose your cuda version
+# 3. install mxnet and gluoncv (options---for convert pre-trained gluon model)
+pip install mxnet-cu92   # (https://beta.mxnet.io/install.html, choose your cuda version)
+pip install gluoncv --pre --upgrade
+```
 
 ## Usage
 
@@ -28,7 +39,7 @@ Convert the [gluon-cv](https://github.com/dmlc/gluon-cv/) to pytorch.
 - using [sh_train.sh](./scripts/sh_train.sh) to run training （choose the model you want）
 - using [sh_train_distributed.sh](./scripts/sh_train_distributed.sh) to run training （choose the model you want）
 
-Another way is follow **Demo** and **Evaluation**
+Another way is follow **Demo** and **Evaluation** and **Training**
 
 ### Demo
 
@@ -73,13 +84,31 @@ Another way is follow **Demo** and **Evaluation**
    cd scritps/eval
    # cifar as example
    python eval_cifar.py --network CIFAR_ResNeXt29_16x64d
+   
+   ## another option: distributed version (especially recommended for segmentation)
+   export NGPUS=4
+   python -m torch.distributed.launch --nproc_per_node=$NGPUS eval/eval_cifar10.py --network CIFAR_ResNet20_v1 --batch-size 8 --cuda
    ```
 
 You can see the performance (compare with gluon-cv) in [EVAL](./NOTE/EVAL.md).
 
 ### Training
 
-Recommend use [sh_train_distributed.sh](./scripts/sh_train_distributed.sh)
+1. using [gluon2torch](./utils/gluon2torch.py) to convert backbone gluon model to pytorch (exclude classification)
+
+2. run training
+
+   ```shell
+   cd scripts/train
+   # cifar as example
+   python train/train_cifar10.py --num-epochs 200 -j 4 --batch-size 128 --wd 0.0001 --lr 0.1 --lr-decay 0.1 --lr-decay-epoch 100,150 --model cifar_resnet20_v1 --cuda
+   
+   # another option: distributed version
+   export NGPUS=4
+   python -m torch.distributed.launch --nproc_per_node=$NGPUS train/train_cifar10.py --model CIFAR_ResNet20_v1 --num-epochs 200 -j 4 --batch-size 128 --wd 0.0001 --lr 0.4 --lr-decay 0.1 --lr-decay-epoch 100,150 --cuda
+   ```
+
+   > Note：please change lr to NGPU*one_gpu_lr
 
 ## TODO
 
