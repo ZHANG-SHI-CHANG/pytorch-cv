@@ -2,9 +2,20 @@
 
 Convert the [gluon-cv](https://github.com/dmlc/gluon-cv/) to pytorch. 
 
-**You can see more detail results in [PROGRESS](./NOTE/PROGRESS.md) and [TRAIN](./NOTE/TRAIN.md)** 
+**You can see more detail results in [EVAL](./NOTE/EVAL.md) and [TRAIN](./NOTE/TRAIN.md)** 
 
 > Note: use pytorch-nightly （due to nn.SyncBatchNorm）
+
+## Schedule
+
+- [x] CIFAR10：Demo+Eval+Train
+
+
+- [x] ImageNet：Demo+Eval
+- [x] Segmentation：Demo+Eval+Train
+- [x] SSD：Demo+Eval+Train
+- [x] YOLOv3：Demo+Eval+Train
+- [x] Simple Pose Estimation：Demo+Eval
 
 ## Usage
 
@@ -64,7 +75,7 @@ Another way is follow **Demo** and **Evaluation**
    python eval_cifar.py --network CIFAR_ResNeXt29_16x64d
    ```
 
-You can see the performance (compare with gluon-cv) in [PROGRESS](./NOTE/PROGRESS.md).
+You can see the performance (compare with gluon-cv) in [EVAL](./NOTE/EVAL.md).
 
 ### Training
 
@@ -80,7 +91,6 @@ Recommend use [sh_train_distributed.sh](./scripts/sh_train_distributed.sh)
 - [ ] add mixup
 - [ ] add tutorial
 - [ ] modify doc
-- [ ] add python opencv version (check the "difference" --- note, it's still different with mxnet.image)
 - [ ] delete duplicated code
 
 ### BUG

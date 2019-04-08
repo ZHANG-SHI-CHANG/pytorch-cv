@@ -40,14 +40,14 @@ def validate(net, val_data, device, acc_top1, acc_top5):
     net.eval()
     acc_top1.reset()
     acc_top5.reset()
-    cpu_device = torch.device("cpu")
+    # cpu_device = torch.device("cpu")
     tbar = tqdm(val_data)
     for i, (data, label) in enumerate(tbar):
-        # data, label = data.to(device), label.to(device)
+        data, label = data.to(device), label.to(device)
         data = data.to(device)
         with torch.no_grad():
             outputs = net(data)
-        outputs = outputs.to(cpu_device)
+        # outputs = outputs.to(cpu_device)
         acc_top1.update(label, outputs)
         acc_top5.update(label, outputs)
     return acc_top1, acc_top5
@@ -55,13 +55,13 @@ def validate(net, val_data, device, acc_top1, acc_top5):
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Eval ImageNet networks.')
-    parser.add_argument('--model', type=str, default='ResNet34_v1',
+    parser.add_argument('--model', type=str, default='ResNet101_v1d',
                         help="Base network name")
     parser.add_argument('--input-size', type=int, default=224,
                         help='size of the input image size. default is 224')
     parser.add_argument('--crop-ratio', type=float, default=0.875,
                         help='Crop ratio during validation. default is 0.875')
-    parser.add_argument('--batch-size', type=int, default=32,
+    parser.add_argument('--batch-size', type=int, default=64,
                         help='Training mini-batch size')
     parser.add_argument('--num-workers', '-j', dest='num_workers', type=int,
                         default=4, help='Number of data workers')
