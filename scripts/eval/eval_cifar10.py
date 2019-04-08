@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.join(cur_path, '../..'))
 from model import model_zoo
 from data.base import make_data_sampler
 from utils.distributed.parallel import synchronize, accumulate_metric, is_main_process
-from utils.metrics.metric_classification import Accuracy
+from utils.metrics.classification import Accuracy
 
 
 def get_dataloader(batch_size, num_workers, distributed):

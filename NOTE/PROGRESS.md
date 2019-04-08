@@ -46,7 +46,13 @@
 
 #### ImageNet
 
-😢 Do not have large enough device to save it.
+#### ResNet
+
+| Model       | Top-1 (gluon-cv) | Top-5 (gluon-cv) | Top-1 (here-PIL) | Top-5 (here-PIL) |
+| ----------- | ---------------- | ---------------- | ---------------- | ---------------- |
+| ResNet18_v1 | 70.93            | 89.92            | 69.53            | 89.11            |
+
+
 
 ### Detection
 

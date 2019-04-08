@@ -1,5 +1,5 @@
 import torch
-
+import numpy as np
 from utils.metrics.metric import EvalMetric, check_label_shapes
 
 
@@ -60,19 +60,19 @@ class Accuracy(EvalMetric):
         for label, pred_label in zip(labels, preds):
             if pred_label.shape != label.shape:
                 pred_label = torch.argmax(pred_label, dim=self.axis)
-            pred_label = pred_label.long()
-            label = label.long()
+            pred_label = pred_label.cpu().numpy().astype('int32')
+            label = label.cpu().numpy().astype('int32')
             # flatten before checking shapes to avoid shape miss match
-            label = label.flatten()
-            pred_label = pred_label.flatten()
+            label = label.flat
+            pred_label = pred_label.flat
 
             check_label_shapes(label, pred_label)
 
-            num_correct = torch.sum(pred_label == label).item()
+            num_correct = (pred_label == label).sum()
             self.sum_metric += num_correct
             self.global_sum_metric += num_correct
-            self.num_inst += pred_label.numel()
-            self.global_num_inst += pred_label.numel()
+            self.num_inst += len(pred_label)
+            self.global_num_inst += len(pred_label)
 
     def combine_metric(self, metric):
         assert isinstance(metric, Accuracy)
@@ -143,39 +143,33 @@ class TopKAccuracy(EvalMetric):
             # we do not care about the order of top k elements. It is
             # much faster, which is important since that computation is
             # single-threaded due to Python GIL.
-            pred_label = torch.argsort(pred_label, dim=-1, descending=True)
+            pred_label = np.argpartition(pred_label.cpu().numpy().astype('float32'), -self.top_k)
+            label = label.cpu().numpy().astype('int32')
             check_label_shapes(label, pred_label)
             num_samples = pred_label.shape[0]
             num_dims = len(pred_label.shape)
             if num_dims == 1:
-                self.sum_metric += (pred_label == label).sum().item()
+                self.sum_metric += (pred_label.flat == label.flat).sum()
             elif num_dims == 2:
                 num_classes = pred_label.shape[1]
                 top_k = min(num_classes, self.top_k)
                 for j in range(top_k):
-                    # num_correct = (pred_label[:, num_classes - 1 - j] == label).sum().item()
-                    num_correct = (pred_label[:, j] == label).sum().item()
+                    num_correct = (pred_label[:, num_classes - 1 - j].flat == label.flat).sum()
                     self.sum_metric += num_correct
                     self.global_sum_metric += num_correct
             self.num_inst += num_samples
             self.global_num_inst += num_samples
 
-    def combine_metric(self, metric):
-        assert isinstance(metric, Accuracy)
-        self.sum_metric += metric.sum_metric
-        self.num_inst += metric.num_inst
-
 
 if __name__ == '__main__':
-    # predicts = [torch.tensor([[0.3, 0.7], [0, 1.], [0.4, 0.6]]).cuda()]
-    # labels = [torch.tensor([0, 1, 1]).cuda()]
+    # predicts = [torch.tensor([[0.3, 0.7], [0, 1.], [0.4, 0.6]])]
+    # labels = [torch.tensor([0, 1, 1])]
     # acc = Accuracy()
     # acc.update(preds=predicts, labels=labels)
-    # # acc2 = Accuracy()
-    # # acc2.update(preds=predicts, labels=labels)
-    # # acc.combine_metric(acc2)
+    # acc2 = Accuracy()
+    # acc2.update(preds=predicts, labels=labels)
+    # acc.combine_metric(acc2)
     # print(acc.get())
-    import numpy as np
 
     np.random.seed(999)
     top_k = 3

@@ -232,7 +232,7 @@ def parse_args():
                         help='Random seed to be fixed.')
     parser.add_argument('--num-samples', type=int, default=-1,
                         help='Training images. Use -1 to automatically get the number.')
-    parser.add_argument('--no-random-shape', action='store_true', default=False,
+    parser.add_argument('--no-random-shape', action='store_true', default=True,
                         help='Use fixed size(data-shape) throughout the training, which will be faster '
                              'and require less memory. However, final model will be slightly worse.')
     parser.add_argument('--no-wd', action='store_true',

@@ -1,4 +1,34 @@
+"""ImageNet classification dataset."""
+import os
+from torchvision.datasets.folder import ImageFolder, default_loader
+
 __all__ = ['ImageNetAttr']
+
+
+class ImageNet(ImageFolder):
+    """Load the ImageNet classification dataset.
+
+        Refer to :doc:`../build/examples_datasets/imagenet` for the description of
+        this dataset and how to prepare it.
+
+        Parameters
+        ----------
+        root : str, default '~/.torch/datasets/imagenet'
+            Path to the folder stored the dataset.
+        train : bool, default True
+            Whether to load the training or validation set.
+        transform : function, default None
+            A function that takes data and label and transforms them. Refer to
+            :doc:`./transforms` for examples. (TODO, should we restrict its datatype
+            to transformer?)
+        """
+
+    def __init__(self, root=os.path.join('~', '.torch', 'datasets', 'imagenet'),
+                 train=True, transform=None, target_transform=None, loader=default_loader):
+        split = 'train' if train else 'val'
+        root = os.path.join(root, split)
+        super(ImageNet, self).__init__(root=root, transform=transform, target_transform=target_transform,
+                                       loader=loader)
 
 
 class ImageNetAttr(object):

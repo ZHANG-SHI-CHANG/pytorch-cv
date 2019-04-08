@@ -17,6 +17,9 @@
 #python eval/eval_cifar10.py --network CIFAR_ResNeXt29_16x64d --batch-size 8 --cuda
 
 
+# #----------------------------imagenet: resnet----------------------------
+
+
 
 # -----------------------------------------------------------------------------
 # Detection
