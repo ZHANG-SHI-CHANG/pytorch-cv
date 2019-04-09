@@ -55,7 +55,7 @@ def validate(net, val_data, device, acc_top1, acc_top5):
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Eval ImageNet networks.')
-    parser.add_argument('--model', type=str, default='MobileNetV2_0.75',
+    parser.add_argument('--model', type=str, default='resnet18_v1b_0.89',
                         help="Base network name")
     parser.add_argument('--input-size', type=int, default=224,
                         help='size of the input image size. default is 224')
@@ -73,8 +73,6 @@ def parse_args():
                         help='Load weights from previously saved parameters.')
     parser.add_argument('--data-dir', type=str, default=os.path.expanduser('~/.torch/datasets/imagenet'),
                         help='default data root')
-    parser.add_argument('--use-gn', action='store_true',
-                        help='whether to use group norm.')
     args = parser.parse_args()
     return args
 
@@ -104,12 +102,6 @@ if __name__ == '__main__':
         pretrained = False
     model_name = args.model
     kwargs = {'classes': 1000, 'pretrained': pretrained}
-    if args.use_gn:
-        from model.module.basic import GroupNorm
-
-        kwargs['norm_layer'] = GroupNorm
-    if model_name.startswith('resnext'):
-        kwargs['use_se'] = args.use_se
 
     net = model_zoo.get_model(model_name, **kwargs)
     net.to(device)

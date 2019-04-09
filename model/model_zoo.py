@@ -3,6 +3,7 @@ from model.models_zoo.cifarwideresnet import *
 from model.models_zoo.cifarresnext import *
 from model.models_zoo.vgg import *
 from model.models_zoo.resnet import *
+from model.models_zoo.pruned_resnet import *
 from model.models_zoo.resnetv1b import *
 from model.models_zoo.resnext import *
 from model.models_zoo.mobilenet import *
@@ -96,6 +97,14 @@ _models = {
     'densenet161': densenet161,
     'densenet169': densenet169,
     'densenet201': densenet201,
+    # imagenet - prunned resnet
+    'resnet18_v1b_0.89': resnet18_v1b_89,
+    'resnet50_v1d_0.86': resnet50_v1d_86,
+    'resnet50_v1d_0.48': resnet50_v1d_48,
+    'resnet50_v1d_0.37': resnet50_v1d_37,
+    'resnet50_v1d_0.11': resnet50_v1d_11,
+    'resnet101_v1d_0.76': resnet101_v1d_76,
+    'resnet101_v1d_0.73': resnet101_v1d_73,
     # imagenet - others
     'alexnet': alexnet,
     'darknet53': darknet53,
