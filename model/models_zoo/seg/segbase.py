@@ -47,14 +47,10 @@ class SegBaseModel(nn.Module):
             pretrained = resnet152_v1s(pretrained=pretrained_base, dilated=True, **kwargs)
         else:
             raise RuntimeError('unknown backbone: {}'.format(backbone))
-        self.conv1 = pretrained.conv1
-        self.bn1 = pretrained.bn1
-        self.relu = pretrained.relu
-        self.maxpool = pretrained.maxpool
-        self.layer1 = pretrained.layer1
-        self.layer2 = pretrained.layer2
-        self.layer3 = pretrained.layer3
-        self.layer4 = pretrained.layer4
+        self.base1 = nn.Sequential(pretrained.conv1, pretrained.bn1, pretrained.relu, pretrained.maxpool,
+                                   pretrained.layer1, pretrained.layer2)
+        self.base2 = pretrained.layer3
+        self.base3 = pretrained.layer4
         height = height if height is not None else crop_size
         width = width if width is not None else crop_size
         self._up_kwargs = (height, width)
@@ -63,14 +59,9 @@ class SegBaseModel(nn.Module):
 
     def base_forward(self, x):
         """forwarding pre-trained network"""
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.relu(x)
-        x = self.maxpool(x)
-        x = self.layer1(x)
-        x = self.layer2(x)
-        c3 = self.layer3(x)
-        c4 = self.layer4(c3)
+        x = self.base1(x)
+        c3 = self.base2(x)
+        c4 = self.base3(c3)
         return c3, c4
 
     def evaluate(self, x):

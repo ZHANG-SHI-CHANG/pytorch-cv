@@ -113,7 +113,7 @@ def resnet50_v1d_86(pretrained=False, root=os.path.expanduser('~/.torch/models')
     prune_torch_block.idx = 0
     if pretrained:
         from model.model_store import get_model_file
-        params_file = get_model_file('resnet%d_v%db_%.2f' % (50, 1, 0.86), root=root)
+        params_file = get_model_file('resnet%d_v%dd_%.2f' % (50, 1, 0.86), root=root)
         prune_torch_block(model, list(params_items.keys()), list(params_items.values()),
                           params=torch.load(params_file), pretrained=True)
     else:
@@ -148,14 +148,14 @@ def resnet50_v1d_48(pretrained=False, root=os.path.expanduser('~/.torch/models')
     with open(json_filename, "r") as jsonFile:
         params_items = json.load(jsonFile, object_pairs_hook=OrderedDict)
     prune_torch_block.idx = 0
-    # if pretrained:
-    #     from model.model_store import get_model_file
-    #     params_file = get_model_file('resnet%d_v%db_%.2f' % (50, 1, 0.48), root=root)
-    #     prune_torch_block(model, list(params_items.keys()), list(params_items.values()),
-    #                       params=torch.load(params_file), pretrained=True)
-    # else:
-    #     prune_torch_block(model, list(params_items.keys()), list(params_items.values()),
-    #                       params=None, pretrained=False)
+    if pretrained:
+        from model.model_store import get_model_file
+        params_file = get_model_file('resnet%d_v%dd_%.2f' % (50, 1, 0.48), root=root)
+        prune_torch_block(model, list(params_items.keys()), list(params_items.values()),
+                          params=torch.load(params_file), pretrained=True)
+    else:
+        prune_torch_block(model, list(params_items.keys()), list(params_items.values()),
+                          params=None, pretrained=False)
     if pretrained:
         from data.imagenet import ImageNetAttr
         attrib = ImageNetAttr()
@@ -187,7 +187,7 @@ def resnet50_v1d_37(pretrained=False, root=os.path.expanduser('~/.torch/models')
     prune_torch_block.idx = 0
     if pretrained:
         from model.model_store import get_model_file
-        params_file = get_model_file('resnet%d_v%db_%.2f' % (50, 1, 0.37), root=root)
+        params_file = get_model_file('resnet%d_v%dd_%.2f' % (50, 1, 0.37), root=root)
         prune_torch_block(model, list(params_items.keys()), list(params_items.values()),
                           params=torch.load(params_file), pretrained=True)
     else:
@@ -224,7 +224,7 @@ def resnet50_v1d_11(pretrained=False, root=os.path.expanduser('~/.torch/models')
     prune_torch_block.idx = 0
     if pretrained:
         from model.model_store import get_model_file
-        params_file = get_model_file('resnet%d_v%db_%.2f' % (50, 1, 0.11), root=root)
+        params_file = get_model_file('resnet%d_v%dd_%.2f' % (50, 1, 0.11), root=root)
         prune_torch_block(model, list(params_items.keys()), list(params_items.values()),
                           params=torch.load(params_file), pretrained=True)
     else:
@@ -261,7 +261,7 @@ def resnet101_v1d_76(pretrained=False, root=os.path.expanduser('~/.torch/models'
     prune_torch_block.idx = 0
     if pretrained:
         from model.model_store import get_model_file
-        params_file = get_model_file('resnet%d_v%db_%.2f' % (101, 1, 0.76), root=root)
+        params_file = get_model_file('resnet%d_v%dd_%.2f' % (101, 1, 0.76), root=root)
         prune_torch_block(model, list(params_items.keys()), list(params_items.values()),
                           params=torch.load(params_file), pretrained=True)
     else:
@@ -298,7 +298,7 @@ def resnet101_v1d_73(pretrained=False, root=os.path.expanduser('~/.torch/models'
     prune_torch_block.idx = 0
     if pretrained:
         from model.model_store import get_model_file
-        params_file = get_model_file('resnet%d_v%db_%.2f' % (101, 1, 0.73), root=root)
+        params_file = get_model_file('resnet%d_v%dd_%.2f' % (101, 1, 0.73), root=root)
         prune_torch_block(model, list(params_items.keys()), list(params_items.values()),
                           params=torch.load(params_file), pretrained=True)
     else:

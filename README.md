@@ -8,24 +8,65 @@ Convert the [gluon-cv](https://github.com/dmlc/gluon-cv/) to pytorch.
 
 ## Schedule
 
-- [x] CIFAR10：Demo+Eval+Train
-- [x] ImageNet：Demo+Eval
-- [x] Segmentation：Demo+Eval+Train
-- [x] SSD：Demo+Eval+Train
-- [x] YOLOv3：Demo+Eval+Train
-- [x] Simple Pose Estimation：Demo+Eval
+> Note：the ✓ of train means the training code is available. However, I did not enough machine to run all the results.
+
+#### classification
+
+|          | demo | train | eval |
+| -------- | :--: | :---: | :--: |
+| cifar10  |  ✓   |   ✓   |  ✓   |
+| imagenet |  ✓   |   ✗   |  ✓   |
+
+#### Segmentation
+
+|         | demo | train | eval |
+| ------- | :--: | :---: | :--: |
+| fcn     |  ✓   |   ✓   |  ✓   |
+| pspnet  |  ✓   |   ✓   |  ✓   |
+| deeplab |  ✓   |   ✓   |  ✓   |
+
+#### Object Detection
+
+|             | demo | train | eval |
+| ----------- | :--: | :---: | :--: |
+| YOLOv3      |  ✓   |   ✓   |  ✓   |
+| SSD         |  ✓   |   ✓   |  ✓   |
+| Faster-RCNN |  ✗   |   ✗   |  ✗   |
+
+#### Pose Estimation
+
+|             | demo | train | eval |
+| ----------- | :--: | :---: | :--: |
+| Simple Pose |  ✓   |   ✗   |  ✓   |
+
+#### Instance Segmentation
+
+|           | demo | train | eval |
+| --------- | :--: | :---: | :--: |
+| Mask RCNN |  ✗   |   ✗   |  ✗   |
 
 ## Enviroment
 
 ```shell
 # 1. create new enviroment
 conda env create -f environment.yml
-conda activate ptcv
-# 2. install pytorch (https://pytorch.org/get-started/locally/)
+source activate ptcv
+# 2. install opencv 
+conda install -c menpo opencv3
+# 3. install pytorch (https://pytorch.org/get-started/locally/)
 conda install pytorch-nightly cudatoolkit=9.0 -c pytorch  # choose your cuda version
-# 3. install mxnet and gluoncv (options---for convert pre-trained gluon model)
+# 4. install mxnet and gluoncv (options---for convert pre-trained gluon model)
 pip install mxnet-cu92   # (https://beta.mxnet.io/install.html, choose your cuda version)
 pip install gluoncv --pre --upgrade
+```
+
+### build cpp-extension (for object detection)
+
+> Note: it will delete after torchvision merge this [pull-826](https://github.com/pytorch/vision/pull/826)
+
+```shell
+cd model
+python setup.py build_ext develop
 ```
 
 ## Usage
@@ -121,6 +162,7 @@ You can see the performance (compare with gluon-cv) in [EVAL](./NOTE/EVAL.md).
 - [ ] add tutorial
 - [ ] modify doc
 - [ ] delete duplicated code
+- [ ] provide better pre-trained model
 
 ### BUG
 

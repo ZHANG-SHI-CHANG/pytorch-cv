@@ -169,14 +169,44 @@ class BBoxBatchIOU(nn.Module):
 
         return i / (union + self._eps)
 
-def box_iou(lhs, rhs):
-    n, m = a.shape[0], a.shape[1], b.shape[1]
+
+class BBoxClipToImage(nn.Module):
+    """Clip bounding box coordinates to image boundaries.
+    If multiple images are supplied and padded, must have additional inputs
+    of accurate image shape.
+    """
+
+    def __init__(self, **kwargs):
+        super(BBoxClipToImage, self).__init__(**kwargs)
+
+    def forward(self, x, img):
+        """If images are padded, must have additional inputs for clipping
+
+        Parameters
+        ----------
+        x: (B, N, 4) Bounding box coordinates.
+        img: (B, C, H, W) Image tensor.
+
+        Returns
+        -------
+        (B, N, 4) Bounding box coordinates.
+
+        """
+        x.clamp_(0.0)
+        x = torch.min(x, torch.tensor([img.shape[3], img.shape[2], img.shape[3], img.shape[2]],
+                                      dtype=x.dtype, device=x.device))
+        return x
 
 
 if __name__ == '__main__':
-    a = torch.FloatTensor([[1.0, 1.0, 2.0, 2.0], [1.5, 1.5, 3.0, 3.0]]).view((2, 1, 4))
-    b = torch.FloatTensor([[1.2, 1.2, 2.2, 2.3], [1.6, 1.6, 3.5, 3.5],
-                           [1.4, 1.4, 2.2, 2.3], [1.3, 1.6, 3.5, 3.5]]).reshape((2, 2, 4))
-    op = BBoxBatchIOU()
-    out = op(a, b)
+    import numpy as np
+    import torch
+
+    np.random.seed(100)
+    a = np.random.randn(2, 10, 4)
+    b = np.random.randn(2, 3, 40, 20)
+    a = torch.from_numpy(a)
+    b = torch.from_numpy(b)
+    net = BBoxClipToImage()
+    out = net(a, b)
     print(out)

@@ -76,8 +76,87 @@ class NormalizedBoxCenterEncoder(nn.Module):
         return targets, masks
 
 
+class NormalizedPerClassBoxCenterEncoder(nn.Module):
+    """Encode bounding boxes training target with normalized center offsets.
+
+    Input bounding boxes are using corner type: `x_{min}, y_{min}, x_{max}, y_{max}`.
+
+    Parameters
+    ----------
+    stds : array-like of size 4
+        Std value to be divided from encoded values, default is (0.1, 0.1, 0.2, 0.2).
+    means : array-like of size 4
+        Mean value to be subtracted from encoded values, default is (0., 0., 0., 0.).
+
+    """
+
+    def __init__(self, num_class, stds=(0.1, 0.1, 0.2, 0.2), means=(0., 0., 0., 0.)):
+        super(NormalizedPerClassBoxCenterEncoder, self).__init__()
+        assert len(stds) == 4, "Box Encoder requires 4 std values."
+        assert num_class > 0, "Number of classes must be positive"
+        self._num_class = num_class
+        self.class_agnostic_encoder = NormalizedBoxCenterEncoder(stds=stds, means=means)
+
+    def forward(self, samples, matches, anchors, labels, refs):
+        """Encode BBox One entry per category
+
+        Parameters
+        ----------
+        samples: (B, N) value +1 (positive), -1 (negative), 0 (ignore)
+        matches: (B, N) value range [0, M)
+        anchors: (B, N, 4) encoded in corner
+        labels: (B, N) value range [0, self._num_class), excluding background
+        refs: (B, M, 4) encoded in corner
+
+        Returns
+        -------
+        targets: (C, B, N, 4) transform anchors to refs picked according to matches
+        masks: (C, B, N, 4) only positive anchors of the correct class has targets
+
+        """
+        m = refs.shape[1]
+        # refs [B, M, 4], anchors [B, N, 4], samples [B, N], matches [B, N]
+        # encoded targets [B, N, 4], masks [B, N, 4]
+        targets, masks = self.class_agnostic_encoder(samples, matches, anchors, refs)
+        # labels [B, M] -> [B, N, M]
+        ref_labels = labels.unsqueeze(1).repeat(1, matches.shape[1], 1)
+        # labels [B, N, M] -> pick from matches [B, N] -> [B, N, 1]
+        ref_labels = torch.gather(ref_labels, 2, matches.clamp(0, m))
+        # expand class agnostic targets to per class targets
+        out_targets = []
+        out_masks = []
+        for cid in range(self._num_class):
+            # boolean array [B, N, 1]
+            same_cid = ref_labels == cid
+            # keep orig targets
+            out_targets.append(targets)
+            # but mask out the one not belong to this class [B, N, 1] -> [B, N, 4]
+            out_masks.append(masks * same_cid.repeat(1, 1, 4))
+        # targets, masks C * [B, N, 4] -> [C, B, N, 4] -> [B, N, C, 4]
+        all_targets = torch.stack(out_targets, 0)
+        all_masks = torch.stack(out_masks, 0)
+        return all_targets, all_masks
+
+
 if __name__ == '__main__':
-    pass
+    import numpy as np
+
+    np.random.seed(10)
+    samples = np.array([[1, 0, 0, 1], [-1, 0, -1, 1]])
+    matches = np.array([[4, 3, 1, 0], [0, 1, 1, 2]])
+    anchors = np.random.rand(2, 4, 4)
+    labels = np.array([[1, 2, 0, 2, 2], [2, 1, 2, 0, 1]])
+    refs = np.random.rand(2, 5, 4)
+
+    samples = torch.from_numpy(samples)
+    matches = torch.from_numpy(matches)
+    anchors = torch.from_numpy(anchors)
+    labels = torch.from_numpy(labels)
+    refs = torch.from_numpy(refs)
+
+    net = NormalizedPerClassBoxCenterEncoder(10)
+    targets, masks = net(samples, matches, anchors, labels, refs)
+    print(targets)
 
 
 class NormalizedBoxCenterDecoder(nn.Module):

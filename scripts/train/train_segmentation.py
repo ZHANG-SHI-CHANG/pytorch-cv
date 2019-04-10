@@ -45,7 +45,7 @@ class Trainer(object):
         val_sampler = make_data_sampler(valset, False, distributed)
         val_batch_sampler = data.sampler.BatchSampler(val_sampler, args.test_batch_size, False)
 
-        self.eval_data = data.DataLoader(valset, batch_sampler=val_batch_sampler,
+        self.valid_data = data.DataLoader(valset, batch_sampler=val_batch_sampler,
                                          num_workers=args.workers)
 
         # create network
@@ -72,16 +72,21 @@ class Trainer(object):
 
         # create criterion
         self.criterion = MixSoftmaxCrossEntropyLoss(args.aux, aux_weight=args.aux_weight)
+
         # optimizer and lr scheduling
-        self.optimizer = optim.SGD(self.net.parameters(), lr=args.lr, momentum=args.momentum,
+        params_list = [{'params': self.net.base1.parameters(), 'lr': args.lr},
+                       {'params': self.net.base2.parameters(), 'lr': args.lr},
+                       {'params': self.net.base3.parameters(), 'lr': args.lr}]
+        if hasattr(self.net, 'head'):
+            params_list.append({'params': self.net.head.parameters(), 'lr': args.lr * 10})
+        if hasattr(self.net, 'auxlayer'):
+            params_list.append({'params': self.net.auxlayer.parameters(), 'lr': args.lr * 10})
+        self.optimizer = optim.SGD(params_list, lr=args.lr, momentum=args.momentum,
                                    weight_decay=args.weight_decay)
         self.lr_scheduler = LRScheduler(self.optimizer, mode='poly',
                                         n_iters=len(self.train_data),
-                                        n_epochs=args.epochs)
-
-        # if args.no_wd:
-        #     for k, v in self.net.module.collect_params('.*beta|.*gamma|.*bias').items():
-        #         v.wd_mult = 0.0
+                                        n_epochs=args.epochs,
+                                        power=0.9)
 
         # evaluation metrics
         self.metric = SegmentationMetric(trainset.num_class)
@@ -112,7 +117,7 @@ class Trainer(object):
         # total_inter, total_union, total_correct, total_label = 0, 0, 0, 0
         self.metric.reset()
         self.net.eval()
-        tbar = tqdm(self.eval_data)
+        tbar = tqdm(self.valid_data)
         for i, (image, target) in enumerate(tbar):
             image, target = image.to(self.device), target.to(self.device)
             with torch.no_grad():
