@@ -9,7 +9,7 @@ import torch
 from torch import nn
 
 from model.loss import YOLOV3Loss
-from model.module.nms import box_nms
+from model.ops.bbox import box_nms_py, box_nms
 from model.module.basic import _conv2d
 from model.models_zoo.yolo.darknet import darknet53
 from model.models_zoo.mobilenet import get_mobilenet
@@ -164,12 +164,31 @@ class YOLOV3(nn.Module):
 
         # concat all detection results from different stages
         result = torch.cat(all_detections, dim=1)
-        # apply nms per class
-        if 1 > self.nms_thresh > 0:
-            result = box_nms(result, overlap_thresh=self.nms_thresh, topk=self.nms_topk,
-                             score_index=1, coord_start=2, id_index=0)
-            if self.post_nms > 0:
-                result = result.narrow(1, 0, self.post_nms)
+        # # --- nms like gluon-cv ---
+        # # apply nms per class ???
+        # if 1 > self.nms_thresh > 0:
+        #     result = box_nms_py(result, iou_threshold=self.nms_thresh, topk=self.nms_topk,
+        #                         score_index=1, coord_start=2)
+        #     if self.post_nms > 0:
+        #         result = result.narrow(1, 0, self.post_nms)
+        # ids = result.narrow(-1, 0, 1)
+        # scores = result.narrow(-1, 1, 1)
+        # bboxes = result.narrow(-1, 2, 4)
+        # # --- nms * version ---
+        result_all = list()
+        for i in range(result.shape[0]):
+            result_per = box_nms(result[i], iou_threshold=self.nms_thresh, topk=self.nms_topk,
+                                 score_index=1, coord_start=2, score_threshold=1e-6, sort=True)
+
+            if 0 < self.post_nms < result_per.size(0):
+                keep = torch.argsort(result_per[:, 1], dim=0, descending=True)[:self.post_nms]
+                result_per = result_per[keep, :]
+            if result_per.size(0) < self.post_nms:
+                result_per = torch.cat([result_per, -1 * torch.ones(self.post_nms - result_per.size(0), 6,
+                                                                    dtype=result_per.dtype,
+                                                                    device=result_per.device)], 0)
+            result_all.append(result_per.unsqueeze_(0))
+        result = torch.cat(result_all, 0)
         ids = result.narrow(-1, 0, 1)
         scores = result.narrow(-1, 1, 1)
         bboxes = result.narrow(-1, 2, 4)

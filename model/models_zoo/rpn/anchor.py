@@ -53,7 +53,7 @@ class RPNAnchorGenerator(nn.Module):
         return anchors
 
     # pylint: disable=arguments-differ
-    def forward(self, x, anchors):
+    def forward(self, x):
         """Slice anchors given the input image shape.
 
         Inputs:
@@ -62,5 +62,5 @@ class RPNAnchorGenerator(nn.Module):
             - **out**: output anchor with (1, N, 4) shape. N is the number of anchors.
 
         """
-        a = anchors.narrow(2, 0, x.shape[2]).narrow(3, 0, x.shape[3])
+        a = self._parameters['anchor'].narrow(2, 0, x.shape[2]).narrow(3, 0, x.shape[3])
         return a.reshape((1, -1, 4))

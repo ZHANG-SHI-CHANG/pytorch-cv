@@ -53,13 +53,14 @@ class COCODetection(VisionDataset):
 
     def __init__(self, root=os.path.join('~', '.torch', 'datasets', 'coco'),
                  splits=('instances_val2017',), transform=None, min_object_area=0,
-                 skip_empty=True, use_crowd=True):
+                 skip_empty=True, use_crowd=True, keep_idx=False):
         super(COCODetection, self).__init__(root)
         self._root = os.path.expanduser(root)
         self._transform = transform
         self._min_object_area = min_object_area
         self._skip_empty = skip_empty
         self._use_crowd = use_crowd
+        self._keep_idx = keep_idx
         if isinstance(splits, str):
             splits = [splits]
         self._splits = splits
@@ -97,7 +98,9 @@ class COCODetection(VisionDataset):
         label = np.array(self._labels[idx])
         img = cv2.cvtColor(cv2.imread(img_path, 1), cv2.COLOR_BGR2RGB)
         if self._transform is not None:
-            return self._transform(img, label)
+            img, label = self._transform(img, label)
+        if self._keep_idx:
+            return img, label, int(img_path.split('/')[-1][:-4])
         return img, label
 
     def _load_jsons(self):

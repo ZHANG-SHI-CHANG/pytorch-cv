@@ -10,7 +10,7 @@ import torch.nn.functional as F
 from model.models_zoo.ssd.anchor import SSDAnchorGenerator
 from model.module.predictor import ConvPredictor
 from model.module.features import FeatureExpander
-from model.module.nms import box_nms
+from model.ops.bbox import box_nms_py, box_nms
 from model.loss import SSDMultiBoxLoss
 from model.module.coder import MultiPerClassDecoder, NormalizedBoxCenterDecoder
 from model.models_zoo.ssd.vgg_atrous import vgg16_atrous_300, vgg16_atrous_512
@@ -182,7 +182,7 @@ class SSD(nn.Module):
 
         anchors = [ag(feat).view(1, -1)
                    for feat, ag in zip(features, self.anchor_generators)]
-        anchors = torch.cat(anchors, dim=1).view((1, -1, 4))
+        anchors = torch.cat(anchors, dim=1).view(-1, 4)
         return anchors
 
     def set_nms(self, nms_thresh=0.45, nms_topk=400, post_nms=100):
@@ -205,7 +205,7 @@ class SSD(nn.Module):
         None
 
         """
-        # self.clear()
+        torch.cuda.empty_cache()  # TODO: whether necessary ?
         self.nms_thresh = nms_thresh
         self.nms_topk = nms_topk
         self.post_nms = post_nms
@@ -230,21 +230,49 @@ class SSD(nn.Module):
         bboxes = self.bbox_decoder(box_preds, anchors)
         cls_ids, scores = self.cls_decoder(F.softmax(cls_preds, -1))
         results = []
-        for i in range(self.num_classes):
-            cls_id = cls_ids.narrow(-1, i, 1)
-            score = scores.narrow(-1, i, 1)
-            # per class results
-            per_result = torch.cat([cls_id, score, bboxes], dim=-1)
-            results.append(per_result)
-        result = torch.cat(results, dim=1)
-        if 1 > self.nms_thresh > 0:
-            result = box_nms(result, overlap_thresh=self.nms_thresh, topk=self.nms_topk,
-                             score_index=1, coord_start=2, id_index=0)
-            if self.post_nms > 0:
-                result = result.narrow(1, 0, self.post_nms)
-        ids = result.narrow(2, 0, 1)
-        scores = result.narrow(2, 1, 1)
-        bboxes = result.narrow(2, 2, 4)
+        # # ------ nms like gluon-cv ------
+        # for i in range(self.num_classes):
+        #     cls_id = cls_ids.narrow(-1, i, 1)
+        #     score = scores.narrow(-1, i, 1)
+        #     # per class results
+        #     per_result = torch.cat([cls_id, score, bboxes], dim=-1)
+        #     results.append(per_result)
+        # result = torch.cat(results, dim=1)
+        # if 1 > self.nms_thresh > 0:
+        #     result = box_nms_py(result, iou_threshold=self.nms_thresh, topk=self.nms_topk,
+        #                      score_index=1, coord_start=2)
+        #     if self.post_nms > 0:
+        #         result = result.narrow(1, 0, self.post_nms)
+        # ids = result.narrow(2, 0, 1)
+        # scores = result.narrow(2, 1, 1)
+        # bboxes = result.narrow(2, 2, 4)
+        # # ------ nms version * ------
+        for i_b in range(b):
+            image_result = list()
+            for i_c in range(self.num_classes):
+                cls_id = cls_ids[i_b].narrow(-1, i_c, 1)
+                score = scores[i_b].narrow(-1, i_c, 1)
+                per_result = torch.cat([cls_id, score, bboxes[i_b]], dim=-1)
+                per_result = box_nms(per_result, self.nms_thresh, topk=self.nms_topk, sort=True)
+                image_result.append(per_result)
+            # no object detected
+            if len(image_result) == 0:
+                image_result = torch.empty(0, 6)
+            else:  # cat all result
+                image_result = torch.cat(image_result, 0)
+            if 0 < self.post_nms < image_result.size(0):
+                keep = torch.argsort(image_result[:, 1], dim=0, descending=True)[:self.post_nms]
+                image_result = image_result[keep, :]
+            if image_result.size(0) < self.post_nms:
+                image_result = torch.cat([image_result, -1 * torch.ones(self.post_nms - image_result.size(0), 6,
+                                                                        dtype=image_result.dtype,
+                                                                        device=image_result.device)], 0)
+            results.append(image_result.unsqueeze(0))
+
+        results = torch.cat(results, 0)
+        ids = results.narrow(2, 0, 1)
+        scores = results.narrow(2, 1, 1)
+        bboxes = results.narrow(2, 2, 4)
         return ids, scores, bboxes
 
     def reset_class(self, classes):

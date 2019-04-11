@@ -6,7 +6,7 @@ from torch import nn
 import torch.nn.functional as F
 
 from model.models_zoo.rpn import RPNAnchorGenerator, RPNProposal
-from model.module.nms import box_nms
+from model.ops import box_nms_py
 
 
 class RPNHead(nn.Module):
@@ -124,18 +124,20 @@ class RPN(nn.Module):
             raw_rpn_boxes = torch.cat(raw_rpn_boxes, dim=1)
         else:
             x = x[0]
+            b = x.shape[0]
             anchors = self.anchor_generator(x)
             x = self.conv1(x)
-            raw_rpn_scores = self.score(x).permute(0, 2, 3, 1).reshape((0, -1, 1))
+            raw_rpn_scores = self.score(x).permute(0, 2, 3, 1).reshape((b, -1, 1))
             rpn_scores = F.sigmoid(raw_rpn_scores.detach())
-            raw_rpn_boxes = self.loc(x).permute(0, 2, 3, 1).reshape((0, -1, 4))
+            raw_rpn_boxes = self.loc(x).permute(0, 2, 3, 1).reshape((b, -1, 4))
             rpn_boxes = raw_rpn_boxes.detach()
             rpn_pre_nms_proposals = self.region_proposer(
                 anchors, rpn_scores, rpn_boxes, img)
 
-        # Non-maximum suppression TODO: check
-        tmp = box_nms(rpn_pre_nms_proposals, overlap_thresh=self._nms_thresh, topk=pre_nms,
-                      coord_start=1, score_index=0)
+        # Non-maximum suppression
+        # TODO: change it
+        tmp = box_nms_py(rpn_pre_nms_proposals, iou_threshold=self._nms_thresh, topk=pre_nms,
+                         coord_start=1, score_index=0)
 
         # slice post_nms number of boxes
         result = tmp.narrow(1, 0, post_nms)

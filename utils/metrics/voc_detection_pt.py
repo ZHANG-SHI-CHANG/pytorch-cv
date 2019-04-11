@@ -5,9 +5,10 @@ import torch
 from collections import defaultdict
 import numpy as np
 from utils.metrics.metric import EvalMetric
-from utils.bbox_pt import bbox_iou
+from model.ops.bbox import bbox_iou
 
 
+# TODO: rewrite
 class VOCMApMetric(EvalMetric):
     """
     Calculate mean AP for object detection task

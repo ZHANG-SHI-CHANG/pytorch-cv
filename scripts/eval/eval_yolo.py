@@ -17,7 +17,7 @@ from data.batchify import Tuple, Stack, Pad
 from data.pascal_voc.detection import VOCDetection
 from data.mscoco.detection import COCODetection
 from data.transforms.yolo import YOLO3DefaultValTransform
-from utils.metrics.voc_detection import VOC07MApMetric
+from utils.metrics.voc_detection_pt import VOC07MApMetric
 from utils.metrics.coco_detection import COCODetectionMetric
 from utils.distributed.parallel import synchronize, accumulate_metric, is_main_process
 
@@ -84,13 +84,13 @@ def parse_args():
                         help='YOLO version, default is yolo3')
     parser.add_argument('--data-shape', type=int, default=320,
                         help="Input data shape")
-    parser.add_argument('--batch-size', type=int, default=4,
+    parser.add_argument('--batch-size', type=int, default=16,
                         help='Training mini-batch size')
-    parser.add_argument('--dataset', type=str, default='coco',
+    parser.add_argument('--dataset', type=str, default='voc',
                         help='Training dataset.')
     parser.add_argument('--num-workers', '-j', dest='num_workers', type=int,
                         default=4, help='Number of data workers')
-    parser.add_argument('--cuda', action='store_true',
+    parser.add_argument('--cuda', action='store_true', default=True,
                         help='Training with GPUs, you can specify 1,3 for example.')
     parser.add_argument('--local_rank', type=int, default=0)
     parser.add_argument('--init-method', type=str, default="env://")

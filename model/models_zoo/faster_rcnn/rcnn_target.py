@@ -4,6 +4,7 @@ from __future__ import absolute_import
 import torch
 from torch import nn
 
+from model.ops import bbox_iou
 from model.module.coder import MultiClassEncoder, NormalizedPerClassBoxCenterEncoder
 
 
@@ -111,76 +112,73 @@ class RCNNTargetSampler(nn.Module):
         new_rois = []
         new_samples = []
         new_matches = []
-        # for i in range(self._num_image):
-        #     roi = rois.narrow(0, i, 1).squeeze(0)
-        #     score = scores.narrow(0, i, 1).squeeze(0)
-        #     gt_box = gt_boxes.narrow(0, i, 1).squeeze(0)
-        #     gt_score = torch.ones_like(torch.sum(gt_box, dim=-1, keepdim=True))
-        #
-        #     # concat rpn roi with ground truth
-        #     all_roi = torch.cat([roi, gt_box], dim=0)
-        #     all_score = torch.cat([score, gt_score], dim=0).squeeze(-1)
-        #     # calculate (N, M) ious between (N, 4) anchors and (M, 4) bbox ground-truths
-        #     # cannot do batch op, will get (B, N, B, M) ious
-        #     ious = box_iou(all_roi, gt_box, format='corner')
-        #     # match to argmax iou
-        #     ious_max = ious.max(axis=-1)
-        #     ious_argmax = ious.argmax(axis=-1)
-        #     # init with 2, which are neg samples
-        #     mask = F.ones_like(ious_max) * 2
-        #     # mark all ignore to 0
-        #     mask = F.where(all_score < 0, F.zeros_like(mask), mask)
-        #     # mark positive samples with 3
-        #     pos_mask = ious_max >= self._pos_iou_thresh
-        #     mask = F.where(pos_mask, F.ones_like(mask) * 3, mask)
-        #
-        #     # shuffle mask
-        #     rand = F.random.uniform(0, 1, shape=(self._num_proposal + self._max_num_gt,))
-        #     rand = F.slice_like(rand, ious_argmax)
-        #     index = F.argsort(rand)
-        #     mask = F.take(mask, index)
-        #     ious_argmax = F.take(ious_argmax, index)
-        #
-        #     # sample pos samples
-        #     order = F.argsort(mask, is_ascend=False)
-        #     topk = F.slice_axis(order, axis=0, begin=0, end=self._max_pos)
-        #     topk_indices = F.take(index, topk)
-        #     topk_samples = F.take(mask, topk)
-        #     topk_matches = F.take(ious_argmax, topk)
-        #     # reset output: 3 pos 2 neg 0 ignore -> 1 pos -1 neg 0 ignore
-        #     topk_samples = F.where(topk_samples == 3,
-        #                            F.ones_like(topk_samples), topk_samples)
-        #     topk_samples = F.where(topk_samples == 2,
-        #                            F.ones_like(topk_samples) * -1, topk_samples)
-        #
-        #     # sample neg samples
-        #     index = F.slice_axis(index, axis=0, begin=self._max_pos, end=None)
-        #     mask = F.slice_axis(mask, axis=0, begin=self._max_pos, end=None)
-        #     ious_argmax = F.slice_axis(ious_argmax, axis=0, begin=self._max_pos, end=None)
-        #     # change mask: 4 neg 3 pos 0 ignore
-        #     mask = F.where(mask == 2, F.ones_like(mask) * 4, mask)
-        #     order = F.argsort(mask, is_ascend=False)
-        #     num_neg = self._num_sample - self._max_pos
-        #     bottomk = F.slice_axis(order, axis=0, begin=0, end=num_neg)
-        #     bottomk_indices = F.take(index, bottomk)
-        #     bottomk_samples = F.take(mask, bottomk)
-        #     bottomk_matches = F.take(ious_argmax, bottomk)
-        #     # reset output: 4 neg 3 pos 0 ignore -> 1 pos -1 neg 0 ignore
-        #     bottomk_samples = F.where(bottomk_samples == 3,
-        #                               F.ones_like(bottomk_samples), bottomk_samples)
-        #     bottomk_samples = F.where(bottomk_samples == 4,
-        #                               F.ones_like(bottomk_samples) * -1, bottomk_samples)
-        #
-        #     # output
-        #     indices = F.concat(topk_indices, bottomk_indices, dim=0)
-        #     samples = F.concat(topk_samples, bottomk_samples, dim=0)
-        #     matches = F.concat(topk_matches, bottomk_matches, dim=0)
-        #
-        #     new_rois.append(all_roi.take(indices))
-        #     new_samples.append(samples)
-        #     new_matches.append(matches)
-        # # stack all samples together
-        # new_rois = F.stack(*new_rois, axis=0)
-        # new_samples = F.stack(*new_samples, axis=0)
-        # new_matches = F.stack(*new_matches, axis=0)
-        # return new_rois, new_samples, new_matches
+        for i in range(self._num_image):
+            roi = rois[i]
+            score = scores[i]
+            gt_box = gt_boxes[i]
+            gt_score = torch.ones_like(torch.sum(gt_box, dim=-1, keepdim=True))
+
+            # concat rpn roi with ground truth
+            all_roi = torch.cat([roi, gt_box], dim=0)
+            all_score = torch.cat([score, gt_score], dim=0).squeeze(-1)
+            # calculate (N, M) ious between (N, 4) anchors and (M, 4) bbox ground-truths
+            # cannot do batch op, will get (B, N, B, M) ious
+            ious = bbox_iou(all_roi, gt_box, fmt='corner')
+            # match to argmax iou
+            ious_max, ious_argmax = ious.max(axis=-1)
+            # init with 2, which are neg samples
+            mask = torch.ones_like(ious_max) * 2
+            # mark all ignore to 0
+            mask = torch.where(all_score < 0, torch.zeros_like(mask), mask)
+            # mark positive samples with 3
+            pos_mask = ious_max >= self._pos_iou_thresh
+            mask = torch.where(pos_mask, torch.ones_like(mask) * 3, mask)
+
+            # shuffle mask
+            rand = torch.zeros(self._num_proposal + self._max_num_gt, ).uniform(0, 1)
+            rand = torch.slice_like(rand, ious_argmax)
+            index = torch.argsort(rand)
+            mask = mask[index]
+            ious_argmax = ious_argmax[index]
+
+            # sample pos samples
+            order = torch.argsort(mask, descending=True)
+            topk = order.narrow(0, 0, self._max_pos)
+            topk_indices = index[topk]
+            topk_samples = mask[topk]
+            topk_matches = ious_argmax[topk]
+            # reset output: 3 pos 2 neg 0 ignore -> 1 pos -1 neg 0 ignore
+            topk_samples = torch.where(topk_samples == 3, torch.ones_like(topk_samples), topk_samples)
+            topk_samples = torch.where(topk_samples == 2, torch.ones_like(topk_samples) * -1, topk_samples)
+
+            # sample neg samples
+            index = index[self._max_pos:]
+            mask = mask[self._max_pos:]
+            ious_argmax = ious_argmax[self._max_pos:]
+            # change mask: 4 neg 3 pos 0 ignore
+            mask = torch.where(mask == 2, torch.ones_like(mask) * 4, mask)
+            order = torch.argsort(mask, descending=True)
+            num_neg = self._num_sample - self._max_pos
+            bottomk = order.narrow(0, 0, num_neg)
+            bottomk_indices = index[bottomk]
+            bottomk_samples = mask[bottomk]
+            bottomk_matches = ious_argmax[bottomk]
+            # reset output: 4 neg 3 pos 0 ignore -> 1 pos -1 neg 0 ignore
+            bottomk_samples = torch.where(bottomk_samples == 3, torch.ones_like(bottomk_samples),
+                                          bottomk_samples)
+            bottomk_samples = torch.where(bottomk_samples == 4, torch.ones_like(bottomk_samples) * -1,
+                                          bottomk_samples)
+
+            # output
+            indices = torch.cat([topk_indices, bottomk_indices], dim=0)
+            samples = torch.cat([topk_samples, bottomk_samples], dim=0)
+            matches = torch.cat([topk_matches, bottomk_matches], dim=0)
+
+            new_rois.append(all_roi[indices])
+            new_samples.append(samples)
+            new_matches.append(matches)
+        # stack all samples together
+        new_rois = torch.stack(*new_rois, axis=0)
+        new_samples = torch.stack(*new_samples, axis=0)
+        new_matches = torch.stack(*new_matches, axis=0)
+        return new_rois, new_samples, new_matches

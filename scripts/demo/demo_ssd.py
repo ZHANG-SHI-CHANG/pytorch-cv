@@ -9,7 +9,7 @@ from torch.backends import cudnn
 cur_path = os.path.dirname(__file__)
 sys.path.insert(0, os.path.join(cur_path, '../..'))
 from model.model_zoo import get_model
-from data.transforms.ssd import load_test
+from data.transforms.ssd_cv import load_test
 from utils.viz.bbox import plot_bbox
 
 

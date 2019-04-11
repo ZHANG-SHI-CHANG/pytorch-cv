@@ -9,14 +9,14 @@ from torch.backends import cudnn
 cur_path = os.path.dirname(__file__)
 sys.path.insert(0, os.path.join(cur_path, '../..'))
 from model.model_zoo import get_model
-from data.transforms.ssd import load_test
+from data.transforms.rcnn_cv import load_test
 from utils.viz.bbox import plot_bbox
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='Test with SSD networks.')
-    parser.add_argument('--network', type=str, default='ssd_512_mobilenet1.0_coco',
-                        help="Base network name")
+    parser = argparse.ArgumentParser(description='Test with Faster-RCNN networks.')
+    parser.add_argument('--network', type=str, default='faster_rcnn_resnet50_v1b_voc',
+                        help="Faster RCNN full network name")
     parser.add_argument('--images', type=str, default='',
                         help='Test images, use comma to split multiple.')
     parser.add_argument('--cuda', type=bool, default=False,
@@ -29,21 +29,22 @@ def parse_args():
     return args
 
 
+# TODO: the results is bad than gluon-cv
 if __name__ == '__main__':
     args = parse_args()
     device = torch.device('cpu')
     if args.cuda:
         cudnn.benchmark = True
         device = torch.device('cuda:0')
-    image_list = [os.path.join(cur_path, '../png/street.jpg')]
+    image_list = [os.path.join(cur_path, '../png/biking.jpg')]
     net = get_model(args.network, pretrained=True)
     net.to(device)
-    net.set_nms(0.45, 200)
+    net.set_nms(0.3, 200)
     net.eval()
 
     for image in image_list:
         ax = None
-        x, img = load_test(image, short=512)
+        x, img = load_test(image, short=net.short, max_size=net.max_size)
         x = x.to(device)
         with torch.no_grad():
             ids, scores, bboxes = [xx[0].cpu().numpy() for xx in net(x)]

@@ -52,6 +52,7 @@ def get_dataloader(val_dataset, batch_size, num_workers, distributed, coco=False
 
 def validate(net, val_data, device, metric, coco=False):
     net.eval()
+    metric.reset()
     tbar = tqdm(val_data)
 
     for ib, batch in enumerate(tbar):
@@ -87,9 +88,9 @@ def parse_args():
                         help="Base network name")
     parser.add_argument('--data-shape', type=int, default=512,
                         help="Input data shape")
-    parser.add_argument('--batch-size', type=int, default=4,
+    parser.add_argument('--batch-size', type=int, default=2,
                         help='Training mini-batch size')
-    parser.add_argument('--dataset', type=str, default='voc',
+    parser.add_argument('--dataset', type=str, default='coco',
                         help='Training dataset.')
     parser.add_argument('--num-workers', '-j', dest='num_workers', type=int,
                         default=4, help='Number of data workers')

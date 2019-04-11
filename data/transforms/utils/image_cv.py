@@ -23,7 +23,7 @@ def resize_short_within(img, short, max_size, mult_base=1, interp=2):
         scale = float(np.floor(max_size / mult_base) * mult_base) / float(im_size_max)
     new_w, new_h = (int(np.round(w * scale / mult_base) * mult_base),
                     int(np.round(h * scale / mult_base) * mult_base))
-    return vf.resize(img, (new_h, new_w), interp, get_interp_method(interp, (h, w, new_h, new_w)))
+    return vf.resize(img, (new_h, new_w), get_interp_method(interp, (h, w, new_h, new_w)))
 
 
 numeric_types = (float, int, np.generic)

@@ -46,7 +46,7 @@ class Trainer(object):
         val_batch_sampler = data.sampler.BatchSampler(val_sampler, args.test_batch_size, False)
 
         self.valid_data = data.DataLoader(valset, batch_sampler=val_batch_sampler,
-                                         num_workers=args.workers)
+                                          num_workers=args.workers)
 
         # create network
         BatchNorm2d = torch.nn.SyncBatchNorm if distributed else torch.nn.BatchNorm2d
@@ -66,10 +66,6 @@ class Trainer(object):
                 raise RuntimeError("=> no checkpoint found at '{}'" \
                                    .format(args.resume))
 
-        if distributed:
-            self.net = torch.nn.parallel.DistributedDataParallel(
-                self.net, device_ids=[args.local_rank], output_device=args.local_rank)
-
         # create criterion
         self.criterion = MixSoftmaxCrossEntropyLoss(args.aux, aux_weight=args.aux_weight)
 
@@ -87,6 +83,10 @@ class Trainer(object):
                                         n_iters=len(self.train_data),
                                         n_epochs=args.epochs,
                                         power=0.9)
+
+        if distributed:
+            self.net = torch.nn.parallel.DistributedDataParallel(
+                self.net, device_ids=[args.local_rank], output_device=args.local_rank)
 
         # evaluation metrics
         self.metric = SegmentationMetric(trainset.num_class)

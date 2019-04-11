@@ -16,6 +16,7 @@ from model.models_zoo.yolo.darknet import *
 from model.models_zoo.ssd.ssd import *
 from model.models_zoo.ssd.vgg_atrous import *
 from model.models_zoo.yolo.yolo3 import *
+from model.models_zoo.faster_rcnn.faster_rcnn import *
 from model.models_zoo.seg.fcn import *
 from model.models_zoo.seg.pspnet import *
 from model.models_zoo.seg.deeplabv3 import *
@@ -70,7 +71,6 @@ _models = {
     'se_resnext50_32x4d': se_resnext50_32x4d,
     'se_resnext101_32x4d': se_resnext101_32x4d,
     'se_resnext101_64x4d': se_resnext101_64x4d,
-
     # imagenet - mobilenet
     'mobilenet1.0': mobilenet1_0,
     'mobilenet0.75': mobilenet0_75,
@@ -126,6 +126,15 @@ _models = {
     'yolo3_mobilenet1.0_voc': yolo3_mobilenet1_0_voc,
     'yolo3_darknet53_coco': yolo3_darknet53_coco,
     'yolo3_mobilenet1.0_coco': yolo3_mobilenet1_0_coco,
+    # faster-rcnn
+    'faster_rcnn_resnet50_v1b_voc': faster_rcnn_resnet50_v1b_voc,
+    # 'faster_rcnn_resnet50_v1b_coco': faster_rcnn_resnet50_v1b_coco,
+    # 'faster_rcnn_fpn_resnet50_v1b_coco': faster_rcnn_fpn_resnet50_v1b_coco,
+    # 'faster_rcnn_fpn_bn_resnet50_v1b_coco': faster_rcnn_fpn_bn_resnet50_v1b_coco,
+    # 'faster_rcnn_resnet50_v1b_custom': faster_rcnn_resnet50_v1b_custom,
+    # 'faster_rcnn_resnet101_v1d_voc': faster_rcnn_resnet101_v1d_voc,
+    # 'faster_rcnn_resnet101_v1d_coco': faster_rcnn_resnet101_v1d_coco,
+    # 'faster_rcnn_fpn_resnet101_v1d_coco': faster_rcnn_fpn_resnet101_v1d_coco,
     # fcn
     'fcn_resnet101_voc': get_fcn_resnet101_voc,
     'fcn_resnet101_coco': get_fcn_resnet101_coco,

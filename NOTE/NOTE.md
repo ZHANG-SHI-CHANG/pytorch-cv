@@ -83,3 +83,6 @@
 - `data.DistributedSampler`：使得Dataset每次`__getitem__`获得的是多个data（和指定的gpu数目相关---以iter形式）
 - 
 
+## python
+
+- 善用`getattr`：利用属性名从某个类返回其中的某个"属性"（比如某一层网络结构）

@@ -33,12 +33,12 @@ class RPNProposal(nn.Module):
         # by setting them to (-1, -1, -1, -1)
         # width = roi.slice_axis(axis=-1, begin=2, end=3)
         # height = roi.slice_axis(axis=-1, begin=3, end=None)
-        xmin, ymin, xmax, ymax = roi.split(axis=-1, num_outputs=4)
+        xmin, ymin, xmax, ymax = roi.split(1, dim=-1)
         width = xmax - xmin
         height = ymax - ymin
         # TODO:(zhreshold), there's im_ratio to handle here, but it requires
         # add' info, and we don't expect big difference
-        invalid = (width < self._min_size) + (height < self._min_size)
+        invalid = (width < self._min_size) | (height < self._min_size)
 
         # # remove out of bound anchors
         # axmin, aymin, axmax, aymax = F.split(anchor, axis=-1, num_outputs=4)
@@ -50,9 +50,9 @@ class RPNProposal(nn.Module):
         # invalid = (axmin < 0) + (aymin < 0) + F.broadcast_greater(axmax, wrange) + \
         #    F.broadcast_greater(aymax, hrange)
         # avoid invalid anchors suppress anchors with 0 confidence
-        score = torch.where(invalid, torch.ones_like(invalid) * -1, score)
+        score = torch.where(invalid, torch.ones_like(invalid, dtype=score.dtype) * -1, score)
         invalid = invalid.repeat(1, 1, 4)
-        roi = torch.where(invalid, torch.ones_like(invalid) * -1, roi)
+        roi = torch.where(invalid, torch.ones_like(invalid, dtype=roi.dtype) * -1, roi)
 
         pre = torch.cat([score, roi], dim=-1)
         return pre

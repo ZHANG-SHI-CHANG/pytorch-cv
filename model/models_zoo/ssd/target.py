@@ -4,7 +4,7 @@ from model.module.matcher import CompositeMatcher, BipartiteMatcher, MaximumMatc
 from model.module.coder import MultiClassEncoder, NormalizedBoxCenterEncoder
 from model.module.sampler import NaiveSampler
 from model.module.bbox import BBoxCenterToCorner
-from utils.bbox_pt import bbox_iou
+from model.ops import bbox_iou
 
 
 class SSDTargetGenerator(nn.Module):
@@ -35,7 +35,7 @@ class SSDTargetGenerator(nn.Module):
     # pylint: disable=arguments-differ
     def forward(self, anchors, gt_boxes, gt_ids):
         """Generate training targets."""
-        anchors = self._center_to_corner(anchors.reshape((-1, 4)))
+        anchors = self._center_to_corner(anchors)
         ious = bbox_iou(anchors, gt_boxes)
         matches = self._matcher(ious).unsqueeze(0)
         samples = self._sampler(matches)

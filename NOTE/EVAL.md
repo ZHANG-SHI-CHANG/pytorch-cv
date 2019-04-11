@@ -131,30 +131,36 @@
 
 ## Detection
 
+> Note：* means restrict scores (using score_threshold) before nms and python-opencv. (the original gluon-cv using nms on all boxes)
+
 ### VOC
 
-| SSD Model                | gluon-cv | pytorch-cv (PIL) |
-| ------------------------ | -------- | ---------------- |
-| ssd_300_vgg16_atrous_voc | 77.6     | 74.6             |
-| ssd_512_vgg16_atrous_voc | 79.2     | 76.2             |
-| ssd_512_resnet50_v1_voc  | 80.1     | 78.0             |
-| ssd_512_mobilenet1.0_voc | 75.4     | 72.9             |
+| SSD Model                | gluon-cv | pytorch-cv (PIL) | pytorch-cv (*) |
+| ------------------------ | -------- | ---------------- | -------------- |
+| ssd_300_vgg16_atrous_voc | 77.6     | 74.6             | 77.5           |
+| ssd_512_vgg16_atrous_voc | 79.2     | 76.2             | 79.1           |
+| ssd_512_resnet50_v1_voc  | 80.1     | 78.0             | 80.4           |
+| ssd_512_mobilenet1.0_voc | 75.4     | 72.9             | 75.5           |
 
-| YOLO Model                      | gluon-cv | pytorch-cv (PIL) |
-| ------------------------------- | -------- | ---------------- |
-| yolo3_darknet53_voc (320x320)   | 79.3     | 78.5             |
-| yolo3_darknet53_voc (416x416)   | 81.5     | 80.9             |
-| yolo3_mobilenet1.0_voc(320x320) | 73.9     | 72.1             |
-| yolo3_mobilenet1.0_voc(416x416) | 75.8     | 74.0             |
+> nms using score_threshold=0.01 
+
+| YOLO Model                      | gluon-cv | pytorch-cv (PIL) | pytorch-cv (*) |
+| ------------------------------- | -------- | ---------------- | -------------- |
+| yolo3_darknet53_voc (320x320)   | 79.3     | 78.5             | 78.8           |
+| yolo3_darknet53_voc (416x416)   | 81.5     | 80.9             |                |
+| yolo3_mobilenet1.0_voc(320x320) | 73.9     | 72.1             |                |
+| yolo3_mobilenet1.0_voc(416x416) | 75.8     | 74.0             |                |
+
+>nms using score_threshold=
 
 ### COCO
 
-| SSD Model                 | gluon-cv       | pytorch-cv(PIL) |
-| ------------------------- | -------------- | --------------- |
-| ssd_300_vgg16_atrous_coco | 25.1/42.9/25.8 | 23.8/40.2/24.5  |
-| ssd_512_vgg16_atrous_coco | 28.9/47.9/30.6 | 27.7/45.5/29.4  |
-| ssd_512_resnet50_v1_coco  | 30.6/50.0/32.2 | 28.4/46.7/29.7  |
-| ssd_512_mobilenet1.0_coco | 21.7/39.2/21.3 | 19.9/36.6/19.7  |
+| SSD Model                 | gluon-cv       | pytorch-cv(PIL) | pytorch-cv (*) |
+| ------------------------- | -------------- | --------------- | -------------- |
+| ssd_300_vgg16_atrous_coco | 25.1/42.9/25.8 | 23.8/40.2/24.5  | 25.0/42.6/25.8 |
+| ssd_512_vgg16_atrous_coco | 28.9/47.9/30.6 | 27.7/45.5/29.4  | 29.0/48.0/30.6 |
+| ssd_512_resnet50_v1_coco  | 30.6/50.0/32.2 | 28.4/46.7/29.7  | 29.7/49.1/31.1 |
+| ssd_512_mobilenet1.0_coco | 21.7/39.2/21.3 | 19.9/36.6/19.7  | 20.8/38.4/20.3 |
 
 | YOLO Model                        | gluon-cv       | pytorch-cv(PIL) |
 | --------------------------------- | -------------- | --------------- |
