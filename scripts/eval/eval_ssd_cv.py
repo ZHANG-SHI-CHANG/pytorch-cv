@@ -24,13 +24,13 @@ from utils.distributed.parallel import synchronize, accumulate_metric, is_main_p
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Eval SSD networks.')
-    parser.add_argument('--network', type=str, default='mobilenet1.0',
+    parser.add_argument('--network', type=str, default='vgg16_atrous',
                         help="Base network name")
-    parser.add_argument('--data-shape', type=int, default=512,
+    parser.add_argument('--data-shape', type=int, default=300,
                         help="Input data shape")
     parser.add_argument('--batch-size', type=int, default=8,
                         help='Training mini-batch size')
-    parser.add_argument('--dataset', type=str, default='coco',
+    parser.add_argument('--dataset', type=str, default='voc',
                         help='Training dataset.')
     parser.add_argument('--num-workers', '-j', dest='num_workers', type=int,
                         default=4, help='Number of data workers')
@@ -80,9 +80,8 @@ def validate(net, val_data, device, metric, coco=False):
     tbar = tqdm(val_data)
 
     for ib, batch in enumerate(tbar):
-        data = batch[0].to(device)
-        label = batch[1].to(device)
-        x, y = data, label
+        x = batch[0].to(device)
+        y = batch[1].to(device)
         with torch.no_grad():
             ids, scores, bboxes = net(x)
         det_ids = [ids]
@@ -126,7 +125,7 @@ if __name__ == '__main__':
         net = model_zoo.get_model(net_name, pretrained=True)
     else:
         net = model_zoo.get_model(net_name, pretrained=False)
-        net.load_parameters(args.pretrained.strip())
+        net.load_state_dict(torch.load(args.pretrained.strip()))
 
     net.to(device)
     net.set_nms(nms_thresh=0.45, nms_topk=400)

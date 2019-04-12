@@ -7,7 +7,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
-from model.ops import box_nms_py, roi_pool, roi_align
+from model.ops import box_nms, roi_pool, roi_align
 from model.models_zoo.rcnn import RCNN
 from model.models_zoo.faster_rcnn import RCNNTargetGenerator, RCNNTargetSampler
 from model.models_zoo.rpn import RPN
@@ -234,11 +234,12 @@ class FasterRCNN(RCNN):
             # res (C, N, 6)
             res = torch.cat([cls_id, score, bbox], dim=-1)
             # res (C, self.nms_topk, 6)
-            # TODO
-            res = box_nms_py(
-                res, iou_threshold=self.nms_thresh, topk=self.nms_topk,
-                score_index=1, coord_start=2)
+            # res = box_nms_py(
+            #     res, iou_threshold=self.nms_thresh, topk=self.nms_topk,
+            #     score_index=1, coord_start=2)
             # res (C * self.nms_topk, 6)
+            res = box_nms(res, overlap_thresh=self.nms_thresh, topk=self.nms_topk, valid_thresh=1e-4,
+                          id_index=0, score_index=1, coord_start=2, force_suppress=True, sort=True)
             res = res.reshape((-1, 6))
             results.append(res)
 

@@ -84,13 +84,13 @@ def validate(net, val_data, device, metric, coco=False):
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Eval SSD networks.')
-    parser.add_argument('--network', type=str, default='mobilenet1.0',
+    parser.add_argument('--network', type=str, default='vgg16_atrous',
                         help="Base network name")
-    parser.add_argument('--data-shape', type=int, default=512,
+    parser.add_argument('--data-shape', type=int, default=300,
                         help="Input data shape")
-    parser.add_argument('--batch-size', type=int, default=2,
+    parser.add_argument('--batch-size', type=int, default=8,
                         help='Training mini-batch size')
-    parser.add_argument('--dataset', type=str, default='coco',
+    parser.add_argument('--dataset', type=str, default='voc',
                         help='Training dataset.')
     parser.add_argument('--num-workers', '-j', dest='num_workers', type=int,
                         default=4, help='Number of data workers')

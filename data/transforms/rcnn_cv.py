@@ -1,11 +1,13 @@
 """Transforms for RCNN series."""
 from __future__ import absolute_import
 
+import torch
 import numpy as np
 import cv2
 
 import data.transforms.utils.functional_cv as vf
 import data.transforms.utils.image_cv as timage
+import data.transforms.utils.bbox as tbbox
 
 
 def transform_test(imgs, short=600, max_size=1000, mean=(0.485, 0.456, 0.406),
@@ -87,3 +89,40 @@ def load_test(filenames, short=600, max_size=1000, mean=(0.485, 0.456, 0.406),
         filenames = [filenames]
     imgs = [cv2.cvtColor(cv2.imread(f), cv2.COLOR_BGR2RGB) for f in filenames]
     return transform_test(imgs, short, max_size, mean, std)
+
+
+class FasterRCNNDefaultValTransform(object):
+    """Default Faster-RCNN validation transform.
+
+    Parameters
+    ----------
+    short : int, default is 600
+        Resize image shorter side to ``short``.
+    max_size : int, default is 1000
+        Make sure image longer side is smaller than ``max_size``.
+    mean : array-like of size 3
+        Mean pixel values to be subtracted from image tensor. Default is [0.485, 0.456, 0.406].
+    std : array-like of size 3
+        Standard deviation to be divided from image. Default is [0.229, 0.224, 0.225].
+
+    """
+
+    def __init__(self, short=600, max_size=1000,
+                 mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)):
+        self._mean = mean
+        self._std = std
+        self._short = short
+        self._max_size = max_size
+
+    def __call__(self, src, label):
+        """Apply transform to validation image/label."""
+        # resize shorter side but keep in max_size
+        h, w, _ = src.shape
+        img = timage.resize_short_within(src, self._short, self._max_size, interp=1)
+        # no scaling ground-truth, return image scaling ratio instead
+        bbox = tbbox.resize(label, (w, h), (img.shape[1], img.shape[0]))
+        im_scale = h / float(img.shape[0])
+
+        img = vf.to_tensor(img)
+        img = vf.normalize(img, mean=self._mean, std=self._std)
+        return img, bbox.astype('float32'), torch.tensor([im_scale], dtype=torch.float32)

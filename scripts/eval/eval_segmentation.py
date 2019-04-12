@@ -44,8 +44,11 @@ def parse_args():
                         help='Select dataset.')
     # parser.add_argument('--model_root', type=str, default=os.path.expanduser('~/.torch/models'),
     #                     help='Select dataset.')
-    parser.add_argument('--model_root', type=str, default='../train',
+    parser.add_argument('--model_root', type=str,
+                        default=os.path.expanduser('~/cbb/pytorch-cv/scripts/runs/ade20k/fcn/res50'),
                         help='Select dataset.')
+    # parser.add_argument('--model_root', type=str, default='/home/ace/cbb/own/pretrained/ade',
+    #                     help='Select dataset.')
 
     args = parser.parse_args()
     return args

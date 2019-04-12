@@ -247,32 +247,28 @@ class SSD(nn.Module):
         # scores = result.narrow(2, 1, 1)
         # bboxes = result.narrow(2, 2, 4)
         # # ------ nms version * ------
-        for i_b in range(b):
-            image_result = list()
-            for i_c in range(self.num_classes):
-                cls_id = cls_ids[i_b].narrow(-1, i_c, 1)
-                score = scores[i_b].narrow(-1, i_c, 1)
-                per_result = torch.cat([cls_id, score, bboxes[i_b]], dim=-1)
-                per_result = box_nms(per_result, self.nms_thresh, topk=self.nms_topk, sort=True)
-                image_result.append(per_result)
-            # no object detected
-            if len(image_result) == 0:
-                image_result = torch.empty(0, 6)
-            else:  # cat all result
-                image_result = torch.cat(image_result, 0)
-            if 0 < self.post_nms < image_result.size(0):
-                keep = torch.argsort(image_result[:, 1], dim=0, descending=True)[:self.post_nms]
-                image_result = image_result[keep, :]
-            if image_result.size(0) < self.post_nms:
-                image_result = torch.cat([image_result, -1 * torch.ones(self.post_nms - image_result.size(0), 6,
-                                                                        dtype=image_result.dtype,
-                                                                        device=image_result.device)], 0)
-            results.append(image_result.unsqueeze(0))
-
-        results = torch.cat(results, 0)
-        ids = results.narrow(2, 0, 1)
-        scores = results.narrow(2, 1, 1)
-        bboxes = results.narrow(2, 2, 4)
+        for i in range(self.num_classes):
+            cls_id = cls_ids.narrow(-1, i, 1)
+            score = scores.narrow(-1, i, 1)
+            # per class results
+            per_result = torch.cat([cls_id, score, bboxes], dim=-1)
+            results.append(per_result)
+        results = torch.cat(results, dim=1)
+        res_all = list()
+        for i in range(b):
+            res_per = box_nms(results[i], overlap_thresh=self.nms_thresh, topk=self.nms_topk, sort=True,
+                              valid_thresh=0.01, id_index=0, score_index=1, coord_start=2, force_suppress=False)
+            if 0 < self.post_nms < res_per.size(0):
+                keep = torch.argsort(res_per[:, 1], dim=0, descending=True)[:self.post_nms]
+                res_per = res_per[keep, :]
+            if res_per.size(0) < self.post_nms:
+                res_per = torch.cat([res_per, -1 * torch.ones(self.post_nms - res_per.size(0), 6,
+                                                              dtype=res_per.dtype, device=res_per.device)], 0)
+            res_all.append(res_per.unsqueeze(0))
+        res_all = torch.cat(res_all, 0)
+        ids = res_all.narrow(2, 0, 1)
+        scores = res_all.narrow(2, 1, 1)
+        bboxes = res_all.narrow(2, 2, 4)
         return ids, scores, bboxes
 
     def reset_class(self, classes):

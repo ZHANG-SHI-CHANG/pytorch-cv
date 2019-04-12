@@ -289,6 +289,59 @@ class Empty(object):
     def __call__(self, data):
         return data
 
+
+def _append_arrs(arrs, use_shared_mem=False, expand=False, batch_axis=0):
+    """Internal impl for returning appened arrays as list."""
+    if isinstance(arrs[0], torch.Tensor):
+        out = arrs
+    else:
+        out = [torch.from_numpy(x) for x in arrs]
+
+    # add batch axis
+    if expand:
+        out = [x.unsqueeze(dim=batch_axis) for x in out]
+    return out
+
+
+class Append(object):
+    r"""Loosely return list of the input data samples.
+    There is no constraint of shape for any of the input samples, however, you will
+    only be able to apply single batch operations since the output have different shapes.
+
+    Examples
+    --------
+    >>> a = [1, 2, 3, 4]
+    >>> b = [4, 5, 6]
+    >>> c = [8, 2]
+    >>> batchify.Append()([a, b, c])
+    [
+    [[1. 2. 3. 4.]]
+    <NDArray 1x4 @cpu_shared(0)>,
+    [[4. 5. 6.]]
+    <NDArray 1x3 @cpu_shared(0)>,
+    [[8. 2.]]
+    <NDArray 1x2 @cpu_shared(0)>
+    ]
+    """
+
+    def __init__(self, expand=True, batch_axis=0):
+        self._expand = expand
+        self._batch_axis = batch_axis
+
+    def __call__(self, data):
+        """Batchify the input data.
+
+        Parameters
+        ----------
+        data : list
+            The input data samples
+        Returns
+        -------
+        batch_data : NDArray
+        """
+        return _append_arrs(data, use_shared_mem=True,
+                            expand=self._expand, batch_axis=self._batch_axis)
+
 # if __name__ == '__main__':
 #     import torch
 #

@@ -21,9 +21,11 @@
 
 ### ADE20K
 
-| Model            | pixAcc/mIoU（8GPU） | pixAcc/mIoU（gluon-cv） |
-| ---------------- | ------------------- | ----------------------- |
-| fcn_resnet50_ade | 78.4/38.0           | 79.0/39.5               |
+| Model            | pixAcc/mIoU（pytorch-cv） | pixAcc/mIoU（gluon-cv） |
+| ---------------- | ------------------------- | ----------------------- |
+| fcn_resnet50_ade | 78.40/38.58               | 79.0/39.5               |
+
+> Note: `lr=0.01/16*batch_size(per GPU)*NGPU` 
 
 ### COCO
 

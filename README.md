@@ -31,7 +31,7 @@ Convert the [gluon-cv](https://github.com/dmlc/gluon-cv/) to pytorch.
 | ----------- | :--: | :---: | :--: |
 | YOLOv3      |  ✓   |   ✓   |  ✓   |
 | SSD         |  ✓   |   ✓   |  ✓   |
-| Faster-RCNN |  ✗   |   ✗   |  ✗   |
+| Faster-RCNN |  ✓   |   ✗   |  ✗   |
 
 #### Pose Estimation
 

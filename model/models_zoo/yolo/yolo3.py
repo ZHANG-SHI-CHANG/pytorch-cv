@@ -177,8 +177,9 @@ class YOLOV3(nn.Module):
         # # --- nms * version ---
         result_all = list()
         for i in range(result.shape[0]):
-            result_per = box_nms(result[i], iou_threshold=self.nms_thresh, topk=self.nms_topk,
-                                 score_index=1, coord_start=2, score_threshold=1e-6, sort=True)
+            result_per = box_nms(result[i], overlap_thresh=self.nms_thresh, valid_thresh=0.01,
+                                 topk=self.nms_topk, id_index=0, score_index=1, coord_start=2,
+                                 force_suppress=False, sort=True)
 
             if 0 < self.post_nms < result_per.size(0):
                 keep = torch.argsort(result_per[:, 1], dim=0, descending=True)[:self.post_nms]

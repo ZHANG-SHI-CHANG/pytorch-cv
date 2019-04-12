@@ -13,7 +13,7 @@ cur_path = os.path.dirname(__file__)
 sys.path.insert(0, os.path.join(cur_path, '../..'))
 from model import model_zoo
 from data.base import make_data_sampler
-from data.batchify import Tuple, Stack, Pad
+from data.batchify import Tuple, Stack, Pad, Empty
 from data.pascal_voc.detection import VOCDetection
 from data.mscoco.detection import COCODetection
 from data.transforms.yolo import YOLO3DefaultValTransform
@@ -37,9 +37,12 @@ def get_dataset(dataset, data_shape):
     return val_dataset, val_metric
 
 
-def get_dataloader(val_dataset, batch_size, num_workers, distributed):
+def get_dataloader(val_dataset, batch_size, num_workers, distributed, coco=False):
     """Get dataloader."""
-    batchify_fn = Tuple(Stack(), Pad(pad_val=-1))
+    if coco:
+        batchify_fn = Tuple(Stack(), Pad(pad_val=-1), Empty())
+    else:
+        batchify_fn = Tuple(Stack(), Pad(pad_val=-1))
     sampler = make_data_sampler(val_dataset, False, distributed)
     batch_sampler = data.BatchSampler(sampler=sampler, batch_size=batch_size, drop_last=False)
     val_loader = data.DataLoader(val_dataset, batch_sampler=batch_sampler, collate_fn=batchify_fn,
@@ -47,7 +50,7 @@ def get_dataloader(val_dataset, batch_size, num_workers, distributed):
     return val_loader
 
 
-def validate(net, val_data, device, metric):
+def validate(net, val_data, device, metric, coco=False):
     net.eval()
     tbar = tqdm(val_data)
 
@@ -72,8 +75,11 @@ def validate(net, val_data, device, metric):
             gt_bboxes.append(y.narrow(-1, 0, 4))
             gt_difficults.append(y.narrow(-1, 5, 1) if y.shape[-1] > 5 else None)
 
-            metric.update(det_bboxes, det_ids, det_scores, gt_bboxes, gt_ids, gt_difficults)
-    return metric
+            if coco:
+                metric.update(det_bboxes, det_ids, det_scores, batch[2], gt_bboxes, gt_ids, gt_difficults)
+            else:
+                metric.update(det_bboxes, det_ids, det_scores, gt_bboxes, gt_ids, gt_difficults)
+        return metric
 
 
 def parse_args():
@@ -86,7 +92,7 @@ def parse_args():
                         help="Input data shape")
     parser.add_argument('--batch-size', type=int, default=16,
                         help='Training mini-batch size')
-    parser.add_argument('--dataset', type=str, default='voc',
+    parser.add_argument('--dataset', type=str, default='coco',
                         help='Training dataset.')
     parser.add_argument('--num-workers', '-j', dest='num_workers', type=int,
                         default=4, help='Number of data workers')
@@ -134,11 +140,11 @@ if __name__ == '__main__':
 
     # testing data
     val_dataset, val_metric = get_dataset(args.dataset, args.data_shape)
-    val_data = get_dataloader(val_dataset, args.batch_size, args.num_workers, distributed)
+    val_data = get_dataloader(val_dataset, args.batch_size, args.num_workers, distributed, args.dataset == 'coco')
     classes = val_dataset.classes  # class names
 
     # testing
-    val_metric = validate(net, val_data, device, val_metric)
+    val_metric = validate(net, val_data, device, val_metric, args.dataset == 'coco')
     synchronize()
     names, values = accumulate_metric(val_metric)
     if is_main_process():

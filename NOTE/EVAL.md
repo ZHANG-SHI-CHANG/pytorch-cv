@@ -131,27 +131,32 @@
 
 ## Detection
 
-> Note：* means restrict scores (using score_threshold) before nms and python-opencv. (the original gluon-cv using nms on all boxes)
+> Note：there are two version nms in this our achievement --- one (box_nms_py) without  valid_thresh and another (box_nms) is more likely [torchvison nms](https://github.com/pytorch/vision/pull/826)
+>
+> - v1：PIL+box_nms_py
+> - v2：PIL+box_nms
+> - v3：opencv(python version)+box_nms
+>
 
 ### VOC
 
-| SSD Model                | gluon-cv | pytorch-cv (PIL) | pytorch-cv (*) |
-| ------------------------ | -------- | ---------------- | -------------- |
-| ssd_300_vgg16_atrous_voc | 77.6     | 74.6             | 77.5           |
-| ssd_512_vgg16_atrous_voc | 79.2     | 76.2             | 79.1           |
-| ssd_512_resnet50_v1_voc  | 80.1     | 78.0             | 80.4           |
-| ssd_512_mobilenet1.0_voc | 75.4     | 72.9             | 75.5           |
+| SSD Model                | gluon-cv | pytorch-cv (v1) | pytorch-cv (v3) |
+| ------------------------ | -------- | --------------- | --------------- |
+| ssd_300_vgg16_atrous_voc | 77.6     | 74.6            | 77.5            |
+| ssd_512_vgg16_atrous_voc | 79.2     | 76.2            | 79.1            |
+| ssd_512_resnet50_v1_voc  | 80.1     | 78.0            | 80.4            |
+| ssd_512_mobilenet1.0_voc | 75.4     | 72.9            | 75.5            |
 
-> nms using score_threshold=0.01 
+| YOLO Model                      | gluon-cv | pytorch-cv (v1) | pytorch-cv (v3) |
+| ------------------------------- | -------- | --------------- | --------------- |
+| yolo3_darknet53_voc (320x320)   | 79.3     | 78.5            | 79.3            |
+| yolo3_darknet53_voc (416x416)   | 81.5     | 80.9            | 81.4            |
+| yolo3_mobilenet1.0_voc(320x320) | 73.9     | 72.1            | 74.0            |
+| yolo3_mobilenet1.0_voc(416x416) | 75.8     | 74.0            | 76.1            |
 
-| YOLO Model                      | gluon-cv | pytorch-cv (PIL) | pytorch-cv (*) |
-| ------------------------------- | -------- | ---------------- | -------------- |
-| yolo3_darknet53_voc (320x320)   | 79.3     | 78.5             | 78.8           |
-| yolo3_darknet53_voc (416x416)   | 81.5     | 80.9             |                |
-| yolo3_mobilenet1.0_voc(320x320) | 73.9     | 72.1             |                |
-| yolo3_mobilenet1.0_voc(416x416) | 75.8     | 74.0             |                |
-
->nms using score_threshold=
+| Faster-RCNN Model            | gluon-cv | pytorch-cv (v3) |
+| ---------------------------- | -------- | --------------- |
+| faster_rcnn_resnet50_v1b_voc | 78.3     |                 |
 
 ### COCO
 
@@ -162,14 +167,14 @@
 | ssd_512_resnet50_v1_coco  | 30.6/50.0/32.2 | 28.4/46.7/29.7  | 29.7/49.1/31.1 |
 | ssd_512_mobilenet1.0_coco | 21.7/39.2/21.3 | 19.9/36.6/19.7  | 20.8/38.4/20.3 |
 
-| YOLO Model                        | gluon-cv       | pytorch-cv(PIL) |
-| --------------------------------- | -------------- | --------------- |
-| yolo3_darknet53_coco (320x320)    | 33.6/54.1/35.8 | 32.3/51.8/34.5  |
-| yolo3_darknet53_coco (416x416)    | 36.0/57.2/38.7 | 34.9/55.2/37.7  |
-| yolo3_darknet53_coco (608x608)    | 37.0/58.2/40.1 | 35.9/56.2/39.0  |
-| yolo3_mobilenet1.0_coco (320x320) | 26.7/46.1/27.5 | 25.4/43.6/26.1  |
-| yolo3_mobilenet1.0_coco (416x416) | 28.6/48.9/29.9 | 27.6/46.8/28.9  |
-| yolo3_mobilenet1.0_coco (608x608) | 28.0/49.8/27.8 | 27.1/48.1/27.1  |
+| YOLO Model                        | gluon-cv       | pytorch-cv (v1) | pytorch-cv (v3) |
+| --------------------------------- | -------------- | --------------- | --------------- |
+| yolo3_darknet53_coco (320x320)    | 33.6/54.1/35.8 | 32.3/51.8/34.5  | 33.6/54.1/35.8  |
+| yolo3_darknet53_coco (416x416)    | 36.0/57.2/38.7 | 34.9/55.2/37.7  | 36.0/57.2/38.7  |
+| yolo3_darknet53_coco (608x608)    | 37.0/58.2/40.1 | 35.9/56.2/39.0  | 37.0/58.2/40.1  |
+| yolo3_mobilenet1.0_coco (320x320) | 26.7/46.1/27.5 | 25.4/43.6/26.1  | 26.7/46.1/27.5  |
+| yolo3_mobilenet1.0_coco (416x416) | 28.6/48.9/29.9 | 27.6/46.8/28.9  | 28.6/48.9/29.9  |
+| yolo3_mobilenet1.0_coco (608x608) | 28.0/49.8/27.8 | 27.1/48.1/27.1  | 28.0/49.8/27.8  |
 
 ## Segmentation
 

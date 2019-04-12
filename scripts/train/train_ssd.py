@@ -1,4 +1,4 @@
-# TODO: multi-gpu
+# TODO: why Trainer object is slow ???
 import os
 import sys
 import argparse
@@ -28,9 +28,9 @@ def parse_args():
                         help="Base network name which serves as feature extraction base.")
     parser.add_argument('--data-shape', type=int, default=300,
                         help="Input data shape, use 300, 512.")
-    parser.add_argument('--batch-size', type=int, default=2,
+    parser.add_argument('--batch-size', type=int, default=8,
                         help='Training mini-batch size')
-    parser.add_argument('--test-batch-size', type=int, default=2,
+    parser.add_argument('--test-batch-size', type=int, default=8,
                         help='Training mini-batch size')
     parser.add_argument('--dataset', type=str, default='voc',
                         help='Training dataset. Now support voc.')
@@ -61,6 +61,9 @@ def parse_args():
                         help='Saving parameter prefix')
     parser.add_argument('--save-interval', type=int, default=10,
                         help='Saving parameters epoch interval, best model will always be saved.')
+    parser.add_argument('--first-valid', type=int, default=20,
+                        help='Epoch interval for validation, increase the number will reduce the '
+                             'training time if validation is slow.')
     parser.add_argument('--val-interval', type=int, default=1,
                         help='Epoch interval for validation, increase the number will reduce the '
                              'training time if validation is slow.')
@@ -77,10 +80,8 @@ def parse_args():
 
 def get_dataset(dataset, args):
     if dataset.lower() == 'voc':
-        train_dataset = VOCDetection(
-            splits=[(2007, 'trainval'), (2012, 'trainval')])
-        val_dataset = VOCDetection(
-            splits=[(2007, 'test')])
+        train_dataset = VOCDetection(splits=[(2007, 'trainval'), (2012, 'trainval')])
+        val_dataset = VOCDetection(splits=[(2007, 'test')])
         val_metric = VOCMApMetric(iou_thresh=0.5, class_names=val_dataset.classes)
     elif dataset.lower() == 'coco':
         train_dataset = COCODetection(splits='instances_train2017')
@@ -113,7 +114,7 @@ class Trainer(object):
                 warnings.simplefilter("always")
         # get property
         anchors = self.net.anchors()
-        self.net.set_nms(nms_thresh=0.45, nms_topk=400)   # for validate
+        self.net.set_nms(nms_thresh=0.45, nms_topk=400)  # for validate
         self.net.to(device)
         if distributed:
             self.net = torch.nn.parallel.DistributedDataParallel(
@@ -125,13 +126,13 @@ class Trainer(object):
         batchify_fn = Tuple(Stack(), Stack(), Stack())
         train_dataset = train_dataset.transform(SSDDefaultTrainTransform(width, height, anchors))
         train_sampler = make_data_sampler(train_dataset, True, distributed)
-        train_batch_sampler = data.sampler.BatchSampler(train_sampler, args.batch_size, True)
+        train_batch_sampler = data.BatchSampler(train_sampler, args.batch_size, True)
         self.train_loader = data.DataLoader(train_dataset, batch_sampler=train_batch_sampler,
                                             collate_fn=batchify_fn, num_workers=args.num_workers)
         val_batchify_fn = Tuple(Stack(), Pad(pad_val=-1))
         val_dataset = val_dataset.transform(SSDDefaultValTransform(width, height))
         val_sampler = make_data_sampler(val_dataset, False, distributed)
-        val_batch_sampler = data.sampler.BatchSampler(val_sampler, args.test_batch_size, False)
+        val_batch_sampler = data.BatchSampler(val_sampler, args.test_batch_size, False)
         self.val_loader = data.DataLoader(val_dataset, batch_sampler=val_batch_sampler,
                                           collate_fn=val_batchify_fn, num_workers=args.num_workers)
 
@@ -147,9 +148,21 @@ class Trainer(object):
         tbar = tqdm(self.train_loader)
         self.lr_scheduler.step()
         regs_losses, cls_losses = 0.0, 0.0
+
+        # import numpy as np
+        # np.random.seed(10)
+        # image = np.random.randn(1, 3, 300, 300).astype(np.float32)
+        # cls_target = np.random.randint(0, 20, (1, 8732)).astype(np.float32)
+        # box_target = np.random.randn(1, 8732, 4).astype(np.float32)
+        #
+        # image = torch.from_numpy(image)
+        # cls_target = torch.from_numpy(cls_target)
+        # box_target = torch.from_numpy(box_target)
+        # regs_loss, cls_loss = self.net(image, targets=(cls_target, box_target))
+        # print(regs_loss, cls_loss)
+
         for i, batch in enumerate(tbar):
-            if i == 10:
-                break
+            # if i == 10: break
             image = batch[0].to(self.device)
             cls_targets = batch[1].to(self.device)
             box_targets = batch[2].to(self.device)
@@ -169,8 +182,7 @@ class Trainer(object):
         self.net.eval()
         tbar = tqdm(self.val_loader)
         for i, batch in enumerate(tbar):
-            if i == 10:
-                break
+            # if i == 10: break
             image, label = batch[0].to(self.device), batch[1].to(self.device)
             with torch.no_grad():
                 ids, scores, bboxes = self.net(image)
@@ -223,7 +235,7 @@ if __name__ == '__main__':
     logger.info('Total Epochs: {}'.format(args.epochs))
     for epoch in range(args.start_epoch, args.epochs):
         trainer.training(epoch)
-        if not (epoch + 1) % args.val_interval:
+        if epoch > args.first_valid and not (epoch + 1) % args.val_interval:
             metric = trainer.validate()
             ptutil.synchronize()
             map_name, mean_ap = ptutil.accumulate_metric(metric)
