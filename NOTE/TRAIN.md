@@ -33,3 +33,11 @@
 | ------------------ | ----------- | ----------------------- |
 | fcn_resnet101_coco | 91.11/61.81 | 92.2/66.2               |
 
+## Detection
+
+| Model                    | pytorch-cv | gluon-cv |
+| ------------------------ | ---------- | -------- |
+| ssd_300_vgg16_atrous_voc | 72.95      | 77.6     |
+
+> Note: `lr=1e-3`（due to each loss is divided by num_pos, so it's not related to nGPU）
+

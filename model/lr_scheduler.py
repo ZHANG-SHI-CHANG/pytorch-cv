@@ -141,3 +141,17 @@ class LRScheduler(object):
         self.get_lr(i, epoch)
         for param_group, lr in zip(self.optimizer.param_groups, self.get_lr(i, epoch)):
             param_group['lr'] = lr
+
+
+def adjust_lr(optimizer, lr):
+    for param_group in optimizer.param_groups:
+        param_group['lr'] = lr
+
+
+if __name__ == '__main__':
+    from torch import nn, optim
+
+    net = nn.Conv2d(20, 30, 3, 1, 1)
+    optimizer = optim.Adam(net.parameters(), lr=1e-2)
+    adjust_lr(optimizer, 1e-3)
+    print(optimizer.param_groups[0]['lr'])

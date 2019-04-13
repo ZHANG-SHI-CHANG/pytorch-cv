@@ -7,6 +7,16 @@
 #
 # torch.save(param_new, './coco/fcn/res101/fcn_resnet101_coco.pth')
 
+def func():
+    out = list()
+    a = 10
+    for i in range(5):
+        out.append(a)
+        a += i
+    return out
+
+print(func())
+
 
 from torch import nn
 

@@ -98,10 +98,10 @@ class COCODetection(VisionDataset):
         label = np.array(self._labels[idx])
         img = cv2.cvtColor(cv2.imread(img_path, 1), cv2.COLOR_BGR2RGB)
         if self._transform is not None:
-            img, label = self._transform(img, label)
+            out = self._transform(img, label)
         if self._keep_idx:
-            return img, label, int(img_path.split('/')[-1][:-4])
-        return img, label
+            return (*out, int(img_path.split('/')[-1][:-4]))
+        return out
 
     def _load_jsons(self):
         """Load all image paths and labels from JSON annotation files into buffer."""

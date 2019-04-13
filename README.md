@@ -31,7 +31,7 @@ Convert the [gluon-cv](https://github.com/dmlc/gluon-cv/) to pytorch.
 | ----------- | :--: | :---: | :--: |
 | YOLOv3      |  ✓   |   ✓   |  ✓   |
 | SSD         |  ✓   |   ✓   |  ✓   |
-| Faster-RCNN |  ✓   |   ✗   |  ✗   |
+| Faster-RCNN |  ✓   |   ✗   |  ✓   |
 
 #### Pose Estimation
 
@@ -163,8 +163,8 @@ You can see the performance (compare with gluon-cv) in [EVAL](./NOTE/EVAL.md).
 - [ ] modify doc
 - [ ] delete duplicated code
 - [ ] provide better pre-trained model
+- [ ] make code more efficient and use less memory 
 
 ### BUG
 
 - [x] ~~evaluation:  distributed version is slow~~（rewrite metric in pytorch）
-- [ ] Training with validate in new metric have bug (number of GPU=8 will out of memory, nGPU=4 without this problem, guess caused by move between gpu) 

@@ -1,4 +1,3 @@
-# TODO: why Trainer object is slow ???
 import os
 import sys
 import argparse
@@ -64,15 +63,13 @@ def parse_args():
     parser.add_argument('--first-valid', type=int, default=20,
                         help='Epoch interval for validation, increase the number will reduce the '
                              'training time if validation is slow.')
-    parser.add_argument('--val-interval', type=int, default=1,
+    parser.add_argument('--val-interval', type=int, default=10,
                         help='Epoch interval for validation, increase the number will reduce the '
                              'training time if validation is slow.')
     parser.add_argument('--no-cuda', action='store_true', default=False,
                         help='disables CUDA training')
     parser.add_argument('--local_rank', type=int, default=0)
     parser.add_argument('--init-method', type=str, default="env://")
-    parser.add_argument('--seed', type=int, default=233,
-                        help='Random seed to be fixed.')
 
     args = parser.parse_args()
     return args
@@ -149,18 +146,6 @@ class Trainer(object):
         self.lr_scheduler.step()
         regs_losses, cls_losses = 0.0, 0.0
 
-        # import numpy as np
-        # np.random.seed(10)
-        # image = np.random.randn(1, 3, 300, 300).astype(np.float32)
-        # cls_target = np.random.randint(0, 20, (1, 8732)).astype(np.float32)
-        # box_target = np.random.randn(1, 8732, 4).astype(np.float32)
-        #
-        # image = torch.from_numpy(image)
-        # cls_target = torch.from_numpy(cls_target)
-        # box_target = torch.from_numpy(box_target)
-        # regs_loss, cls_loss = self.net(image, targets=(cls_target, box_target))
-        # print(regs_loss, cls_loss)
-
         for i, batch in enumerate(tbar):
             # if i == 10: break
             image = batch[0].to(self.device)
@@ -197,6 +182,10 @@ class Trainer(object):
 
             self.metric.update(det_bboxes, det_ids, det_scores, gt_bboxes, gt_ids, gt_difficults)
         return self.metric
+
+    def save_params(self, epoch):
+        filename = '{:s}_{:04d}.pth'.format(self.args.save_prefix, epoch)
+        torch.save(self.net.module.state_dict() if self.distributed else self.net.state_dict(), filename)
 
     def save_params(self, current_map, epoch):
         current_map = float(current_map)
@@ -235,15 +224,18 @@ if __name__ == '__main__':
     logger.info('Total Epochs: {}'.format(args.epochs))
     for epoch in range(args.start_epoch, args.epochs):
         trainer.training(epoch)
-        if epoch > args.first_valid and not (epoch + 1) % args.val_interval:
-            metric = trainer.validate()
-            ptutil.synchronize()
-            map_name, mean_ap = ptutil.accumulate_metric(metric)
-            if ptutil.is_main_process():
-                val_msg = '\n'.join(['{}={}'.format(k, v) for k, v in zip(map_name, mean_ap)])
-                logger.info('[Epoch {}] Validation: \n{}'.format(epoch, val_msg))
-                current_map = float(mean_ap[-1])
-        else:
-            current_map = 0.
-        if ptutil.is_main_process():
-            trainer.save_params(current_map, epoch)
+        if ptutil.is_main_process() and epoch % args.save_interval == 0:
+            trainer.save_params(epoch)
+    trainer.save_params(args.epochs)
+    # if epoch > args.first_valid and not (epoch + 1) % args.val_interval:
+    #     metric = trainer.validate()
+    #     ptutil.synchronize()
+    #     map_name, mean_ap = ptutil.accumulate_metric(metric)
+    #     if ptutil.is_main_process():
+    #         val_msg = '\n'.join(['{}={}'.format(k, v) for k, v in zip(map_name, mean_ap)])
+    #         logger.info('[Epoch {}] Validation: \n{}'.format(epoch, val_msg))
+    #         current_map = float(mean_ap[-1])
+    # else:
+    #     current_map = 0.
+    # if ptutil.is_main_process():
+    #     trainer.save_params(current_map, epoch)

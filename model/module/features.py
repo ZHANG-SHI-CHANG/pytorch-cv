@@ -128,15 +128,114 @@ class FeatureExpander(nn.Module):
         return output
 
 
+class FPNFeatureExpander(nn.Module):
+    """Feature extractor with additional layers to append.
+    This is specified for ``Feature Pyramid Network for Object Detection``
+    which implement ``Top-down pathway and lateral connections``.
+
+    Parameters
+    ----------
+    network : str or HybridBlock or Symbol
+        Logic chain: load from gluon.model_zoo.vision if network is string.
+        Convert to Symbol if network is HybridBlock.
+    outputs : str or list of str
+        The name of layers to be extracted as features
+    num_filters : list of int e.g. [256, 256, 256, 256]
+        Number of filters to be appended.
+    use_1x1 : bool
+        Whether to use 1x1 convolution
+    use_upsample : bool
+        Whether to use upsample
+    use_elewadd : float
+        Whether to use element-wise add operation
+    use_p6 : bool
+        Whther use P6 stage, this is used for RPN experiments in ori paper
+    no_bias : bool
+        Whether use bias for Convolution operation.
+    norm_layer : HybridBlock or SymbolBlock
+        Type of normalization layer.
+    norm_kwargs : dict
+        Arguments for normalization layer.
+    pretrained : bool
+        Use pretrained parameters as in gluon.model_zoo if `True`.
+    ctx : Context
+        The context, e.g. mxnet.cpu(), mxnet.gpu(0).
+    inputs : list of str
+        Name of input variables to the network.
+
+    """
+
+    # TODO: add weight init
+    def __init__(self, network, outputs, channels, num_filters, use_1x1=True, use_upsample=True,
+                 use_elewadd=True, use_p6=False, use_bias=False, pretrained=False, norm_layer=None,
+                 norm_kwargs=None):
+        super(FPNFeatureExpander, self).__init__()
+        self.features = nn.ModuleList(_parse_network(network, outputs, pretrained))
+        extras1 = [[] for _ in range(len(self.features))]
+        extras2 = [[] for _ in range(len(self.features))]
+
+        if norm_kwargs is None:
+            norm_kwargs = {}
+        # e.g. For ResNet50, the feature is :
+        # outputs = ['stage1_activation2', 'stage2_activation3',
+        #            'stage3_activation5', 'stage4_activation2']
+        # with regard to [conv2, conv3, conv4, conv5] -> [C2, C3, C4, C5]
+        # append more layers with reversed order : [P5, P4, P3, P2]
+
+        # num_filter is 256 in ori paper
+        for i, (extra1, extra2, c, f) in enumerate(zip(extras1, extras2, channels, num_filters)):
+            if use_1x1:
+                extra1.append(nn.Conv2d(c, f, kernel_size=(1, 1), padding=(0, 0),
+                                        stride=1, bias=use_bias))
+                if norm_layer is not None:
+                    extra1.append(norm_layer(f, **norm_kwargs))
+            # Reduce the aliasing effect of upsampling described in ori paper
+            extra2.append(nn.Conv2d(f, f, kernel_size=(3, 3), padding=(1, 1), stride=1,
+                                    bias=use_bias))
+            if norm_layer is not None:
+                extra2.append(norm_layer(f, **norm_kwargs))
+        self.extras1 = nn.ModuleList([nn.Sequential(*ext) for ext in extras1])
+        self.extras2 = nn.ModuleList([nn.Sequential(*ext) for ext in extras2])
+        if use_p6:
+            if norm_layer is not None:
+                self.y_p6 = nn.Sequential(nn.Conv2d(f, f, kernel_size=(3, 3), padding=(1, 1),
+                                                    stride=2, bias=use_bias),
+                                          norm_layer(f, **norm_kwargs))
+            else:
+                self.y_p6 = nn.Conv2d(f, f, kernel_size=(3, 3), padding=(1, 1),
+                                      stride=2, bias=use_bias)
+        self.use_upsample, self.use_elewadd = use_upsample, use_elewadd
+        self.use_p6 = use_p6
+
+    def forward(self, x):
+        outputs = list()
+        for i, (feat, extra1, extra2) in enumerate(zip(self.features, self.extras1, self.extras2)):
+            x = feat(x)
+            out = extra1(x)
+            if i > 0:
+                if self.use_upsample:
+                    out_ = F.interpolate(outputs[-1], scale_factor=2, mode='nearest')
+                if self.use_elewadd:
+                    out_ = out_[..., :out.shape[2], : out.shape[3]]
+                    out_ = out_ + out
+            out = extra2(out) if i == 0 else extra2(out_)
+            outputs.append(out)
+        if self.use_p6:
+            outputs.append(self.y_p6(out_))
+        return outputs
+
+
 if __name__ == '__main__':
-    net = 'mobilenet1.0'
+    net = 'resnet50_v1b'
     # outputs = [[6, 5, 0, 7], [7, 2, 0, 7]]
-    outputs = [[68], [80]]
+    # outputs = [[68], [80]]
+    outputs = [[4, 2, 5], [5, 3, 5], [6, 5, 5], [7, 2, 5]]
     res = _parse_network(net, outputs, pretrained=False)
-    print(res[0])
-    cnt = 0
-    for key in res[0].state_dict().keys():
-        if not (key.endswith('num_batches_tracked') or key.endswith('running_mean') or
-                key.endswith('running_var')):
-            cnt += 1
-    print(cnt)
+    print(res[2])
+    print(res[3])
+    # cnt = 0
+    # for key in res[0].state_dict().keys():
+    #     if not (key.endswith('num_batches_tracked') or key.endswith('running_mean') or
+    #             key.endswith('running_var')):
+    #         cnt += 1
+    # print(cnt)

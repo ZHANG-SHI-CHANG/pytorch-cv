@@ -30,7 +30,7 @@ class RPNHead(nn.Module):
         self.score = nn.Conv2d(channels, anchor_depth, 1, 1, 0)
         self.loc = nn.Conv2d(channels, anchor_depth * 4, 1, 1, 0)
 
-    # TODO: check stop_gradient
+    # TODO: check stop_gradient: may use torch.no_grad
     def forward(self, x):
         """Forward RPN Head.
 
@@ -49,12 +49,13 @@ class RPNHead(nn.Module):
         """
         # 3x3 conv with relu activation
         x = self.conv1(x)
+        b = x.shape[0]
         # (1, C, H, W)->(1, 9, H, W)->(1, H, W, 9)->(1, H*W*9, 1)
-        raw_rpn_scores = self.score(x).transpose(axes=(0, 2, 3, 1)).reshape((0, -1, 1))
+        raw_rpn_scores = self.score(x).permute((0, 2, 3, 1)).reshape((b, -1, 1))
         # (1, H*W*9, 1)
         rpn_scores = torch.sigmoid(raw_rpn_scores.detach())
         # (1, C, H, W)->(1, 36, H, W)->(1, H, W, 36)->(1, H*W*9, 4)
-        raw_rpn_boxes = self.loc(x).transpose(axes=(0, 2, 3, 1)).reshape((0, -1, 4))
+        raw_rpn_boxes = self.loc(x).permute((0, 2, 3, 1)).reshape((b, -1, 4))
         # (1, H*W*9, 1)
         rpn_boxes = raw_rpn_boxes.detach()
         # return raw predictions as well in training for bp

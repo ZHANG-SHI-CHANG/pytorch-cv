@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.join(cur_path, '../..'))
 from model import model_zoo
 from model.ops import bbox_clip_to_image
 from data.base import make_data_sampler
-from data.batchify import Tuple, Stack, Pad, Empty, Append
+from data.batchify import Tuple, Empty, Append
 from data.pascal_voc.detection_cv import VOCDetection
 from data.transforms.rcnn_cv import FasterRCNNDefaultValTransform
 from data.mscoco.detection_cv import COCODetection
@@ -38,14 +38,12 @@ def get_dataset(short, max_size, dataset):
     return val_dataset, val_metric
 
 
-# TODO: support
 def get_dataloader(val_dataset, batch_size, num_workers, distributed, coco=False):
     """Get dataloader."""
-    # if coco:
-    #     batchify_fn = Tuple(Stack(), Pad(pad_val=-1), Empty())
-    # else:
-    #     batchify_fn = Tuple(Stack(), Pad(pad_val=-1))
-    batchify_fn = Tuple(*[Append() for _ in range(3)])
+    if coco:
+        batchify_fn = Tuple(*[Append() for _ in range(3)], Empty())
+    else:
+        batchify_fn = Tuple(*[Append() for _ in range(3)])
     sampler = make_data_sampler(val_dataset, False, distributed)
     batch_sampler = data.BatchSampler(sampler=sampler, batch_size=batch_size, drop_last=False)
     val_loader = data.DataLoader(val_dataset, batch_sampler=batch_sampler, collate_fn=batchify_fn,
@@ -78,7 +76,7 @@ def validate(net, val_data, device, metric, coco=False):
         gt_difficults = [y.narrow(-1, 5, 1) if y.shape[-1] > 5 else None]
 
         if coco:
-            metric.update(det_bboxes, det_ids, det_scores, batch[2][0], gt_bboxes, gt_ids, gt_difficults)
+            metric.update(det_bboxes, det_ids, det_scores, batch[3], gt_bboxes, gt_ids, gt_difficults)
         else:
             metric.update(det_bboxes, det_ids, det_scores, gt_bboxes, gt_ids, gt_difficults)
     return metric
@@ -90,7 +88,7 @@ def parse_args():
                         help="Base network name")
     parser.add_argument('--batch-size', type=int, default=1,  # now, only support one
                         help='Training mini-batch size')
-    parser.add_argument('--dataset', type=str, default='voc',
+    parser.add_argument('--dataset', type=str, default='coco',
                         help='Training dataset.')
     parser.add_argument('--num-workers', '-j', dest='num_workers', type=int,
                         default=4, help='Number of data workers')

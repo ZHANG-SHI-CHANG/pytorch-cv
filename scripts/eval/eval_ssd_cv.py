@@ -42,6 +42,9 @@ def parse_args():
                         help='Load weights from previously saved parameters.')
     parser.add_argument('--save-prefix', type=str, default='',
                         help='Saving parameter prefix')
+    parser.add_argument('--model_root', type=str,
+                        default=os.path.expanduser('~/cbb/own/pretrained/ssd'),
+                        help='Select dataset.')
     args = parser.parse_args()
     return args
 
@@ -122,7 +125,7 @@ if __name__ == '__main__':
     net_name = '_'.join(('ssd', str(args.data_shape), args.network, args.dataset))
     args.save_prefix += net_name
     if args.pretrained.lower() in ['true', '1', 'yes', 't']:
-        net = model_zoo.get_model(net_name, pretrained=True)
+        net = model_zoo.get_model(net_name, pretrained=True, root=args.model_root)
     else:
         net = model_zoo.get_model(net_name, pretrained=False)
         net.load_state_dict(torch.load(args.pretrained.strip()))

@@ -158,41 +158,42 @@ class ResNetV1b(nn.Module):
         if use_global_stats:
             norm_kwargs['track_running_stats'] = True
         self.norm_kwargs = norm_kwargs
-        self.features = list()
         if not deep_stem:
-            self.features.append(nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False))
+            self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
         else:
-            self.features.append(nn.Conv2d(3, stem_width, kernel_size=3, stride=2, padding=1, bias=False))
-            self.features.append(norm_layer(stem_width, **({} if norm_kwargs is None else norm_kwargs)))
-            self.features.append(nn.ReLU(inplace=True))
-            self.features.append(nn.Conv2d(stem_width, stem_width, kernel_size=3, stride=1, padding=1, bias=False))
-            self.features.append(norm_layer(stem_width, **({} if norm_kwargs is None else norm_kwargs)))
-            self.features.append(nn.ReLU(inplace=True))
-            self.features.append(nn.Conv2d(stem_width, stem_width * 2, kernel_size=3, stride=1,
-                                           padding=1, bias=False))
+            self.conv1 = list()
+            self.conv1.append(nn.Conv2d(3, stem_width, kernel_size=3, stride=2, padding=1, bias=False))
+            self.conv1.append(norm_layer(stem_width, **({} if norm_kwargs is None else norm_kwargs)))
+            self.conv1.append(nn.ReLU(inplace=True))
+            self.conv1.append(nn.Conv2d(stem_width, stem_width, kernel_size=3, stride=1, padding=1, bias=False))
+            self.conv1.append(norm_layer(stem_width, **({} if norm_kwargs is None else norm_kwargs)))
+            self.conv1.append(nn.ReLU(inplace=True))
+            self.conv1.append(nn.Conv2d(stem_width, stem_width * 2, kernel_size=3, stride=1,
+                                        padding=1, bias=False))
+            self.conv1 = nn.Sequential(*self.conv1)
             channel[0] = stem_width * 2
-        self.features.append(norm_layer(stem_width * 2, **({} if norm_kwargs is None else norm_kwargs)))
-        self.features.append(nn.ReLU(inplace=True))
-        self.features.append(nn.MaxPool2d(kernel_size=3, stride=2, padding=1))
-        self.features.append(self._make_layer(block, channel[0], 64, layers[0], avg_down=avg_down,
-                                              norm_layer=norm_layer, last_gamma=last_gamma))
-        self.features.append(self._make_layer(block, channel[1], 128, layers[1], strides=2, avg_down=avg_down,
-                                              norm_layer=norm_layer, last_gamma=last_gamma))
+        self.bn1 = norm_layer(stem_width * 2, **({} if norm_kwargs is None else norm_kwargs))
+        self.relu = nn.ReLU(inplace=True)
+        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+        self.layer1 = self._make_layer(block, channel[0], 64, layers[0], avg_down=avg_down,
+                                       norm_layer=norm_layer, last_gamma=last_gamma)
+        self.layer2 = self._make_layer(block, channel[1], 128, layers[1], strides=2, avg_down=avg_down,
+                                       norm_layer=norm_layer, last_gamma=last_gamma)
         if dilated:
-            self.features.append(self._make_layer(block, channel[2], 256, layers[2], strides=1, dilation=2,
-                                                  avg_down=avg_down, norm_layer=norm_layer,
-                                                  last_gamma=last_gamma))
-            self.features.append(self._make_layer(block, channel[3], 512, layers[3], strides=1, dilation=4,
-                                                  avg_down=avg_down, norm_layer=norm_layer,
-                                                  last_gamma=last_gamma))
+            self.layer3 = self._make_layer(block, channel[2], 256, layers[2], strides=1, dilation=2,
+                                           avg_down=avg_down, norm_layer=norm_layer,
+                                           last_gamma=last_gamma)
+            self.layer4 = self._make_layer(block, channel[3], 512, layers[3], strides=1, dilation=4,
+                                           avg_down=avg_down, norm_layer=norm_layer,
+                                           last_gamma=last_gamma)
         else:
-            self.features.append(self._make_layer(block, channel[2], 256, layers[2], strides=2,
-                                                  avg_down=avg_down, norm_layer=norm_layer,
-                                                  last_gamma=last_gamma))
-            self.features.append(self._make_layer(block, channel[3], 512, layers[3], strides=2,
-                                                  avg_down=avg_down, norm_layer=norm_layer,
-                                                  last_gamma=last_gamma))
-        self.features = nn.Sequential(*self.features)
+            self.layer3 = self._make_layer(block, channel[2], 256, layers[2], strides=2,
+                                           avg_down=avg_down, norm_layer=norm_layer,
+                                           last_gamma=last_gamma)
+            self.layer4 = self._make_layer(block, channel[3], 512, layers[3], strides=2,
+                                           avg_down=avg_down, norm_layer=norm_layer,
+                                           last_gamma=last_gamma)
+
         self.drop = None
         if final_drop > 0.0:
             self.drop = nn.Dropout(final_drop)
@@ -241,7 +242,15 @@ class ResNetV1b(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
-        x = self.features(x)
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
+        x = self.maxpool(x)
+
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
 
         x = F.avg_pool2d(x, x.shape[2]).squeeze(3).squeeze(2)
         if self.drop is not None:
@@ -802,7 +811,7 @@ def resnet101_v1s(pretrained=False, root=os.path.expanduser('~/.torch/models'), 
 
 
 if __name__ == '__main__':
-    net = resnet50_v1b()
+    net = resnet101_v1s()
     print(net)
 
 

@@ -3,6 +3,7 @@ import torch
 import numpy as np
 import collections
 import random
+import numbers
 import cv2
 
 
@@ -109,3 +110,13 @@ def resize(img, size, interpolation=cv2.INTER_CUBIC):
         return output[:, :, np.newaxis]
     else:
         return output
+
+
+def center_crop(img, output_size):
+    if isinstance(output_size, numbers.Number):
+        output_size = (int(output_size), int(output_size))
+    w, h = img.shape[1], img.shape[0]
+    th, tw = output_size
+    x1 = int(round((w - tw) / 2.))
+    y1 = int(round((h - th) / 2.))
+    return img[y1:y1 + h, x1:x1 + tw, :]

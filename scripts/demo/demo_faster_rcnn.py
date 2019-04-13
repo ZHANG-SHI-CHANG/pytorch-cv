@@ -15,7 +15,7 @@ from utils.viz.bbox import plot_bbox
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Test with Faster-RCNN networks.')
-    parser.add_argument('--network', type=str, default='faster_rcnn_resnet50_v1b_voc',
+    parser.add_argument('--network', type=str, default='faster_rcnn_resnet50_v1b_coco',
                         help="Faster RCNN full network name")
     parser.add_argument('--images', type=str, default='',
                         help='Test images, use comma to split multiple.')
@@ -29,7 +29,6 @@ def parse_args():
     return args
 
 
-# TODO: the results is bad than gluon-cv
 if __name__ == '__main__':
     args = parse_args()
     device = torch.device('cpu')
