@@ -32,11 +32,11 @@ python setup.py build_ext develop
 
 |                         Application                          |              Illustration               |                       Available Models                       |
 | :----------------------------------------------------------: | :-------------------------------------: | :----------------------------------------------------------: |
-| **Image Classification:** <br>recognize an object in an image. | ![](NOTE/png/image-classification.png)  | [CIFAR10](scripts/cifar/README.md), [IMAGENET](scripts/imagenet/README.md) |
-| **Object Detection:** <br>detect multiple objects with their <br>bounding boxes in an image. |   ![](NOTE/png/object-detection.png)    | [SSD](scripts/ssd/README.md), [YOLO3](scripts/yolo/README.md), [Faster-RCNN](scripts/faster_rcnn/README.md), [CenterNet](scripts/centernet/README.md) |
-| **Semantic Segmentation:** <br>associate each pixel of an image <br>with a categorical label. | ![](NOTE/png/semantic-segmentation.png) | [FCN, DeepLabv3, PSPNet, DANet](scripts/segmentation/README.md) |
-| **Instance Segmentation:** <br>detect objects and associate <br>each pixel inside object area with an <br>instance label. | ![](NOTE/png/instance-segmentation.png) | [Mask RCNN](scripts/mask_rcnn/README.md), [YOLACT](scripts/yolact/README.md) |
-| **Pose Estimation:** <br>detect human pose <br>from images.  |    ![](NOTE/png/pose-estimation.svg)    |         [Simple-Pose](scripts/simple_pose/README.md)         |
+| **Image Classification:** <br>recognize an object in an image. | ![](NOTE/png/image-classification.png)  | [CIFAR10](scripts/cifar), [IMAGENET](scripts/imagenet) |
+| **Object Detection:** <br>detect multiple objects with their <br>bounding boxes in an image. |   ![](NOTE/png/object-detection.png)    | [SSD](scripts/ssd), [YOLO3](scripts/yolo), [Faster-RCNN](scripts/faster_rcnn), [CenterNet](scripts/centernet/README.md) |
+| **Semantic Segmentation:** <br>associate each pixel of an image <br>with a categorical label. | ![](NOTE/png/semantic-segmentation.png) | [FCN, DeepLabv3, PSPNet, DANet](scripts/segmentation) |
+| **Instance Segmentation:** <br>detect objects and associate <br>each pixel inside object area with an <br>instance label. | ![](NOTE/png/instance-segmentation.png) | [Mask RCNN](scripts/mask_rcnn), [YOLACT](scripts/yolact) |
+| **Pose Estimation:** <br>detect human pose <br>from images.  |    ![](NOTE/png/pose-estimation.svg)    |         [Simple-Pose](scripts/simple_pose)         |
 
 ## TODO
 
@@ -44,3 +44,4 @@ python setup.py build_ext develop
 - [ ] Compare the backbone performance with [torchvison](https://github.com/pytorch/vision) and [pretrained-models.pytorch](https://github.com/Cadene/pretrained-models.pytorch) , and replace with better one.
 - [ ] Improve performance
 - [ ] Add more training code and models
+- [ ] Move convert code from master to branch
