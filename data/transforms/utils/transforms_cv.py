@@ -151,18 +151,3 @@ class CenterCrop(object):
         return self.__class__.__name__ + '(size={0})'.format(self.size)
 
 
-class CenterCrop(object):
-    """Crops the given np.ndarray at the center to have a region of
-    the given size. size can be a tuple (target_height, target_width)
-    or an integer, in which case the target will be of a square shape
-    (size, size)
-    """
-
-    def __init__(self, size):
-        if isinstance(size, numbers.Number):
-            self.size = (int(size), int(size))
-        else:
-            self.size = size
-
-    def __call__(self, img):
-        return F.center_crop(img, self.size)

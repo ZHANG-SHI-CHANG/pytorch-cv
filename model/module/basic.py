@@ -16,7 +16,7 @@ def _conv2d(in_channel, channel, kernel, padding, stride, norm_layer=nn.BatchNor
     cell.append(nn.Conv2d(in_channel, channel, kernel_size=kernel,
                           stride=stride, padding=padding, bias=False))
     cell.append(norm_layer(channel, eps=1e-5, momentum=0.9, **({} if norm_kwargs is None else norm_kwargs)))
-    cell.append(nn.LeakyReLU(0.1))
+    cell.append(nn.LeakyReLU(0.1, inplace=True))
     return nn.Sequential(*cell)
 
 
@@ -255,6 +255,7 @@ def _init_scale(scale=[0.229, 0.224, 0.225]):
 class GroupNorm(nn.GroupNorm):
     def __init__(self, num_channels, num_groups=32, eps=1e-5, affine=True):
         super(GroupNorm, self).__init__(num_groups, num_channels, eps, affine)
+
 
 
 if __name__ == '__main__':

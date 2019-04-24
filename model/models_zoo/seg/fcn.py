@@ -9,6 +9,7 @@ from model.module.basic_seg import _FCNHead
 from model.models_zoo.seg.segbase import SegBaseModel
 
 __all__ = ['FCN', 'get_fcn',
+           'get_fcn_resnet50_voc',
            'get_fcn_resnet101_voc',
            'get_fcn_resnet101_coco',
            'get_fcn_resnet101_ade',
@@ -96,6 +97,7 @@ def get_fcn(dataset='pascal_voc', backbone='resnet50', pretrained=False,
     """
     acronyms = {
         'pascal_voc': 'voc',
+        'pascal_paper': 'voc',
         'pascal_aug': 'voc',
         'ade20k': 'ade',
         'coco': 'coco',
@@ -109,6 +111,29 @@ def get_fcn(dataset='pascal_voc', backbone='resnet50', pretrained=False,
         model.load_state_dict(torch.load(get_model_file(
             'fcn_%s_%s' % (backbone, acronyms[dataset]), root=root)))
     return model
+
+
+def get_fcn_resnet50_voc(**kwargs):
+    r"""FCN model with base network ResNet-101 pre-trained on Pascal VOC dataset
+    from the paper `"Fully Convolutional Network for semantic segmentation"
+    <https://people.eecs.berkeley.edu/~jonlong/long_shelhamer_fcn.pdf>`_
+
+    Parameters
+    ----------
+    pretrained : bool or str
+        Boolean value controls whether to load the default pretrained weights for model.
+        String value represents the hashtag for a certain version of pretrained weights.
+    ctx : Context, default CPU
+        The context in which to load the pretrained weights.
+    root : str, default '~/.mxnet/models'
+        Location for keeping the model parameters.
+
+    Examples
+    --------
+    >>> model = get_fcn_resnet50_voc(pretrained=True)
+    >>> print(model)
+    """
+    return get_fcn('pascal_voc', 'resnet50', **kwargs)
 
 
 def get_fcn_resnet101_voc(**kwargs):

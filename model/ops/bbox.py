@@ -67,8 +67,9 @@ def nms(boxes, scores, iou_threshold):
     return _C.nms(boxes, scores, iou_threshold)
 
 
-def _box_nms(data, overlap_thresh=0.5, valid_thresh=0, topk=-1, coord_start=2,
-             score_index=1, id_index=-1, force_suppress=False, sort=False):
+# TODO: not same as gluon-cv box_nms
+def _box_nms_not(data, overlap_thresh=0.5, valid_thresh=0, topk=-1, coord_start=2,
+                 score_index=1, id_index=-1, force_suppress=False, sort=False):
     if valid_thresh > 0:
         data = data[data[:, score_index] > valid_thresh, :]
     if id_index != -1 and not force_suppress:
@@ -93,17 +94,61 @@ def _box_nms(data, overlap_thresh=0.5, valid_thresh=0, topk=-1, coord_start=2,
     return data
 
 
+def box_nms_not(data, overlap_thresh=0.5, valid_thresh=0, topk=-1, coord_start=2,
+                score_index=1, id_index=-1, force_suppress=False, sort=False):
+    if data.ndimension() == 2:
+        return _box_nms_not(data, overlap_thresh, valid_thresh, topk, coord_start,
+                            score_index, id_index, force_suppress, sort)
+    elif data.ndimension() == 3:
+        data_list = list()
+        for i in range(data.shape[0]):
+            data_per_class = _box_nms_not(data[i], overlap_thresh, valid_thresh, topk, coord_start,
+                                          score_index, id_index, force_suppress, sort)
+            data_list.append(data_per_class)
+        return torch.cat(data_list, 0) if data.shape[0] > 1 else torch.cat(data_list, 0).unsqueeze_(0)
+    else:
+        raise ValueError('illegal input data')
+
+
+def _box_nms(data, overlap_thresh=0.5, valid_thresh=0, topk=-1, coord_start=2,
+             score_index=1, id_index=-1, force_suppress=False):
+    if valid_thresh > 0:
+        data = data[data[:, score_index] > valid_thresh, :]
+    if topk > 0:
+        idx = torch.argsort(data[:, score_index], descending=True)
+        data = data[idx, :]
+        data = data[:topk, :]
+    if id_index != -1 and not force_suppress:
+        all_class = torch.unique(data[..., id_index])
+        data_res = list()
+        for i in range(all_class.shape[0]):
+            data_per = data[data[..., id_index] == all_class[i], :]
+            keep = nms(data_per[:, coord_start:coord_start + 4], data_per[:, score_index], overlap_thresh)
+            data_res.append(data_per[keep])
+        if len(data_res) == 0:
+            data = torch.empty(0, data.shape[1], device=data.device)
+        else:
+            data = torch.cat(data_res, 0)
+    else:
+        keep = nms(data[:, coord_start:coord_start + 4], data[:, score_index], overlap_thresh)
+        data = data[keep]
+    if data.shape[0] < topk:
+        data = torch.cat([data, -1 * torch.ones(topk - data.shape[0], data.shape[1],
+                                                dtype=data.dtype, device=data.device)])
+    return data
+
+
 # TODO move all operation to c++
 def box_nms(data, overlap_thresh=0.5, valid_thresh=0, topk=-1, coord_start=2,
             score_index=1, id_index=-1, force_suppress=False, sort=False):
     if data.ndimension() == 2:
         return _box_nms(data, overlap_thresh, valid_thresh, topk, coord_start,
-                        score_index, id_index, force_suppress, sort)
+                        score_index, id_index, force_suppress)
     elif data.ndimension() == 3:
         data_list = list()
         for i in range(data.shape[0]):
             data_per_class = _box_nms(data[i], overlap_thresh, valid_thresh, topk, coord_start,
-                                      score_index, id_index, force_suppress, sort)
+                                      score_index, id_index, force_suppress)
             data_list.append(data_per_class)
         return torch.cat(data_list, 0) if data.shape[0] > 1 else torch.cat(data_list, 0).unsqueeze_(0)
     else:
@@ -197,7 +242,60 @@ def bbox_iou_batch(bbox_a, bbox_b, fmt='corner', offset=0, eps=1e-15):
     return i / (union + eps)
 
 
+if __name__ == '__main__':
+    import numpy as np
+
+    np.random.seed(10)
+    a = np.random.randn(2, 10, 4)
+    b = np.random.randn(2, 8, 4)
+
+    a = torch.from_numpy(a)
+    b = torch.from_numpy(b)
+    out = bbox_iou_batch(a, b)
+    print(out)
+
+
 def bbox_clip_to_image(x, img):
     x = torch.min(x.clamp_(0.), torch.tensor([img.shape[3], img.shape[2], img.shape[3], img.shape[2]],
                                              dtype=x.dtype, device=x.device))
     return x
+
+
+def sanitize_coordinates(_x1, _x2, img_size, padding=0, cast=True):
+    """
+    Sanitizes the input coordinates so that x1 < x2, x1 != x2, x1 >= 0, and x2 <= image_size.
+    Also converts from relative to absolute coordinates and casts the results to long tensors.
+
+    If cast is false, the result won't be cast to longs.
+    Warning: this does things in-place behind the scenes so copy if necessary.
+    """
+    _x1 *= img_size
+    _x2 *= img_size
+    if cast:
+        _x1 = _x1.long()
+        _x2 = _x2.long()
+    x1 = torch.min(_x1, _x2)
+    x2 = torch.max(_x1, _x2)
+    x1 = torch.clamp(x1 - padding, min=0)
+    x2 = torch.clamp(x2 + padding, max=img_size)
+
+    return x1, x2
+
+
+def mask_crop(masks, boxes, padding=1):
+    with torch.no_grad():
+        h, w, n = masks.size()
+        boxes = boxes.clone()  # Some in-place stuff goes on here
+        x1, x2 = sanitize_coordinates(boxes[:, 0], boxes[:, 2], w, padding, cast=True)
+        y1, y2 = sanitize_coordinates(boxes[:, 1], boxes[:, 3], h, padding, cast=True)
+
+        rows = torch.arange(w, device=masks.device)[None, :, None].expand(h, w, n)
+        cols = torch.arange(h, device=masks.device)[:, None, None].expand(h, w, n)
+
+        masks_left = rows >= x1[None, None, :]
+        masks_right = rows < x2[None, None, :]
+        masks_up = cols >= y1[None, None, :]
+        masks_down = cols < y2[None, None, :]
+
+        crop_mask = masks_left * masks_right * masks_up * masks_down
+    return masks * crop_mask.float()

@@ -5,7 +5,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
-from model.models_zoo.resnetv1b import resnet50_v1s, resnet101_v1s, resnet152_v1s
+from model.module.features import _parse_network
 
 __all__ = ['get_segmentation_model', 'SegBaseModel', 'SegEvalModel', 'MultiEvalModel']
 
@@ -14,10 +14,12 @@ def get_segmentation_model(model, **kwargs):
     from .fcn import get_fcn
     from .pspnet import get_psp
     from .deeplabv3 import get_deeplab
+    from .danet import get_danet
     models = {
         'fcn': get_fcn,
         'psp': get_psp,
         'deeplab': get_deeplab,
+        'danet': get_danet,
     }
     return models[model](**kwargs)
 
@@ -35,22 +37,22 @@ class SegBaseModel(nn.Module):
     """
 
     def __init__(self, nclass, aux, backbone='resnet50', height=None, width=None,
-                 base_size=520, crop_size=480, pretrained_base=True, **kwargs):
+                 base_size=520, crop_size=480, keep_shape=False, pretrained_base=True, **kwargs):
         super(SegBaseModel, self).__init__()
         self.aux = aux
         self.nclass = nclass
+        self.keep_shape = keep_shape
         if backbone == 'resnet50':
-            pretrained = resnet50_v1s(pretrained=pretrained_base, dilated=True, **kwargs)
+            outputs = [[11, 3], [12, 5], [13, 2]]
         elif backbone == 'resnet101':
-            pretrained = resnet101_v1s(pretrained=pretrained_base, dilated=True, **kwargs)
+            outputs = [[11, 3], [12, 22], [13, 2]]
         elif backbone == 'resnet152':
-            pretrained = resnet152_v1s(pretrained=pretrained_base, dilated=True, **kwargs)
+            outputs = [[11, 7], [12, 35], [13, 2]]
         else:
             raise RuntimeError('unknown backbone: {}'.format(backbone))
-        self.base1 = nn.Sequential(pretrained.conv1, pretrained.bn1, pretrained.relu, pretrained.maxpool,
-                                   pretrained.layer1, pretrained.layer2)
-        self.base2 = pretrained.layer3
-        self.base3 = pretrained.layer4
+        self.base1, self.base2, self.base3 = _parse_network(backbone + '_v1s', outputs,
+                                                            pretrained=pretrained_base, dilated=True)
+
         height = height if height is not None else crop_size
         width = width if width is not None else crop_size
         self._up_kwargs = (height, width)
@@ -60,11 +62,14 @@ class SegBaseModel(nn.Module):
     def base_forward(self, x):
         """forwarding pre-trained network"""
         x = self.base1(x)
-        c3 = self.base2(x)
-        c4 = self.base3(c3)
-        return c3, c4
+        x = self.base2(x)
+        c4 = self.base3(x)
+        return x, c4
 
     def evaluate(self, x):
+        if self.keep_shape:
+            h, w = x.shape[2:]
+            self._up_kwargs = (h, w)
         """evaluating network with inputs and targets"""
         return self.forward(x)[0]
 

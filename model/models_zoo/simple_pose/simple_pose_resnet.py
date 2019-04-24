@@ -11,6 +11,7 @@ __all__ = ['get_simple_pose_resnet', 'SimplePoseResNet',
            'simple_pose_resnet152_v1d']
 
 
+# TODO: change norm_layer
 class SimplePoseResNet(nn.Module):
     def __init__(self, base_name='resnet50_v1b',
                  pretrained_base=False,
@@ -26,13 +27,15 @@ class SimplePoseResNet(nn.Module):
                                  norm_layer=nn.BatchNorm2d)
 
         self.resnet = list()
-        if base_name.endswith('v1'):
-            for layer in ['features']:
-                self.resnet.append(getattr(base_network, layer))
-        else:
-            for layer in ['conv1', 'bn1', 'relu', 'maxpool',
-                          'layer1', 'layer2', 'layer3', 'layer4']:
-                self.resnet.append(getattr(base_network, layer))
+        for layer in ['features']:
+            self.resnet.append(getattr(base_network, layer))
+        # if base_name.endswith('v1'):
+        #     for layer in ['features']:
+        #         self.resnet.append(getattr(base_network, layer))
+        # else:
+        #     for layer in ['conv1', 'bn1', 'relu', 'maxpool',
+        #                   'layer1', 'layer2', 'layer3', 'layer4']:
+        #         self.resnet.append(getattr(base_network, layer))
         self.resnet = nn.Sequential(*self.resnet)
 
         self.deconv_with_bias = deconv_with_bias

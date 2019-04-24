@@ -106,3 +106,8 @@ class CitySegmentation(SegmentationDataset):
 
     def __len__(self):
         return len(self.images)
+
+
+if __name__ == '__main__':
+    data = CitySegmentation(mode='val')
+    print(data[0][0].shape, data[0][0].shape)

@@ -83,6 +83,7 @@ class RPN(nn.Module):
                 asz = max(asz[0] // 2, 16)
                 asz = (asz, asz)  # For FPN, We use large anchor presets
             anchor_depth = self.anchor_generator[0].num_depth
+            self.anchor_generator = nn.ModuleList(self.anchor_generator)
             self.rpn_head = RPNHead(in_channels, channels, anchor_depth)
         else:
             self.anchor_generator = RPNAnchorGenerator(
@@ -137,7 +138,7 @@ class RPN(nn.Module):
 
         # Non-maximum suppression
         tmp = box_nms(rpn_pre_nms_proposals, overlap_thresh=self._nms_thresh, topk=pre_nms,
-                      coord_start=1, score_index=0, id_index=-1, force_suppress=True, sort=True)
+                      valid_thresh=0, coord_start=1, score_index=0, id_index=-1, force_suppress=True)
 
         # slice post_nms number of boxes
         result = tmp.narrow(1, 0, post_nms)

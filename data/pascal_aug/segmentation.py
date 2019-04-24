@@ -1,3 +1,4 @@
+# Note: this is different as gluon-cv
 """Pascal Augmented VOC Semantic Segmentation Dataset."""
 
 from data.segbase import SegmentationDataset

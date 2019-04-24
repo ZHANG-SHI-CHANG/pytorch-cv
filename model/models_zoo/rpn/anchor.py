@@ -63,4 +63,4 @@ class RPNAnchorGenerator(nn.Module):
 
         """
         a = self._parameters['anchor'].narrow(2, 0, x.shape[2]).narrow(3, 0, x.shape[3])
-        return a.reshape((1, -1, 4))
+        return a.reshape((1, -1, 4)).to(x.device)

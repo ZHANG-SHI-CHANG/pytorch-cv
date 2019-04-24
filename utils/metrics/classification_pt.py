@@ -74,10 +74,12 @@ class Accuracy(EvalMetric):
             self.num_inst += pred_label.numel()
             self.global_num_inst += pred_label.numel()
 
-    def combine_metric(self, metric):
-        assert isinstance(metric, Accuracy)
-        self.sum_metric += metric.sum_metric
-        self.num_inst += metric.num_inst
+    def get_value(self):
+        return {'sum_metric': self.sum_metric, 'num_inst': self.num_inst}
+
+    def combine_value(self, values):
+        self.sum_metric += values['sum_metric']
+        self.num_inst += values['num_inst']
 
 
 class TopKAccuracy(EvalMetric):
@@ -160,10 +162,12 @@ class TopKAccuracy(EvalMetric):
             self.num_inst += num_samples
             self.global_num_inst += num_samples
 
-    def combine_metric(self, metric):
-        assert isinstance(metric, Accuracy)
-        self.sum_metric += metric.sum_metric
-        self.num_inst += metric.num_inst
+    def get_value(self):
+        return {'sum_metric': self.sum_metric, 'num_inst': self.num_inst}
+
+    def combine_value(self, values):
+        self.sum_metric += values['sum_metric']
+        self.num_inst += values['num_inst']
 
 
 if __name__ == '__main__':

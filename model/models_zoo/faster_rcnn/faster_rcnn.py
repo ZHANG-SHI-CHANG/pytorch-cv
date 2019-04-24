@@ -2,31 +2,27 @@
 from __future__ import absolute_import
 
 import os
-import warnings
 import torch
 from torch import nn
 import torch.nn.functional as F
 
 from model.ops import box_nms, roi_pool, roi_align
-from model.module.features import FPNFeatureExpander
+from model.module.features import FPNFeatureExpander, _parse_network
 from model.models_zoo.rcnn import RCNN
 from model.models_zoo.faster_rcnn import RCNNTargetGenerator, RCNNTargetSampler
 from model.models_zoo.rpn import RPN
+from utils.distributed import get_world_size
 
 __all__ = ['FasterRCNN', 'get_faster_rcnn',
-           'faster_rcnn_resnet50_v1b_voc', 'faster_rcnn_resnet50_v1b_coco', ]
+           'faster_rcnn_resnet50_v1b_voc',
+           'faster_rcnn_resnet50_v1b_coco',
+           'faster_rcnn_fpn_resnet50_v1b_coco',
+           'faster_rcnn_fpn_bn_resnet50_v1b_coco',
+           'faster_rcnn_resnet101_v1d_voc',
+           'faster_rcnn_resnet101_v1d_coco',
+           'faster_rcnn_fpn_resnet101_v1d_coco',
+           ]
 
-
-# __all__ = ['FasterRCNN', 'get_faster_rcnn',
-#            'faster_rcnn_resnet50_v1b_voc',
-#            'faster_rcnn_resnet50_v1b_coco',
-#            'faster_rcnn_fpn_resnet50_v1b_coco',
-#            'faster_rcnn_fpn_bn_resnet50_v1b_coco',
-#            'faster_rcnn_resnet50_v1b_custom',
-#            'faster_rcnn_resnet101_v1d_voc',
-#            'faster_rcnn_resnet101_v1d_coco',
-#            'faster_rcnn_fpn_resnet101_v1d_coco',
-#            'faster_rcnn_resnet101_v1d_custom']
 
 class FasterRCNN(RCNN):
     def __init__(self, features, top_features, classes, box_features=None,
@@ -163,7 +159,6 @@ class FasterRCNN(RCNN):
             rpn_box, samples, matches = self.sampler(rpn_box, rpn_score, gt_box)
         else:
             _, rpn_box = self.rpn(torch.zeros_like(x), *feat)
-
         # create batchid for roi
         num_roi = self._num_sample if self.training else self._rpn_test_post_nms
 
@@ -196,8 +191,10 @@ class FasterRCNN(RCNN):
         if self.box_features is None:
             box_feat = F.adaptive_avg_pool2d(top_feat, output_size=1).squeeze()
         else:
-            top_feat = top_feat.reshape(top_feat.shape[0], -1)
-            box_feat = self.box_features(top_feat).squeeze()
+            for i in range(len(self.box_features) - 1):
+                top_feat = self.box_features[i](top_feat)
+            top_feat = top_feat.view(top_feat.shape[0], -1)  # TODO: maybe not right
+            box_feat = self.box_features[-1](top_feat).squeeze()
         cls_pred = self.class_predictor(box_feat)
         box_pred = self.box_predictor(box_feat)
         # cls_pred (B * N, C) -> (B, N, C)
@@ -242,7 +239,7 @@ class FasterRCNN(RCNN):
             #     score_index=1, coord_start=2)
             # res (C * self.nms_topk, 6)
             res = box_nms(res, overlap_thresh=self.nms_thresh, topk=self.nms_topk, valid_thresh=1e-4,
-                          id_index=0, score_index=1, coord_start=2, force_suppress=True, sort=True)
+                          id_index=0, score_index=1, coord_start=2, force_suppress=True)
             res = res.reshape((-1, 6))
             results.append(res)
 
@@ -309,20 +306,13 @@ def faster_rcnn_resnet50_v1b_voc(pretrained=False, pretrained_base=True, **kwarg
     >>> model = get_faster_rcnn_resnet50_v1b_voc(pretrained=True)
     >>> print(model)
     """
-    from model.models_zoo.resnetv1b import resnet50_v1b
     from data.pascal_voc.detection_cv import VOCDetection
     classes = VOCDetection.CLASSES
     pretrained_base = False if pretrained else pretrained_base
-    base_network = resnet50_v1b(pretrained=pretrained_base, dilated=False,
-                                **kwargs)
-    features = list()
-    top_features = list()
-    for layer in ['conv1', 'bn1', 'relu', 'maxpool', 'layer1', 'layer2', 'layer3']:
-        features.append(getattr(base_network, layer))
-    for layer in ['layer4']:
-        top_features.append(getattr(base_network, layer))
+    outputs = [[6, 5], [7, 2]]
+    features, top_features = _parse_network('resnet50_v1b', outputs, pretrained_base)
+
     train_patterns = '|'.join(['.*dense', '.*rpn', '.*down(2|3|4)_conv', '.*layers(2|3|4)_conv'])
-    features, top_features = nn.Sequential(*features), nn.Sequential(*top_features)
     return get_faster_rcnn(
         name='resnet50_v1b', dataset='voc', pretrained=pretrained,
         features=features, top_features=top_features, classes=classes,
@@ -360,19 +350,13 @@ def faster_rcnn_resnet50_v1b_coco(pretrained=False, pretrained_base=True, **kwar
     >>> model = get_faster_rcnn_resnet50_v1b_coco(pretrained=True)
     >>> print(model)
     """
-    from model.models_zoo.resnetv1b import resnet50_v1b
     from data.mscoco.detection_cv import COCODetection
     classes = COCODetection.CLASSES
     pretrained_base = False if pretrained else pretrained_base
-    base_network = resnet50_v1b(pretrained=pretrained_base, dilated=False,
-                                **kwargs)
-    features, top_features = list(), list()
-    for layer in ['conv1', 'bn1', 'relu', 'maxpool', 'layer1', 'layer2', 'layer3']:
-        features.append(getattr(base_network, layer))
-    for layer in ['layer4']:
-        top_features.append(getattr(base_network, layer))
+    outputs = [[6, 5], [7, 2]]
+    features, top_features = _parse_network('resnet50_v1b', outputs, pretrained_base)
+
     train_patterns = '|'.join(['.*dense', '.*rpn', '.*down(2|3|4)_conv', '.*layers(2|3|4)_conv'])
-    features, top_features = nn.Sequential(*features), nn.Sequential(*top_features)
     return get_faster_rcnn(
         name='resnet50_v1b', dataset='coco', pretrained=pretrained,
         features=features, top_features=top_features, classes=classes,
@@ -416,17 +400,17 @@ def faster_rcnn_fpn_resnet50_v1b_coco(pretrained=False, pretrained_base=True, **
     classes = COCODetection.CLASSES
     pretrained_base = False if pretrained else pretrained_base
     features = FPNFeatureExpander(
-        network='resnet50_v1b', outputs=[[4, 2, 5], [5, 3, 5], [6, 5, 5], [7, 2, 5]],
-        channels=[64, 128, 256, 512], num_filters=[256, 256, 256, 256],
+        network='resnet50_v1b', outputs=[[4, 2], [5, 3], [6, 5], [7, 2]],
+        channels=[256, 512, 1024, 2048], num_filters=[256, 256, 256, 256],
         use_1x1=True, use_upsample=True, use_elewadd=True,
         use_p6=True, use_bias=True, pretrained=pretrained_base)
     top_features = None
     # 2 FC layer before RCNN cls and reg
-    roi_size = 14
-    box_features = nn.Sequential(
+    roi_size = 7
+    box_features = nn.ModuleList([nn.Sequential(
         nn.Linear(256 * roi_size ** 2, 1024), nn.ReLU(inplace=True),
         nn.Linear(1024, 1024), nn.ReLU(inplace=True),
-    )
+    )])
 
     train_patterns = '|'.join(
         ['.*dense', '.*rpn', '.*down(2|3|4)_conv', '.*layers(2|3|4)_conv', 'P'])
@@ -443,10 +427,209 @@ def faster_rcnn_fpn_resnet50_v1b_coco(pretrained=False, pretrained_base=True, **
 
 
 if __name__ == '__main__':
-    net = faster_rcnn_fpn_resnet50_v1b_coco()
+    net = faster_rcnn_resnet50_v1b_coco(pretrained_base=False)
     # print(net)
     net.eval()
     with torch.no_grad():
-        a = torch.randn(1, 3, 150, 150)
+        a = torch.randn(1, 3, 220, 220)
         out = net(a)
         print(out)
+
+
+def faster_rcnn_fpn_bn_resnet50_v1b_coco(pretrained=False, pretrained_base=True, **kwargs):
+    r"""Faster RCNN model with FPN from the paper
+    "Ren, S., He, K., Girshick, R., & Sun, J. (2015). Faster r-cnn: Towards
+    real-time object detection with region proposal networks"
+    "Lin, T., Dollar, P., Girshick, R., He, K., Hariharan, B., Belongie, S. (2016).
+    Feature Pyramid Networks for Object Detection"
+
+    Parameters
+    ----------
+    pretrained : bool or str
+        Boolean value controls whether to load the default pretrained weights for model.
+        String value represents the hashtag for a certain version of pretrained weights.
+    pretrained_base : bool or str, optional, default is True
+        Load pretrained base network, the extra layers are randomized. Note that
+        if pretrained is `Ture`, this has no effect.
+    num_devices : int, default is 0
+        Number of devices for sync batch norm layer. if less than 1, use all devices available.
+    ctx : Context, default CPU
+        The context in which to load the pretrained weights.
+    root : str, default '~/.mxnet/models'
+        Location for keeping the model parameters.
+
+    Examples
+    --------
+    >>> model = get_faster_rcnn_fpn_bn_resnet50_v1b_coco(pretrained=True)
+    >>> print(model)
+    """
+    from data.mscoco.detection_cv import COCODetection
+    classes = COCODetection.CLASSES
+    pretrained_base = False if pretrained else pretrained_base
+    norm_layer = nn.SyncBatchNorm if get_world_size() > 1 else nn.BatchNorm2d
+    features = FPNFeatureExpander(
+        network='resnet50_v1b', outputs=[[4, 2], [5, 3], [6, 5], [7, 2]],
+        channels=[256, 512, 1024, 2048], num_filters=[256, 256, 256, 256], use_1x1=True,
+        use_upsample=True, use_elewadd=True, use_p6=True, use_bias=False, pretrained=pretrained_base,
+        norm_layer=norm_layer, norm_kwargs=None)
+    top_features = None
+    # 1 Conv 1 FC layer before RCNN cls and reg
+    roi_size = 7
+    box_features = nn.ModuleList([
+        nn.Sequential(nn.Conv2d(256, 256, 3, padding=1), norm_layer(256), nn.ReLU(inplace=True)),
+        nn.Sequential(nn.Linear(256 * roi_size ** 2, 1024), nn.ReLU(inplace=True))
+    ])
+
+    train_patterns = '(?!.*moving)'  # excluding symbol bn moving mean and var
+    return get_faster_rcnn(
+        name='fpn_bn_resnet50_v1b', dataset='coco', pretrained=pretrained, features=features,
+        top_features=top_features, classes=classes, box_features=box_features,
+        short=800, max_size=1333, min_stage=2, max_stage=6, train_patterns=train_patterns,
+        nms_thresh=0.5, nms_topk=-1, post_nms=-1, roi_mode='align', roi_size=(roi_size, roi_size),
+        strides=(4, 8, 16, 32, 64), clip=4.42, channel=1024, rpn_in_channel=256, rpn_channel=1024,
+        base_size=16, scales=(2, 4, 8, 16, 32), ratios=(0.5, 1, 2), alloc_size=(384, 384),
+        rpn_nms_thresh=0.7, rpn_train_pre_nms=12000, rpn_train_post_nms=2000,
+        rpn_test_pre_nms=6000, rpn_test_post_nms=1000, rpn_min_size=0, num_sample=512,
+        pos_iou_thresh=0.5, pos_ratio=0.25, max_num_gt=100, **kwargs)
+
+
+def faster_rcnn_resnet101_v1d_voc(pretrained=False, pretrained_base=True, **kwargs):
+    r"""Faster RCNN model from the paper
+    "Ren, S., He, K., Girshick, R., & Sun, J. (2015). Faster r-cnn: Towards
+    real-time object detection with region proposal networks"
+
+    Parameters
+    ----------
+    pretrained : bool, optional, default is False
+        Load pretrained weights.
+    pretrained_base : bool or str, optional, default is True
+        Load pretrained base network, the extra layers are randomized. Note that
+        if pretrained is `True`, this has no effect.
+    ctx : Context, default CPU
+        The context in which to load the pretrained weights.
+    root : str, default '~/.mxnet/models'
+        Location for keeping the model parameters.
+
+    Examples
+    --------
+    >>> model = get_faster_rcnn_resnet101_v1d_voc(pretrained=True)
+    >>> print(model)
+    """
+    from data.pascal_voc.detection_cv import VOCDetection
+    classes = VOCDetection.CLASSES
+    pretrained_base = False if pretrained else pretrained_base
+    outputs = [[12, 21], [13, 2]]
+    features, top_features = _parse_network('resnet101_v1d', outputs, pretrained_base)
+
+    train_patterns = '|'.join(['.*dense', '.*rpn', '.*down(2|3|4)_conv', '.*layers(2|3|4)_conv'])
+    return get_faster_rcnn(
+        name='resnet101_v1d', dataset='voc', pretrained=pretrained,
+        features=features, top_features=top_features, classes=classes,
+        short=600, max_size=1000, train_patterns=train_patterns,
+        nms_thresh=0.3, nms_topk=400, post_nms=100,
+        roi_mode='align', roi_size=(14, 14), strides=16, clip=None,
+        rpn_in_channel=1024, rpn_channel=1024, base_size=16, scales=(2, 4, 8, 16, 32),
+        ratios=(0.5, 1, 2), alloc_size=(128, 128), rpn_nms_thresh=0.7,
+        rpn_train_pre_nms=12000, rpn_train_post_nms=2000,
+        rpn_test_pre_nms=6000, rpn_test_post_nms=300, rpn_min_size=16,
+        num_sample=128, pos_iou_thresh=0.5, pos_ratio=0.25, max_num_gt=100,
+        **kwargs)
+
+
+def faster_rcnn_resnet101_v1d_coco(pretrained=False, pretrained_base=True, **kwargs):
+    r"""Faster RCNN model from the paper
+    "Ren, S., He, K., Girshick, R., & Sun, J. (2015). Faster r-cnn: Towards
+    real-time object detection with region proposal networks"
+
+    Parameters
+    ----------
+    pretrained : bool, optional, default is False
+        Load pretrained weights.
+    pretrained_base : bool or str, optional, default is True
+        Load pretrained base network, the extra layers are randomized. Note that
+        if pretrained is `True`, this has no effect.
+    ctx : Context, default CPU
+        The context in which to load the pretrained weights.
+    root : str, default '~/.mxnet/models'
+        Location for keeping the model parameters.
+
+    Examples
+    --------
+    >>> model = get_faster_rcnn_resnet101_v1d_coco(pretrained=True)
+    >>> print(model)
+    """
+    from data.mscoco.detection_cv import COCODetection
+    classes = COCODetection.CLASSES
+    pretrained_base = False if pretrained else pretrained_base
+    outputs = [[12, 21], [13, 2]]
+    features, top_features = _parse_network('resnet101_v1d', outputs, pretrained_base)
+
+    train_patterns = '|'.join(['.*dense', '.*rpn', '.*down(2|3|4)_conv', '.*layers(2|3|4)_conv'])
+    return get_faster_rcnn(
+        name='resnet101_v1d', dataset='coco', pretrained=pretrained,
+        features=features, top_features=top_features, classes=classes,
+        short=800, max_size=1333, train_patterns=train_patterns,
+        nms_thresh=0.5, nms_topk=-1, post_nms=-1,
+        roi_mode='align', roi_size=(14, 14), strides=16, clip=4.42,
+        rpn_in_channel=1024, rpn_channel=1024, base_size=16, scales=(2, 4, 8, 16, 32),
+        ratios=(0.5, 1, 2), alloc_size=(128, 128), rpn_nms_thresh=0.7,
+        rpn_train_pre_nms=12000, rpn_train_post_nms=2000,
+        rpn_test_pre_nms=6000, rpn_test_post_nms=1000, rpn_min_size=0,
+        num_sample=128, pos_iou_thresh=0.5, pos_ratio=0.25, max_num_gt=100,
+        **kwargs)
+
+
+def faster_rcnn_fpn_resnet101_v1d_coco(pretrained=False, pretrained_base=True, **kwargs):
+    r"""Faster RCNN model with FPN from the paper
+    "Ren, S., He, K., Girshick, R., & Sun, J. (2015). Faster r-cnn: Towards
+    real-time object detection with region proposal networks"
+    "Lin, T., Dollar, P., Girshick, R., He, K., Hariharan, B., Belongie, S. (2016).
+    Feature Pyramid Networks for Object Detection"
+
+    Parameters
+    ----------
+    pretrained : bool or str
+        Boolean value controls whether to load the default pretrained weights for model.
+        String value represents the hashtag for a certain version of pretrained weights.
+    pretrained_base : bool or str, optional, default is True
+        Load pretrained base network, the extra layers are randomized. Note that
+        if pretrained is `Ture`, this has no effect.
+    ctx : Context, default CPU
+        The context in which to load the pretrained weights.
+    root : str, default '~/.mxnet/models'
+        Location for keeping the model parameters.
+
+    Examples
+    --------
+    >>> model = get_faster_rcnn_fpn_resnet101_v1d_coco(pretrained=True)
+    >>> print(model)
+    """
+    from data.mscoco.detection_cv import COCODetection
+    classes = COCODetection.CLASSES
+    pretrained_base = False if pretrained else pretrained_base
+    features = FPNFeatureExpander(
+        network='resnet101_v1d', outputs=[[10, 2, 5], [11, 3, 5], [12, 22, 5], [13, 2, 5]],
+        channels=[64, 128, 256, 512], num_filters=[256, 256, 256, 256],
+        use_1x1=True, use_upsample=True, use_elewadd=True,
+        use_p6=True, use_bias=True, pretrained=pretrained_base)
+
+    top_features = None
+    # 2 FC layer before RCNN cls and reg
+    roi_size = 7
+    box_features = nn.ModuleList([nn.Sequential(
+        nn.Linear(256 * roi_size ** 2, 1024), nn.ReLU(inplace=True),
+        nn.Linear(1024, 1024), nn.ReLU(inplace=True)
+    )])
+
+    train_patterns = '|'.join(
+        ['.*dense', '.*rpn', '.*down(2|3|4)_conv', '.*layers(2|3|4)_conv', 'P'])
+    return get_faster_rcnn(
+        name='fpn_resnet101_v1d', dataset='coco', pretrained=pretrained, features=features,
+        top_features=top_features, classes=classes, box_features=box_features,
+        short=800, max_size=1333, min_stage=2, max_stage=6, train_patterns=train_patterns,
+        nms_thresh=0.5, nms_topk=-1, post_nms=-1, roi_mode='align', roi_size=(7, 7),
+        strides=(4, 8, 16, 32, 64), clip=4.42, channel=1024, rpn_in_channel=256, rpn_channel=1024,
+        base_size=16, scales=(2, 4, 8, 16, 32), ratios=(0.5, 1, 2), alloc_size=(384, 384),
+        rpn_nms_thresh=0.7, rpn_train_pre_nms=12000, rpn_train_post_nms=2000,
+        rpn_test_pre_nms=6000, rpn_test_post_nms=1000, rpn_min_size=0, num_sample=512,
+        pos_iou_thresh=0.5, pos_ratio=0.25, max_num_gt=100, **kwargs)

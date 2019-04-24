@@ -142,6 +142,12 @@ class COCOKeyPointsMetric(EvalMetric):
                                   'keypoints': kpt,
                                   'score': rescore})
 
-    def combine_metric(self, metric):
-        self._results += metric._results
-        # self._current_id += metric._current_id
+    def get_value(self):
+        return {'_results': self._results}
+
+    def combine_value(self, values):
+        self._results += values['_results']
+
+    # def combine_metric(self, metric):
+    #     self._results += metric._results
+    #     # self._current_id += metric._current_id

@@ -174,15 +174,17 @@ class VOCMApMetric(EvalMetric):
                     else:
                         self._match[l].append(0)
 
-    def combine_metric(self, metric):
-        assert isinstance(metric, VOCMApMetric) and metric.num == self.num
-        for key, value in metric._n_pos.items():
+    def get_value(self):
+        return {'_n_pos': self._n_pos, '_score': self._score, '_match': self._match}
+
+    def combine_value(self, values):
+        for key, value in values['_n_pos'].items():
             if key in self._n_pos:
                 self._n_pos[key] += value
             else:
                 self._n_pos[key] = value
 
-        for key, value in metric._score.items():
+        for key, value in values['_score'].items():
             if len(value) > 0 and value[0].is_cuda:
                 value = [v.to('cuda') for v in value]
             if key in self._score:
@@ -190,11 +192,33 @@ class VOCMApMetric(EvalMetric):
             else:
                 self._score[key] = value
 
-        for key, value in metric._match.items():
+        for key, value in values['_match'].items():
             if key in self._match:
                 self._match[key] += value
             else:
                 self._match[key] = value
+
+    # def combine_metric(self, metric):
+    #     assert isinstance(metric, VOCMApMetric) and metric.num == self.num
+    #     for key, value in metric._n_pos.items():
+    #         if key in self._n_pos:
+    #             self._n_pos[key] += value
+    #         else:
+    #             self._n_pos[key] = value
+    #
+    #     for key, value in metric._score.items():
+    #         if len(value) > 0 and value[0].is_cuda:
+    #             value = [v.to('cuda') for v in value]
+    #         if key in self._score:
+    #             self._score[key] += value
+    #         else:
+    #             self._score[key] = value
+    #
+    #     for key, value in metric._match.items():
+    #         if key in self._match:
+    #             self._match[key] += value
+    #         else:
+    #             self._match[key] = value
 
     def _update(self):
         """ update num_inst and sum_metric """
@@ -281,6 +305,7 @@ if __name__ == '__main__':
     gt_labels = torch.Tensor([[1]])
 
     metric.update([pred_bboxes], [pred_labels], [pred_scores], [gt_bboxes], [gt_labels])
+    # metric.update(pred_bboxes, pred_labels, pred_scores, gt_bboxes, gt_labels)
     print(metric._n_pos)
 
 

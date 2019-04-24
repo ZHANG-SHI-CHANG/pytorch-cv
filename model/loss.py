@@ -4,26 +4,55 @@ import torch.nn.functional as F
 from utils.bbox_pt import hard_negative_mining
 
 
+# class MixSoftmaxCrossEntropyLoss(nn.Module):
+#     def __init__(self, aux=True, aux_weight=0.2, ignore_label=-1, **kwargs):
+#         super(MixSoftmaxCrossEntropyLoss, self).__init__(**kwargs)
+#         self.aux = aux
+#         self.aux_weight = aux_weight
+#         self.criterion1 = nn.CrossEntropyLoss(ignore_index=ignore_label)
+#         if aux:
+#             self.criterion2 = nn.CrossEntropyLoss(ignore_index=ignore_label)
+#
+#     def _aux_forward(self, pred1, pred2, label):
+#         loss1 = self.criterion1(pred1, label)
+#         loss2 = self.criterion2(pred2, label)
+#
+#         return loss1 + self.aux_weight * loss2
+#
+#     def forward(self, preds, target):
+#         if self.aux:
+#             return dict(loss=self._aux_forward(*preds, target))
+#         else:
+#             return dict(loss=self.criterion1(*preds, target))
+
 class MixSoftmaxCrossEntropyLoss(nn.Module):
     def __init__(self, aux=True, aux_weight=0.2, ignore_label=-1, **kwargs):
         super(MixSoftmaxCrossEntropyLoss, self).__init__(**kwargs)
         self.aux = aux
         self.aux_weight = aux_weight
-        self.criterion1 = nn.CrossEntropyLoss(ignore_index=ignore_label)
-        if aux:
-            self.criterion2 = nn.CrossEntropyLoss(ignore_index=ignore_label)
+        self.ignore_label = ignore_label
 
     def _aux_forward(self, pred1, pred2, label):
-        loss1 = self.criterion1(pred1, label)
-        loss2 = self.criterion2(pred2, label)
+        loss1 = F.cross_entropy(pred1, label, ignore_index=self.ignore_label)
+        loss2 = F.cross_entropy(pred2, label, ignore_index=self.ignore_label)
 
         return loss1 + self.aux_weight * loss2
 
+    def _mix_forward(self, preds, label):
+        for i, pred in enumerate(preds):
+            if i == 0:
+                loss = F.cross_entropy(pred, label, ignore_index=self.ignore_label)
+            else:
+                loss = loss + F.cross_entropy(pred, label, ignore_index=self.ignore_label)
+        return loss
+
     def forward(self, preds, target):
         if self.aux:
-            return self._aux_forward(*preds, target)
+            return dict(loss=self._aux_forward(*preds, target))
+        elif len(preds) > 1:
+            return dict(loss=self._mix_forward(preds, target))
         else:
-            return self.criterion1(*preds, target)
+            return dict(loss=F.cross_entropy(*preds, target, ignore_index=self.ignore_label))
 
 
 class YOLOV3Loss(nn.Module):
@@ -150,7 +179,6 @@ if __name__ == '__main__':
 
     out = block(cls_pred, box_pred, cls_target, box_target)
     print(out)
-
 
     # np.random.seed(10)
     # objness = np.random.random(size=(1, 10, 1))

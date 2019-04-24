@@ -801,11 +801,6 @@ def resnet101_v1s(pretrained=False, root=os.path.expanduser('~/.torch/models'), 
     return model
 
 
-if __name__ == '__main__':
-    net = resnet50_v1b()
-    print(net)
-
-
 def resnet152_v1s(pretrained=False, root=os.path.expanduser('~/.torch/models'), **kwargs):
     """Constructs a ResNetV1s-152 model.
 
@@ -833,3 +828,16 @@ def resnet152_v1s(pretrained=False, root=os.path.expanduser('~/.torch/models'), 
         model.classes = attrib.classes
         model.classes_long = attrib.classes_long
     return model
+
+
+if __name__ == '__main__':
+    net = resnet18_v1b(pretrained=False)
+    print(net)
+    # import numpy as np
+    #
+    # np.random.seed(10)
+    # x = np.random.randn(1, 3, 200, 200).astype(np.float32)
+    # x = torch.from_numpy(x)
+    # with torch.no_grad():
+    #     out = net(x)
+    # print(net)

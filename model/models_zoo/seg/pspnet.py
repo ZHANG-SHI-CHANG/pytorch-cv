@@ -85,6 +85,7 @@ def get_psp(dataset='pascal_voc', backbone='resnet50', pretrained=False, pretrai
     """
     acronyms = {
         'pascal_voc': 'voc',
+        'pascal_paper': 'voc',
         'pascal_aug': 'voc',
         'ade20k': 'ade',
         'coco': 'coco',

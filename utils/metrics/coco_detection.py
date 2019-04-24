@@ -221,6 +221,13 @@ class COCODetectionMetric(EvalMetric):
                                       'bbox': bbox[:4].tolist(),
                                       'score': score})
 
-    def combine_metric(self, metric):
-        self._results += metric._results
-        self._current_id += metric._current_id
+    def get_value(self):
+        return {'_results': self._results, '_current_id': self._current_id}
+
+    def combine_value(self, values):
+        self._results += values['_results']
+        self._current_id += values['_current_id']
+
+    # def combine_metric(self, metric):
+    #     self._results += metric._results
+    #     self._current_id += metric._current_id

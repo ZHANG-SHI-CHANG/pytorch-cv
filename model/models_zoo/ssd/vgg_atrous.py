@@ -8,6 +8,7 @@ from torch import nn
 import torch.nn.functional as F
 
 from model.module.basic import _init_scale
+from utils.init import xavier_uniform_init, mxnet_xavier_normal_init
 
 __all__ = ['VGGAtrousExtractor', 'get_vgg_atrous_extractor', 'vgg16_atrous_300',
            'vgg16_atrous_512']
@@ -97,13 +98,6 @@ class VGGAtrousBase(nn.Module):
     def forward(self, x):
         raise NotImplementedError
 
-    def _weights_init(self):
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
-                if m.bias is not None:
-                    nn.init.constant_(m.bias, 0)
-
 
 class VGGAtrousExtractor(VGGAtrousBase):
     """VGG Atrous multi layer feature extractor which produces multiple output
@@ -137,12 +131,12 @@ class VGGAtrousExtractor(VGGAtrousBase):
             self.channel.append(f)
             self.extras.append(nn.Sequential(*extra))
         self.extras = nn.Sequential(*self.extras)
-        self._weights_init()
+        self._weight_init()
 
     def forward(self, x):
         x = x * self.init_scale
         assert len(self.stages) == 6
-        outputs = []
+        outputs = list()
         for stage in self.stages[:3]:
             x = stage(x)
             x = F.max_pool2d(x, kernel_size=2, stride=2, ceil_mode=True)
@@ -158,6 +152,12 @@ class VGGAtrousExtractor(VGGAtrousBase):
             x = extra(x)
             outputs.append(x)
         return outputs
+
+    def _weight_init(self):
+        # self.stages.apply(xavier_uniform_init)
+        # self.extras.apply(xavier_uniform_init)
+        self.stages.apply(mxnet_xavier_normal_init)
+        self.extras.apply(mxnet_xavier_normal_init)
 
 
 # -----------------------------------------------------------------------------
@@ -227,6 +227,17 @@ def vgg16_atrous_512(**kwargs):
 
 
 if __name__ == '__main__':
-    net = vgg16_atrous_300()
-    a = torch.randn(1, 3, 300, 300)
-    print(len(net(a)))
+    net = vgg16_atrous_300(pretrained=True)
+    import numpy as np
+    np.random.seed(10)
+
+    a = np.random.randn(1, 3, 300, 300).astype(np.float32)
+    a = torch.from_numpy(a)
+
+    with torch.no_grad():
+        out = net(a)
+
+    print(out[2], out[2].shape)
+
+    # a = torch.randn(1, 3, 300, 300)
+    # print(len(net(a)))

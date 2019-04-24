@@ -1,7 +1,6 @@
 """Base dataset methods."""
 import os
 from torch.utils import data
-from data import samplers
 
 
 class ClassProperty(object):
@@ -106,16 +105,6 @@ class VisionDataset(data.Dataset):
         if lazy:
             return trans
         return SimpleDataset([i for i in trans])
-
-
-def make_data_sampler(dataset, shuffle, distributed):
-    if distributed:
-        return samplers.DistributedSampler(dataset, shuffle=shuffle)
-    if shuffle:
-        sampler = data.sampler.RandomSampler(dataset)
-    else:
-        sampler = data.sampler.SequentialSampler(dataset)
-    return sampler
 
 
 #### for debug (Note: delete)

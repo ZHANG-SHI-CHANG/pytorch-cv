@@ -58,11 +58,11 @@ class VOCSegmentation(SegmentationDataset):
         self.masks = []
         with open(os.path.join(_split_f), "r") as lines:
             for line in lines:
-                _image = os.path.join(_image_dir, line.rstrip('\n')+".jpg")
+                _image = os.path.join(_image_dir, line.rstrip('\n') + ".jpg")
                 assert os.path.isfile(_image)
                 self.images.append(_image)
                 if split != 'test':
-                    _mask = os.path.join(_mask_dir, line.rstrip('\n')+".png")
+                    _mask = os.path.join(_mask_dir, line.rstrip('\n') + ".png")
                     assert os.path.isfile(_mask)
                     self.masks.append(_mask)
 
@@ -106,3 +106,8 @@ class VOCSegmentation(SegmentationDataset):
                 'bus', 'car', 'cat', 'chair', 'cow', 'diningtable', 'dog', 'horse',
                 'motorcycle', 'person', 'potted-plant', 'sheep', 'sofa', 'train',
                 'tv')
+
+
+if __name__ == '__main__':
+    data = VOCSegmentation(mode='val')
+    print(data[0][1].max())

@@ -37,14 +37,6 @@ class ConvPredictor(nn.Module):
         self.activation = activation
         self.predictor = nn.Conv2d(in_channel, channel, kernel,
                                    stride=stride, padding=pad, bias=use_bias)
-        self._weights_init()
-
-    def _weights_init(self):
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                nn.init.xavier_uniform_(m.weight)
-                if m.bias is not None:
-                    nn.init.constant_(m.bias, 0)
 
     def forward(self, x):
         x = self.predictor(x)

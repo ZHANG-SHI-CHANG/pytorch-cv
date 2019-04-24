@@ -21,8 +21,16 @@ def _upsample(x, stride=2):
     dims_expand.insert(d + 1, stride)
     dims[d - 1] *= stride
     dims[d - 2] *= stride
-    x.unsqueeze_(d - 1).unsqueeze_(d + 1)
+    x = x.unsqueeze(d - 1).unsqueeze(d + 1)
     return x.expand(*dims_expand).contiguous().view(*dims)
+
+
+if __name__ == '__main__':
+    x = torch.randn(1, 3, 10, 10)
+    x.requires_grad = True
+    out = _upsample(x)
+    loss = out.sum()
+    loss.backward()
 
 
 def prefetch(anchors, h, w):

@@ -63,17 +63,32 @@ class SegmentationMetric(EvalMetric):
         self.total_correct = 0
         self.total_label = 0
 
-    def combine_metric(self, metric):
+    def get_value(self):
+        return {'total_inter': self.total_inter, 'total_union': self.total_union,
+                'total_correct': self.total_correct, 'total_label': self.total_label}
+
+    def combine_value(self, values):
         if self.total_inter.is_cuda:
-            metric.total_inter = metric.total_inter.to(self.total_inter.device)
-            self.total_inter += metric.total_inter
-            metric.total_union = metric.total_union.to(self.total_union.device)
-            self.total_union += metric.total_union
+            device = torch.device('cuda')
+            self.total_inter += values['total_inter'].to(device)
+            self.total_union += values['total_union'].to(device)
         else:
-            self.total_inter += metric.total_inter
-            self.total_union += metric.total_union
-        self.total_correct += metric.total_correct
-        self.total_label += metric.total_label
+            self.total_inter += values['total_inter']
+            self.total_union += values['total_union']
+        self.total_correct += values['total_correct']
+        self.total_label += values['total_label']
+
+    # def combine_metric(self, metric):
+    #     if self.total_inter.is_cuda:
+    #         metric.total_inter = metric.total_inter.to(self.total_inter.device)
+    #         self.total_inter += metric.total_inter
+    #         metric.total_union = metric.total_union.to(self.total_union.device)
+    #         self.total_union += metric.total_union
+    #     else:
+    #         self.total_inter += metric.total_inter
+    #         self.total_union += metric.total_union
+    #     self.total_correct += metric.total_correct
+    #     self.total_label += metric.total_label
 
 
 def batch_pix_accuracy(output, target):

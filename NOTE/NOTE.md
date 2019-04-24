@@ -68,6 +68,22 @@
     - `nd.shape_array(a)`
     - `a.shape`
 
+15. 拆分向量
+
+    - `nd.split(x, axis, num_outputs, squeeze_axis)`：按照某个维度拆分成`num_outputs`个，如果`squeeze_axis`为true的话，该维度拆分后每个为1维则将该维去掉
+    - `torch.split(tensor, split_size_or_sections, dim=0)`：按照dim维拆分成每一个该维大小为split_size_or_sections大小
+
+16. 按下标提取元素
+
+    - `nd.gather_nd(data, indices)`
+    - `torch.gather(data, dim, index)`
+
+      > 其实也不对，这个话题可以参考：[6445](https://discuss.pytorch.org/t/how-to-do-the-tf-gather-nd-in-pytorch/6445)，[27402](https://discuss.pytorch.org/t/batched-index-select-tf-gather-nd/27402/8)
+
+17. 获取维度数目
+    - `numpy`对象：`a.ndim`
+    - `torch`对象：`a.ndimensions()`
+
 ### torchvision
 
 1. 左右翻转：
@@ -83,6 +99,16 @@
 - `data.DistributedSampler`：使得Dataset每次`__getitem__`获得的是多个data（和指定的gpu数目相关---以iter形式）
 - 
 
+### 注意事项
+
+1. 对于每次输入大小改变的情况，将`torch.backends.cudnn`设置为`False`，否则会严重影响速度（比如在Faster-RCNN测试等阶段）
+
 ## python
 
 - 善用`getattr`：利用属性名从某个类返回其中的某个"属性"（比如某一层网络结构）
+
+- `setattr(name, 模块)`：将模块属性命名为name，方便`getattr`"寻找"
+
+  > 类中对应`self.__setattr__`，`self.__getattr__`
+
+- opencv的图片对应的：`img.shape ---> h, w`； 而PIL对应的则为`img.size--->w, h`

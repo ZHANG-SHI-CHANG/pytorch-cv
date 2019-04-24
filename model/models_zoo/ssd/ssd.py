@@ -10,11 +10,12 @@ import torch.nn.functional as F
 from model.models_zoo.ssd.anchor import SSDAnchorGenerator
 from model.module.predictor import ConvPredictor
 from model.module.features import FeatureExpander
-from model.ops.bbox import box_nms_py, box_nms
+from model.ops.bbox import box_nms
 from model.loss import SSDMultiBoxLoss
 from model.module.coder import MultiPerClassDecoder, NormalizedBoxCenterDecoder
 from model.models_zoo.ssd.vgg_atrous import vgg16_atrous_300, vgg16_atrous_512
 from data.pascal_voc.detection import VOCDetection
+from utils.init import xavier_uniform_init, mxnet_xavier_uniform_init
 
 __all__ = ['SSD', 'get_ssd',
            # voc
@@ -124,6 +125,7 @@ class SSD(nn.Module):
         self.nms_thresh = nms_thresh
         self.nms_topk = nms_topk
         self.post_nms = post_nms
+        self.all_stride = 8 if network is None else 16  # for anchor
 
         if network is None:
             # use fine-grained manually designed block as features
@@ -160,6 +162,7 @@ class SSD(nn.Module):
         self.bbox_decoder = NormalizedBoxCenterDecoder(stds)
         self.cls_decoder = MultiPerClassDecoder(len(self.classes) + 1, thresh=0.01)
         self.criterion = SSDMultiBoxLoss(3.0)
+        self._weight_init()
 
     @property
     def num_classes(self):
@@ -174,7 +177,7 @@ class SSD(nn.Module):
         return len(self.classes)
 
     def anchors(self):
-        features, s = list(), self.base_size / 8
+        features, s = list(), self.base_size / self.all_stride
         while s // 2 > 0:
             features.append(torch.zeros(1, 1, math.ceil(s), math.ceil(s)))
             s /= 2
@@ -223,7 +226,7 @@ class SSD(nn.Module):
         if self.training:
             cls_target, box_target = targets
             regs_loss, cls_loss = self.criterion(cls_preds, box_preds, cls_target, box_target)
-            return regs_loss, cls_loss
+            return dict(reg_loss=regs_loss, cls_loss=cls_loss)
         anchors = [ag(feat).view(1, -1)
                    for feat, ag in zip(features, self.anchor_generators)]
         anchors = torch.cat(anchors, dim=1).view((1, -1, 4))
@@ -293,6 +296,12 @@ class SSD(nn.Module):
         #         class_predictors.add(new_cp)
         #     self.class_predictors = class_predictors
         #     self.cls_decoder = MultiPerClassDecoder(len(self.classes) + 1, thresh=0.01)
+
+    def _weight_init(self):
+        # self.class_predictors.apply(xavier_uniform_init)
+        # self.box_predictors.apply(xavier_uniform_init)
+        self.class_predictors.apply(mxnet_xavier_uniform_init)
+        self.box_predictors.apply(mxnet_xavier_uniform_init)
 
 
 def get_ssd(name, base_size, features, filters, channels, sizes, ratios, steps, classes,
@@ -605,5 +614,16 @@ def ssd_512_mobilenet1_0_coco(pretrained=False, pretrained_base=True, **kwargs):
 
 
 if __name__ == '__main__':
-    net = ssd_512_resnet50_v1_voc()
-    print(net)
+    net = ssd_300_vgg16_atrous_voc(pretrained=True)
+    import numpy as np
+
+    np.random.seed(10)
+    a = np.random.randn(2, 3, 300, 300).astype(np.float32)
+    b = np.random.randint(0, 20, size=(2, 8732)).astype(np.float32)
+    c = np.random.randn(2, 8732, 4).astype(np.float32)
+
+    a = torch.from_numpy(a)
+    b = torch.from_numpy(b)
+    c = torch.from_numpy(c)
+    out = net(a, (b, c))
+    print(out)

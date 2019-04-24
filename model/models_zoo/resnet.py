@@ -653,7 +653,8 @@ def resnet152_v2(**kwargs):
 if __name__ == '__main__':
     import torch
 
-    net = resnet50_v1()
+    net = resnet18_v1()
+    print(net)
     # cnt = 0
     # for key in net.state_dict().keys():
     #     if not key.endswith('num_batches_tracked'):

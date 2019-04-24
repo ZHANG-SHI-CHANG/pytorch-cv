@@ -160,7 +160,8 @@ class YOLOV3(nn.Module):
             all_preds = [torch.cat(p, dim=1) for p in [
                 all_objectness, all_box_centers, all_box_scales, all_class_pred]]
             all_targets = self._target_generator(box_preds, *args)
-            return self._loss(*(all_preds + all_targets))
+            obj_loss, center_loss, scale_loss, cls_loss = self._loss(*(all_preds + all_targets))
+            return dict(obj_loss=obj_loss, center_loss=center_loss, scale_loss=scale_loss, cls_loss=cls_loss)
 
         # concat all detection results from different stages
         result = torch.cat(all_detections, dim=1)
@@ -511,9 +512,15 @@ def yolo3_mobilenet1_0_coco(pretrained_base=True, pretrained=False,
 
 
 if __name__ == '__main__':
-    net = yolo3_darknet53_voc(pretrained_base=False)
-    print(net.stages)
-    # a = torch.randn(1, 3, 416, 416)
-    # net.eval()
-    # out = net(a)
-    # print(out[0].shape)
+    net = yolo3_darknet53_voc(pretrained=True)
+    import numpy as np
+
+    np.random.seed(10)
+    a = np.random.randn(1, 3, 416, 416).astype(np.float32)
+    b = np.random.randn(1, 20, 4).astype(np.float32)
+    c = [np.random.randn(1, 10647, k).astype(np.float32) for k in [1, 2, 2, 2, 20]]
+    a = torch.from_numpy(a)
+    b = torch.from_numpy(b)
+    c = [torch.from_numpy(k) for k in c]
+
+    print(net(a, b, *c))

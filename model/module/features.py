@@ -7,6 +7,8 @@ from __future__ import absolute_import
 
 from torch import nn
 import torch.nn.functional as F
+from utils.distributed import get_world_size
+from utils.init import xavier_uniform_init, mxnet_xavier_normal_init
 
 
 def _parse_network(network, outputs, pretrained, norm_layer=nn.BatchNorm2d,
@@ -32,6 +34,8 @@ def _parse_network(network, outputs, pretrained, norm_layer=nn.BatchNorm2d,
     results = [[] for _ in range(l)]
     if isinstance(network, str):
         from model.model_zoo import get_model
+        if norm_layer == nn.BatchNorm2d and get_world_size() > 1:
+            norm_layer = nn.SyncBatchNorm
         network = get_model(network, pretrained=pretrained, norm_layer=norm_layer,
                             norm_kwargs=norm_kwargs, **kwargs).features
 
@@ -127,6 +131,10 @@ class FeatureExpander(nn.Module):
             output.append(x)
         return output
 
+    def _weight_init(self):
+        # self.extras.apply(xavier_uniform_init)
+        self.extras.apply(mxnet_xavier_normal_init)
+
 
 class FPNFeatureExpander(nn.Module):
     """Feature extractor with additional layers to append.
@@ -165,10 +173,10 @@ class FPNFeatureExpander(nn.Module):
 
     """
 
-    # TODO: add weight init
+    # TODO: add weight init --- here version is due to "converted model"
     def __init__(self, network, outputs, channels, num_filters, use_1x1=True, use_upsample=True,
-                 use_elewadd=True, use_p6=False, use_bias=False, pretrained=False, norm_layer=None,
-                 norm_kwargs=None):
+                 use_elewadd=True, use_p6=False, use_bias=False, use_relu=False, version='v1',
+                 pretrained=False, norm_layer=None, norm_kwargs=None):
         super(FPNFeatureExpander, self).__init__()
         self.features = nn.ModuleList(_parse_network(network, outputs, pretrained))
         extras1 = [[] for _ in range(len(self.features))]
@@ -194,35 +202,46 @@ class FPNFeatureExpander(nn.Module):
                                     bias=use_bias))
             if norm_layer is not None:
                 extra2.append(norm_layer(f, **norm_kwargs))
+            if use_relu:
+                extra2.append(nn.ReLU(inplace=True))
         self.extras1 = nn.ModuleList([nn.Sequential(*ext) for ext in extras1])
         self.extras2 = nn.ModuleList([nn.Sequential(*ext) for ext in extras2])
         if use_p6:
             if norm_layer is not None:
-                self.y_p6 = nn.Sequential(nn.Conv2d(f, f, kernel_size=(3, 3), padding=(1, 1),
-                                                    stride=2, bias=use_bias),
-                                          norm_layer(f, **norm_kwargs))
+                self.extra = nn.Sequential(nn.Conv2d(f, f, kernel_size=(3, 3), padding=(1, 1),
+                                                     stride=2, bias=use_bias),
+                                           norm_layer(f, **norm_kwargs))
             else:
-                self.y_p6 = nn.Conv2d(f, f, kernel_size=(3, 3), padding=(1, 1),
-                                      stride=2, bias=use_bias)
+                self.extra = nn.Conv2d(f, f, kernel_size=(3, 3), padding=(1, 1),
+                                       stride=2, bias=use_bias)
         self.use_upsample, self.use_elewadd = use_upsample, use_elewadd
-        self.use_p6 = use_p6
+        self.use_p6, self.version = use_p6, version
 
     def forward(self, x):
-        outputs = list()
-        for i, (feat, extra1, extra2) in enumerate(zip(self.features, self.extras1, self.extras2)):
+        feat_list = list()
+        for feat in self.features:
             x = feat(x)
-            out = extra1(x)
-            if i > 0:
-                if self.use_upsample:
-                    out_ = F.interpolate(outputs[-1], scale_factor=2, mode='nearest')
-                if self.use_elewadd:
-                    out_ = out_[..., :out.shape[2], : out.shape[3]]
-                    out_ = out_ + out
-            out = extra2(out) if i == 0 else extra2(out_)
-            outputs.append(out)
-        if self.use_p6:
-            outputs.append(self.y_p6(out_))
-        return outputs
+            feat_list.append(x)
+
+        outputs, num = list(), len(feat_list)
+        for i in range(num - 1, -1, -1):
+            if i == num - 1:
+                y = self.extras1[i](feat_list[i])
+                if self.use_p6:
+                    outputs.append(self.extra(y))
+            else:
+                bf = self.extras1[i](feat_list[i])
+                if self.version == 'v1':
+                    if self.use_upsample:
+                        y = F.interpolate(y, scale_factor=2, mode='nearest')
+                    if self.use_elewadd:
+                        y = bf + y[..., :bf.shape[2], : bf.shape[3]]
+                else:
+                    y = F.interpolate(y, size=(bf.shape[2], bf.shape[3]), mode='bilinear', align_corners=False)
+                    y = bf + y
+            outputs.append(self.extras2[i](y))
+
+        return outputs[::-1]
 
 
 if __name__ == '__main__':

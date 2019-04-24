@@ -90,9 +90,9 @@ def resize(img, size, interpolation=cv2.INTER_CUBIC):
         raise TypeError('img should be numpy image. Got {}'.format(type(img)))
     if not (isinstance(size, int) or (isinstance(size, collections.Iterable) and len(size) == 2)):
         raise TypeError('Got inappropriate size arg: {}'.format(size))
-    w, h, = size
 
     if isinstance(size, int):
+        h, w = img.shape[0], img.shape[1]
         if (w <= h and w == size) or (h <= w and h == size):
             return img
         if w < h:
@@ -106,7 +106,7 @@ def resize(img, size, interpolation=cv2.INTER_CUBIC):
 
     else:
         output = cv2.resize(img, dsize=size[::-1], interpolation=interpolation)
-    if img.shape[2] == 1:
+    if img.ndim > 2 and img.shape[2] == 1:
         return output[:, :, np.newaxis]
     else:
         return output

@@ -2,7 +2,6 @@
 from __future__ import absolute_import
 from __future__ import division
 import os
-import logging
 import numpy as np
 import cv2
 
@@ -129,5 +128,5 @@ class VOCDetection(VisionDataset):
 
     def _preload_labels(self):
         """Preload all labels into memory."""
-        logging.debug("Preloading %s labels into memory...", str(self))
+        print("Preloading " + str(self) + "labels into memory...")
         return [self._load_label(idx) for idx in range(len(self))]

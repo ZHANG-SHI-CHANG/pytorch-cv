@@ -78,6 +78,31 @@ def all_gather(data):
     return data_list
 
 
+def reduce_loss_dict(loss_dict):
+    """
+    Reduce the loss dictionary from all processes so that process with rank
+    0 has the averaged results. Returns a dict with the same fields as
+    loss_dict, after reduction.
+    """
+    world_size = get_world_size()
+    if world_size < 2:
+        return loss_dict
+    with torch.no_grad():
+        loss_names = []
+        all_losses = []
+        for k in sorted(loss_dict.keys()):
+            loss_names.append(k)
+            all_losses.append(loss_dict[k])
+        all_losses = torch.stack(all_losses, dim=0)
+        dist.reduce(all_losses, dst=0)
+        if dist.get_rank() == 0:
+            # only main process gets accumulated, so only divide by
+            # world_size in this case
+            all_losses /= world_size
+        reduced_losses = {k: v for k, v in zip(loss_names, all_losses)}
+    return reduced_losses
+
+
 def reduce_dict(input_dict, average=True):
     """
     Args:
@@ -109,13 +134,12 @@ def reduce_dict(input_dict, average=True):
 
 # TODO: fix bug
 def accumulate_metric(metric):
-    all_metric = all_gather(metric)
+    all_values = all_gather(metric.get_value())
     if not is_main_process():
         return None, None
-    metric_res = all_metric[0]
-    for i in range(1, len(all_metric)):
-        metric_res.combine_metric(all_metric[i])
-    return metric_res.get()
+    for value in all_values[1:]:
+        metric.combine_value(value)
+    return metric.get()
 
 
 # def accumulate_values(values, metric):

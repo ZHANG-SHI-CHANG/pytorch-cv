@@ -94,6 +94,7 @@ def get_deeplab(dataset='pascal_voc', backbone='resnet50', pretrained=False,
     """
     acronyms = {
         'pascal_voc': 'voc',
+        'pascal_paper': 'voc',
         'pascal_aug': 'voc',
         'ade20k': 'ade',
         'coco': 'coco',

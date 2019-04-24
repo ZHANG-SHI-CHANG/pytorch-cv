@@ -193,7 +193,8 @@ class ResNetV1b(nn.Module):
             self.layer4 = self._make_layer(block, channel[3], 512, layers[3], strides=2,
                                            avg_down=avg_down, norm_layer=norm_layer,
                                            last_gamma=last_gamma)
-
+        # self.features = nn.Sequential(self.conv1, self.bn1, self.relu, self.maxpool,
+        #                               self.layer1, self.layer2, self.layer3, self.layer4)
         self.drop = None
         if final_drop > 0.0:
             self.drop = nn.Dropout(final_drop)
@@ -359,6 +360,18 @@ def resnet50_v1b(pretrained=False, root=os.path.expanduser('~/.torch/models'), *
         model.classes = attrib.classes
         model.classes_long = attrib.classes_long
     return model
+
+
+if __name__ == '__main__':
+    net = resnet50_v1b(pretrained=True)
+    import numpy as np
+
+    np.random.seed(10)
+    x = np.random.randn(1, 3, 200, 200).astype(np.float32)
+    x = torch.from_numpy(x)
+    with torch.no_grad():
+        out = net(x)
+    # print(net)
 
 
 def resnet50_v1b_gn(pretrained=False, root=os.path.expanduser('~/.torch/models'), **kwargs):
@@ -808,11 +821,6 @@ def resnet101_v1s(pretrained=False, root=os.path.expanduser('~/.torch/models'), 
         model.classes = attrib.classes
         model.classes_long = attrib.classes_long
     return model
-
-
-if __name__ == '__main__':
-    net = resnet101_v1s()
-    print(net)
 
 
 def resnet152_v1s(pretrained=False, root=os.path.expanduser('~/.torch/models'), **kwargs):
