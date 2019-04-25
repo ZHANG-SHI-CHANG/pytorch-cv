@@ -32,13 +32,21 @@ def parse_args():
                         help='Select val|test, evaluate in val or test data')
     parser.add_argument('--mode', type=str, default='testval',
                         help='Select testval|val, w/o corp and with crop')
+    parser.add_argument('--base-size', type=int, default=540,
+                        help='base image size')
+    parser.add_argument('--crop-size', type=int, default=480,  # 768
+                        help='crop image size')
     parser.add_argument('--multi', action='store_true', default=False,
-                        help='whether using multiple scale evalate')
+                        help='whether using multiple scale evaluate')
     parser.add_argument('--aux', action='store_true', default=True,  # TODO: unnecessary in eval
                         help='whether using aux loss')
+    parser.add_argument('--dilated', action='store_true', default=False,
+                        help='whether using dilated in backbone')
+    parser.add_argument('--jpu', action='store_true', default=True,
+                        help='whether using JPU after backbone')
     # parser.add_argument('--root', type=str, default=os.path.expanduser('~/.torch/models'),
     #                     help='Default Pre-trained model root.')
-    parser.add_argument('--root', type=str, default='/home/ace/cbb/own/pretrained/seg',
+    parser.add_argument('--root', type=str, default='/home/ace/cbb/own/pretrained/seg_jpu',
                         help='Default Pre-trained model root.')
 
     # device
@@ -79,7 +87,7 @@ if __name__ == '__main__':
 
     # Load Model
     model = model_zoo.get_model(args.model_name, pretrained=True, pretrained_base=False,
-                                root=args.root, aux=args.aux)
+                                root=args.root, aux=args.aux, dilated=args.dilated, jpu=args.jpu)
     model.keep_shape = True if args.mode == 'testval' else False
     model.to(device)
 
@@ -89,7 +97,7 @@ if __name__ == '__main__':
         transforms.Normalize([.485, .456, .406], [.229, .224, .225]),
     ])
 
-    data_kwargs = {'transform': input_transform}
+    data_kwargs = {'base_size': args.base_size, 'crop_size': args.crop_size, 'transform': input_transform}
 
     val_dataset = get_segmentation_dataset(args.dataset, split=args.split, mode=args.mode, **data_kwargs)
     sampler = make_data_sampler(val_dataset, False, distributed)

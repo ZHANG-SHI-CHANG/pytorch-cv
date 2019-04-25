@@ -113,8 +113,9 @@ class Trainer(object):
         self.device = torch.device(args.device)
         net_name = '_'.join(('ssd', str(args.data_shape), args.network, args.dataset))
         self.save_prefix = net_name
-        BatchNorm2d = torch.nn.SyncBatchNorm if args.distributed else torch.nn.BatchNorm2d
-        self.net = get_model(net_name, pretrained_base=True, norm_layer=BatchNorm2d)
+        self.net = get_model(net_name, pretrained_base=True)
+        if args.distributed:
+            self.net = torch.nn.SyncBatchNorm.convert_sync_batchnorm(self.net)
         if args.resume.strip():
             logger.info("Resume from the model {}".format(args.resume))
             self.net.load_state_dict(torch.load(args.resume.strip()))

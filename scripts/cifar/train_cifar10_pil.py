@@ -206,7 +206,6 @@ if __name__ == '__main__':
         torch.distributed.init_process_group(backend="nccl", init_method=args.init_method)
 
     args.lr = num_gpus * args.lr
-    BatchNorm2d = nn.SyncBatchNorm if distributed else nn.BatchNorm2d
     model_name = args.model
     if model_name.startswith('cifar_wideresnet'):
         kwargs = {'classes': classes,
@@ -214,7 +213,9 @@ if __name__ == '__main__':
     else:
         kwargs = {'classes': classes}
 
-    net = model_zoo.get_model(model_name, norm_layer=BatchNorm2d, **kwargs)
+    net = model_zoo.get_model(model_name, **kwargs)
+    if distributed:
+        net = torch.nn.SyncBatchNorm.convert_sync_batchnorm(net)
     net.to(device)
 
     if args.resume_from:

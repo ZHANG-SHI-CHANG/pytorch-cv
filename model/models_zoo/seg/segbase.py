@@ -6,6 +6,7 @@ from torch import nn
 import torch.nn.functional as F
 
 from model.module.features import _parse_network
+from model.module.basic_seg import JPU
 
 __all__ = ['get_segmentation_model', 'SegBaseModel', 'SegEvalModel', 'MultiEvalModel']
 
@@ -36,11 +37,12 @@ class SegBaseModel(nn.Module):
         Normalization layer used in backbone network (default: :class:`nn.BatchNorm`).
     """
 
-    def __init__(self, nclass, aux, backbone='resnet50', height=None, width=None,
+    def __init__(self, nclass, aux, backbone='resnet50', jpu=False, dilated=True, height=None, width=None,
                  base_size=520, crop_size=480, keep_shape=False, pretrained_base=True, **kwargs):
         super(SegBaseModel, self).__init__()
         self.aux = aux
         self.nclass = nclass
+        self.jpu = jpu
         self.keep_shape = keep_shape
         if backbone == 'resnet50':
             outputs = [[11, 3], [12, 5], [13, 2]]
@@ -50,21 +52,26 @@ class SegBaseModel(nn.Module):
             outputs = [[11, 7], [12, 35], [13, 2]]
         else:
             raise RuntimeError('unknown backbone: {}'.format(backbone))
+
         self.base1, self.base2, self.base3 = _parse_network(backbone + '_v1s', outputs,
-                                                            pretrained=pretrained_base, dilated=True)
+                                                            pretrained=pretrained_base, dilated=dilated)
 
         height = height if height is not None else crop_size
         width = width if width is not None else crop_size
         self._up_kwargs = (height, width)
         self.base_size = base_size
         self.crop_size = crop_size
+        if jpu:
+            self.JPU = JPU([512, 1024, 2048], width=512)
 
     def base_forward(self, x):
         """forwarding pre-trained network"""
-        x = self.base1(x)
-        x = self.base2(x)
-        c4 = self.base3(x)
-        return x, c4
+        c2 = self.base1(x)
+        c3 = self.base2(c2)
+        c4 = self.base3(c3)
+        if self.jpu:
+            c4 = self.JPU(c2, c3, c4)
+        return c3, c4
 
     def evaluate(self, x):
         if self.keep_shape:

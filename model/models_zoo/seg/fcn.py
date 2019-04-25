@@ -48,10 +48,10 @@ class FCN(SegBaseModel):
     """
 
     # pylint: disable=arguments-differ
-    def __init__(self, nclass, backbone='resnet50', aux=True, pretrained_base=True,
-                 base_size=520, crop_size=480, **kwargs):
-        super(FCN, self).__init__(nclass, aux, backbone, base_size=base_size,
-                                  crop_size=crop_size, pretrained_base=pretrained_base, **kwargs)
+    def __init__(self, nclass, backbone='resnet50', aux=True, dilated=True, jpu=False,
+                 pretrained_base=True, base_size=520, crop_size=480, **kwargs):
+        super(FCN, self).__init__(nclass, aux, backbone, base_size=base_size, crop_size=crop_size,
+                                  dilated=dilated, jpu=jpu, pretrained_base=pretrained_base, **kwargs)
         self.head = _FCNHead(2048, nclass, **kwargs)
         if self.aux:
             self.auxlayer = _FCNHead(1024, nclass, **kwargs)
@@ -226,8 +226,3 @@ def get_fcn_resnet50_ade(**kwargs):
     >>> print(model)
     """
     return get_fcn('ade20k', 'resnet50', **kwargs)
-
-
-if __name__ == '__main__':
-    net = get_fcn_resnet101_voc(pretrained=False, pretrained_base=False)
-    print(net)

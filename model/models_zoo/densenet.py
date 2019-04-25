@@ -39,25 +39,23 @@ class DenseNet(nn.Module):
     """
 
     def __init__(self, num_init_features, growth_rate, block_config,
-                 bn_size=4, dropout=0, classes=1000,
-                 norm_layer=nn.BatchNorm2d, norm_kwargs=None, **kwargs):
+                 bn_size=4, dropout=0, classes=1000, **kwargs):
         super(DenseNet, self).__init__(**kwargs)
         self.features = list()
         self.features.append(nn.Conv2d(3, num_init_features, kernel_size=7,
                                        stride=2, padding=3, bias=False))
-        self.features.append(norm_layer(num_init_features, **({} if norm_kwargs is None else norm_kwargs)))
+        self.features.append(nn.BatchNorm2d(num_init_features))
         self.features.append(nn.ReLU(inplace=True))
         self.features.append(nn.MaxPool2d(kernel_size=3, stride=2, padding=1))
         # Add dense blocks
         num_features = num_init_features
         for i, num_layers in enumerate(block_config):
-            self.features.append(_make_dense_block(num_features, num_layers,
-                                                   bn_size, growth_rate, dropout, norm_layer, norm_kwargs))
+            self.features.append(_make_dense_block(num_features, num_layers, bn_size, growth_rate, dropout))
             num_features = num_features + num_layers * growth_rate
             if i != len(block_config) - 1:
-                self.features.append(_make_transition(num_features, num_features // 2, norm_layer, norm_kwargs))
+                self.features.append(_make_transition(num_features, num_features // 2))
                 num_features = num_features // 2
-        self.features.append(norm_layer(num_features, **({} if norm_kwargs is None else norm_kwargs)))
+        self.features.append(nn.BatchNorm2d(num_features))
         self.features.append(nn.ReLU(inplace=True))
         self.features = nn.Sequential(*self.features)
 
@@ -65,7 +63,7 @@ class DenseNet(nn.Module):
 
     def forward(self, x):
         x = self.features(x)
-        x = F.avg_pool2d(x, x.shape[2]).squeeze(3).squeeze(2)
+        x = F.adaptive_avg_pool2d(x, 1).squeeze(3).squeeze(2)
         x = self.output(x)
         return x
 

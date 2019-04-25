@@ -20,7 +20,7 @@ from utils.metrics.classification_pt import Accuracy, TopKAccuracy
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Eval ImageNet networks.')
-    parser.add_argument('--model', type=str, default='MobileNetV2_1.0',
+    parser.add_argument('--model', type=str, default='resnet101_v1s',
                         help="Base network name")
     parser.add_argument('--input-size', type=int, default=224,
                         help='size of the input image size. default is 224')
@@ -103,7 +103,7 @@ if __name__ == '__main__':
     else:
         pretrained = False
     model_name = args.model
-    kwargs = {'classes': 1000, 'pretrained': pretrained, 'root': args.root}
+    kwargs = {'classes': 1000, 'pretrained': pretrained, 'root': args.root, 'dilated': True}
 
     net = model_zoo.get_model(model_name, **kwargs)
     net.to(device)

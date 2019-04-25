@@ -28,7 +28,7 @@ cd model
 python setup.py build_ext develop
 ```
 
-## Scheduler
+## Supported Applications
 
 |                         Application                          |              Illustration               |                       Available Models                       |
 | :----------------------------------------------------------: | :-------------------------------------: | :----------------------------------------------------------: |
@@ -38,10 +38,44 @@ python setup.py build_ext develop
 | **Instance Segmentation:** <br>detect objects and associate <br>each pixel inside object area with an <br>instance label. | ![](NOTE/png/instance-segmentation.png) | [Mask RCNN](scripts/mask_rcnn), [YOLACT](scripts/yolact) |
 | **Pose Estimation:** <br>detect human pose <br>from images.  |    ![](NOTE/png/pose-estimation.svg)    |         [Simple-Pose](scripts/simple_pose)         |
 
+## Schedule
+
+Classification: 
+
+|         | demo | eval | train |          | demo | eval | train |
+| :-----: | :--: | :--: | :---: | :------: | :--: | :--: | :---: |
+| CIFAR10 |  ✓   |  ✓   |   ✓   | IMAGENET |  ✓   |  ✓   |   ✗   |
+
+Semantic Segmentation：training performance nearly same as paper
+
+|              | demo | eval | train |
+| :----------: | :--: | :--: | :---: |
+| Segmentation |  ✓   |  ✓   |   ✓   |
+
+Object Detection：the training performance is a little worse than gluon-cv
+
+|             | demo | eval | train |           | demo | eval | train |
+| :---------: | :--: | :--: | :---: | :-------: | :--: | :--: | :---: |
+|     SSD     |  ✓   |  ✓   |   ✓   |   YOLO    |  ✓   |  ✓   |   ✓   |
+| Faster-RCNN |  ✓   |  ✓   |   ✗   | CenterNet |  ✓   |  ✗   |   ✗   |
+
+Instance Segmentation
+
+|           | demo | eval | train |        | demo | eval | train |
+| :-------: | :--: | :--: | :---: | :----: | :--: | :--: | :---: |
+| Mask-RCNN |  ✓   |  ✓   |   ✗   | YOLACT |  ✓   |  ✗   |   ✗   |
+
+Pose Estimation
+
+|             | demo | eval | train |      | demo | eval | train |
+| :---------: | :--: | :--: | :---: | :--: | :--: | :--: | :---: |
+| Simple-Pose |  ✓   |  ✓   |   ✗   |      |      |      |       |
+
 ## TODO
 
 - [ ] Provide converted models (BaiduYun and GoogleDrive)
 - [ ] Compare the backbone performance with [torchvison](https://github.com/pytorch/vision) and [pretrained-models.pytorch](https://github.com/Cadene/pretrained-models.pytorch) , and replace with better one.
 - [ ] Improve performance
+- [x] Move sync BN through use `convert_sync_batchnorm`
 - [ ] Add more training code and models
 - [ ] Move convert code from master to branch

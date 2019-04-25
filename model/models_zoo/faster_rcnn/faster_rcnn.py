@@ -466,17 +466,15 @@ def faster_rcnn_fpn_bn_resnet50_v1b_coco(pretrained=False, pretrained_base=True,
     from data.mscoco.detection_cv import COCODetection
     classes = COCODetection.CLASSES
     pretrained_base = False if pretrained else pretrained_base
-    norm_layer = nn.SyncBatchNorm if get_world_size() > 1 else nn.BatchNorm2d
     features = FPNFeatureExpander(
         network='resnet50_v1b', outputs=[[4, 2], [5, 3], [6, 5], [7, 2]],
         channels=[256, 512, 1024, 2048], num_filters=[256, 256, 256, 256], use_1x1=True,
-        use_upsample=True, use_elewadd=True, use_p6=True, use_bias=False, pretrained=pretrained_base,
-        norm_layer=norm_layer, norm_kwargs=None)
+        use_upsample=True, use_elewadd=True, use_p6=True, use_bias=False, pretrained=pretrained_base)
     top_features = None
     # 1 Conv 1 FC layer before RCNN cls and reg
     roi_size = 7
     box_features = nn.ModuleList([
-        nn.Sequential(nn.Conv2d(256, 256, 3, padding=1), norm_layer(256), nn.ReLU(inplace=True)),
+        nn.Sequential(nn.Conv2d(256, 256, 3, padding=1), nn.BatchNorm2d(256), nn.ReLU(inplace=True)),
         nn.Sequential(nn.Linear(256 * roi_size ** 2, 1024), nn.ReLU(inplace=True))
     ])
 

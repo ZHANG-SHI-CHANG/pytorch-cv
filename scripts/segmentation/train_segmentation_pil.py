@@ -27,15 +27,15 @@ def parse_args():
     """Training Options for Segmentation Experiments"""
     parser = argparse.ArgumentParser(description='PyTorch Segmentation')
     # model and dataset
-    parser.add_argument('--model', type=str, default='fcn',
+    parser.add_argument('--model', type=str, default='psp',
                         help='model name (default: fcn)')
-    parser.add_argument('--backbone', type=str, default='resnet101',
+    parser.add_argument('--backbone', type=str, default='resnet50',
                         help='backbone name (default: resnet50)')
-    parser.add_argument('--dataset', type=str, default='citys',
+    parser.add_argument('--dataset', type=str, default='pascal_paper',
                         help='dataset name (default: ade20k)')
     parser.add_argument('--workers', '-j', type=int, default=4,
                         metavar='N', help='dataloader threads')
-    parser.add_argument('--base-size', type=int, default=1024,
+    parser.add_argument('--base-size', type=int, default=540,
                         help='base image size')
     parser.add_argument('--crop-size', type=int, default=480,  # 768
                         help='crop image size')
@@ -46,11 +46,15 @@ def parse_args():
                         help='Auxiliary loss')
     parser.add_argument('--aux-weight', type=float, default=0.5,
                         help='auxiliary loss weight')
+    parser.add_argument('--dilated', action='store_true', default=False,
+                        help='Using dilated conv in backbone')
+    parser.add_argument('--jpu', action='store_true', default=True,
+                        help='Using jpu in backbone')
     parser.add_argument('--epochs', type=int, default=-1, metavar='N',
                         help='number of epochs to train (default: 50)')
     parser.add_argument('--start_epoch', type=int, default=0,
                         metavar='N', help='start epochs (default:0)')
-    parser.add_argument('--batch-size', type=int, default=1,
+    parser.add_argument('--batch-size', type=int, default=3,
                         metavar='N', help='input batch size for \
                         training (default: 16)')
     parser.add_argument('--test-batch-size', type=int, default=1,
@@ -65,7 +69,7 @@ def parse_args():
     parser.add_argument('--no-wd', action='store_true',
                         help='whether to remove weight decay on bias, \
                         and beta/gamma for batchnorm layers.')
-    parser.add_argument('--warmup-iters', type=int, default=300,  # 500
+    parser.add_argument('--warmup-iters', type=int, default=200,  # 500
                         help='warmup epochs')
     parser.add_argument('--warmup-factor', type=float, default=0.01,
                         help='warm up start lr=warmup_factor*lr')
@@ -150,22 +154,22 @@ class Trainer(object):
                                                 num_workers=args.workers, pin_memory=True)
 
         # create network
-        BatchNorm2d = torch.nn.SyncBatchNorm if args.distributed else torch.nn.BatchNorm2d
         if args.model_zoo is not None:
-            self.net = get_model(args.model_zoo, pretrained=True, norm_layer=BatchNorm2d)
+            self.net = get_model(args.model_zoo, pretrained=True)
         else:
             self.net = get_segmentation_model(model=args.model, dataset=args.dataset,
-                                              backbone=args.backbone, norm_layer=BatchNorm2d,
-                                              norm_kwargs={}, aux=args.aux,
+                                              backbone=args.backbone, aux=args.aux,
+                                              dilated=args.dilated, jpu=args.jpu,
                                               crop_size=args.crop_size)
+        if args.distributed:
+            self.net = torch.nn.SyncBatchNorm.convert_sync_batchnorm(self.net)
         self.net.to(self.device)
         # resume checkpoint if needed
         if args.resume is not None:
             if os.path.isfile(args.resume):
                 self.net.load_state_dict(torch.load(args.resume))
             else:
-                raise RuntimeError("=> no checkpoint found at '{}'" \
-                                   .format(args.resume))
+                raise RuntimeError("=> no checkpoint found at '{}'".format(args.resume))
 
         # create criterion
         self.criterion = MixSoftmaxCrossEntropyLoss(args.aux, aux_weight=args.aux_weight)
@@ -176,6 +180,8 @@ class Trainer(object):
                        {'params': self.net.base3.parameters(), 'lr': args.lr}]
         if hasattr(self.net, 'head'):
             params_list.append({'params': self.net.head.parameters(), 'lr': args.lr * 10})
+        if hasattr(self.net, 'JPU'):
+            params_list.append({'params': self.net.JPU.parameters(), 'lr': args.lr * 10})
         if hasattr(self.net, 'auxlayer'):
             params_list.append({'params': self.net.auxlayer.parameters(), 'lr': args.lr * 10})
         self.optimizer = optim.SGD(params_list, lr=args.lr, momentum=args.momentum,

@@ -38,29 +38,28 @@ class CIFARBlock(nn.Module):
     """
 
     def __init__(self, in_channels, channels, cardinality, bottleneck_width,
-                 stride, downsample=False, norm_layer=nn.BatchNorm2d, norm_kwargs=None, **kwargs):
+                 stride, downsample=False, **kwargs):
         super(CIFARBlock, self).__init__(**kwargs)
         D = int(math.floor(channels * (bottleneck_width / 64)))
         group_width = cardinality * D
 
         self.body = list()
         self.body.append(nn.Conv2d(in_channels, group_width, kernel_size=1, bias=False))
-        self.body.append(norm_layer(group_width, **({} if norm_kwargs is None else norm_kwargs)))
+        self.body.append(nn.BatchNorm2d(group_width))
         self.body.append(nn.ReLU(inplace=True))
         self.body.append(nn.Conv2d(group_width, group_width, kernel_size=3, stride=stride, padding=1,
                                    groups=cardinality, bias=False))
-        self.body.append(norm_layer(group_width, **({} if norm_kwargs is None else norm_kwargs)))
+        self.body.append(nn.BatchNorm2d(group_width))
         self.body.append(nn.ReLU(inplace=True))
         self.body.append(nn.Conv2d(group_width, channels * 4, kernel_size=1, bias=False))
-        self.body.append(norm_layer(channels * 4, **({} if norm_kwargs is None else norm_kwargs)))
+        self.body.append(nn.BatchNorm2d(channels * 4))
         self.body = nn.Sequential(*self.body)
 
         if downsample:
-            self.downsample = list()
-            self.downsample.append(nn.Conv2d(in_channels, channels * 4, kernel_size=1, stride=stride,
-                                             bias=False))
-            self.downsample.append(norm_layer(channels * 4, **({} if norm_kwargs is None else norm_kwargs)))
-            self.downsample = nn.Sequential(*self.downsample)
+            self.downsample = nn.Sequential(
+                nn.Conv2d(in_channels, channels * 4, kernel_size=1, stride=stride, bias=False),
+                nn.BatchNorm2d(channels * 4)
+            )
         else:
             self.downsample = None
 
@@ -100,8 +99,7 @@ class CIFARResNext(nn.Module):
         Additional `norm_layer` arguments.
     """
 
-    def __init__(self, layers, cardinality, bottleneck_width, classes=10,
-                 norm_layer=nn.BatchNorm2d, norm_kwargs=None, **kwargs):
+    def __init__(self, layers, cardinality, bottleneck_width, classes=10, **kwargs):
         super(CIFARResNext, self).__init__(**kwargs)
         self.cardinality = cardinality
         self.bottleneck_width = bottleneck_width
@@ -109,28 +107,26 @@ class CIFARResNext(nn.Module):
 
         self.features = list()
         self.features.append(nn.Conv2d(3, channels, 3, 1, 1, bias=False))
-        self.features.append(norm_layer(channels, **({} if norm_kwargs is None else norm_kwargs)))
+        self.features.append(nn.BatchNorm2d(channels))
         self.features.append(nn.ReLU(inplace=True))
 
         for i, num_layer in enumerate(layers):
             stride = 1 if i == 0 else 2
-            self.features.append(self._make_layer(in_channels, channels, num_layer, stride,
-                                                  norm_layer=norm_layer, norm_kwargs=norm_kwargs))
+            self.features.append(self._make_layer(in_channels, channels, num_layer, stride))
             in_channels = in_channels * 4 if i == 0 else in_channels * 2
             channels *= 2
         self.features = nn.Sequential(*self.features)
 
         self.output = nn.Linear(in_channels, classes)
 
-    def _make_layer(self, in_channels, channels, num_layer, stride,
-                    norm_layer=nn.BatchNorm2d, norm_kwargs=None):
+    def _make_layer(self, in_channels, channels, num_layer, stride):
         layer = list()
         layer.append(CIFARBlock(in_channels, channels, self.cardinality, self.bottleneck_width,
-                                stride, True, norm_layer=norm_layer, norm_kwargs=norm_kwargs))
+                                stride, True))
         in_channels = channels * 4
         for _ in range(num_layer - 1):
             layer.append(CIFARBlock(in_channels, channels, self.cardinality, self.bottleneck_width,
-                                    1, False, norm_layer=norm_layer, norm_kwargs=norm_kwargs))
+                                    1, False))
         return nn.Sequential(*layer)
 
     def forward(self, x):

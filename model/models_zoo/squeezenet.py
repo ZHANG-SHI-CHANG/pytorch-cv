@@ -72,7 +72,7 @@ class SqueezeNet(nn.Module):
     def forward(self, x):
         x = self.features(x)
         x = self.output(x)
-        x = F.avg_pool2d(x, x.shape[2]).squeeze(3).squeeze(2)
+        x = F.adaptive_avg_pool2d(x, 1).squeeze(3).squeeze(2)
         return x
 
 
@@ -141,5 +141,10 @@ def squeezenet1_1(**kwargs):
 
 
 if __name__ == '__main__':
-    net = squeezenet1_0()
-    print(net)
+    net1 = squeezenet1_0()
+    net2 = squeezenet1_1()
+    import torch
+    a = torch.randn(1, 3, 224, 224)
+    with torch.no_grad():
+        net1(a)
+        net2(a)

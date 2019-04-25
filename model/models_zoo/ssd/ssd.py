@@ -102,10 +102,8 @@ class SSD(nn.Module):
                  steps, classes, use_1x1_transition=True, use_bn=True,
                  reduce_ratio=1.0, min_depth=128, global_pool=False, pretrained=False,
                  stds=(0.1, 0.1, 0.2, 0.2), nms_thresh=0.45, nms_topk=400, post_nms=100,
-                 anchor_alloc_size=128, norm_layer=nn.BatchNorm2d, norm_kwargs=None, **kwargs):
+                 anchor_alloc_size=128, **kwargs):
         super(SSD, self).__init__(**kwargs)
-        if norm_kwargs is None:
-            norm_kwargs = {}
         if network is None:
             num_layers = len(ratios)
         else:
@@ -128,25 +126,14 @@ class SSD(nn.Module):
         self.all_stride = 8 if network is None else 16  # for anchor
 
         if network is None:
-            # use fine-grained manually designed block as features
-            try:
-                self.features = features(pretrained=pretrained, norm_layer=norm_layer, norm_kwargs=norm_kwargs)
-            except TypeError:
-                self.features = features(pretrained=pretrained)
+            self.features = features(pretrained=pretrained)
         else:
-            try:
-                self.features = FeatureExpander(
-                    network=network, outputs=features, num_filters=num_filters,
-                    channels=channels, use_1x1_transition=use_1x1_transition,
-                    use_bn=use_bn, reduce_ratio=reduce_ratio, min_depth=min_depth,
-                    global_pool=global_pool, pretrained=pretrained,
-                    norm_layer=norm_layer, norm_kwargs=norm_kwargs)
-            except TypeError:
-                self.features = FeatureExpander(
-                    network=network, outputs=features, num_filters=num_filters,
-                    channels=channels, use_1x1_transition=use_1x1_transition,
-                    use_bn=use_bn, reduce_ratio=reduce_ratio, min_depth=min_depth,
-                    global_pool=global_pool, pretrained=pretrained)
+            self.features = FeatureExpander(
+                network=network, outputs=features, num_filters=num_filters,
+                channels=channels, use_1x1_transition=use_1x1_transition,
+                use_bn=use_bn, reduce_ratio=reduce_ratio, min_depth=min_depth,
+                global_pool=global_pool, pretrained=pretrained)
+
         self.class_predictors = nn.ModuleList()
         self.box_predictors = nn.ModuleList()
         self.anchor_generators = nn.ModuleList()

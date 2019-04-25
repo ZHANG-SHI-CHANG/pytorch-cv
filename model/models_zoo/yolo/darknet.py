@@ -30,14 +30,12 @@ class DarknetBasicBlockV3(nn.Module):
 
     """
 
-    def __init__(self, in_channel, channel, norm_layer=nn.BatchNorm2d, norm_kwargs=None, **kwargs):
+    def __init__(self, in_channel, channel, **kwargs):
         super(DarknetBasicBlockV3, self).__init__(**kwargs)
-        self.body = list()
-        # 1x1 reduce
-        self.body.append(_conv2d(in_channel, channel, 1, 0, 1, norm_layer=norm_layer, norm_kwargs=norm_kwargs))
-        # 3x3 conv expand
-        self.body.append(_conv2d(channel, channel * 2, 3, 1, 1, norm_layer=norm_layer, norm_kwargs=norm_kwargs))
-        self.body = nn.Sequential(*self.body)
+        self.body = nn.Sequential(
+            _conv2d(in_channel, channel, 1, 0, 1),
+            _conv2d(channel, channel * 2, 3, 1, 1)
+        )
 
     def forward(self, x):
         residual = x
@@ -74,25 +72,21 @@ class DarknetV3(nn.Module):
 
     """
 
-    def __init__(self, layers, channels, classes=1000,
-                 norm_layer=nn.BatchNorm2d, norm_kwargs=None, **kwargs):
+    def __init__(self, layers, channels, classes=1000, **kwargs):
         super(DarknetV3, self).__init__(**kwargs)
         assert len(layers) == len(channels) - 1, (
             "len(channels) should equal to len(layers) + 1, given {} vs {}".format(
                 len(channels), len(layers)))
         self.features = list()
         # first 3x3 conv
-        self.features.append(_conv2d(3, channels[0], 3, 1, 1,
-                                     norm_layer=norm_layer, norm_kwargs=norm_kwargs))
+        self.features.append(_conv2d(3, channels[0], 3, 1, 1))
         for i, (nlayer, channel) in enumerate(zip(layers, channels[1:])):
             assert channel % 2 == 0, "channel {} cannot be divided by 2".format(channel)
             # add downsample conv with stride=2
-            self.features.append(_conv2d(channels[i], channel, 3, 1, 2,
-                                         norm_layer=norm_layer, norm_kwargs=norm_kwargs))
+            self.features.append(_conv2d(channels[i], channel, 3, 1, 2))
             # add nlayer basic blocks
             for i in range(nlayer):
-                self.features.append(DarknetBasicBlockV3(channel, channel // 2,
-                                                         norm_layer=norm_layer, norm_kwargs=None))
+                self.features.append(DarknetBasicBlockV3(channel, channel // 2))
         self.features = nn.Sequential(*self.features)
         # output
         self.output = nn.Linear(channels[-1], classes)
@@ -190,4 +184,8 @@ def darknet53(**kwargs):
 
 if __name__ == '__main__':
     net = darknet53()
-    print(net)
+    import torch
+
+    a = torch.randn(1, 3, 224, 224)
+    with torch.no_grad():
+        net(a)

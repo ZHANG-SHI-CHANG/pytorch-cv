@@ -37,22 +37,15 @@ class CIFARBasicBlockV1(nn.Module):
         Additional `norm_layer` arguments
     """
 
-    def __init__(self, in_channels, channels, stride, downsample=False,
-                 norm_layer=nn.BatchNorm2d, norm_kwargs=None, **kwargs):
+    def __init__(self, in_channels, channels, stride, downsample=False, **kwargs):
         super(CIFARBasicBlockV1, self).__init__(**kwargs)
-        self.body = list()
-        self.body.append(_conv3x3(in_channels, channels, stride))
-        self.body.append(norm_layer(channels, **({} if norm_kwargs is None else norm_kwargs)))
-        self.body.append(nn.ReLU(inplace=True))
-        self.body.append(_conv3x3(channels, channels, 1))
-        self.body.append(norm_layer(channels, **({} if norm_kwargs is None else norm_kwargs)))
-        self.body = nn.Sequential(*self.body)
+        self.body = nn.Sequential(_conv3x3(in_channels, channels, stride),
+                                  nn.BatchNorm2d(channels), nn.ReLU(inplace=True),
+                                  _conv3x3(channels, channels, 1),
+                                  nn.BatchNorm2d(channels))
         if downsample:
-            self.downsample = list()
-            self.downsample.append(nn.Conv2d(in_channels, channels, kernel_size=1, stride=stride,
-                                             bias=False))
-            self.downsample.append(norm_layer(channels, **({} if norm_kwargs is None else norm_kwargs)))
-            self.downsample = nn.Sequential(*self.downsample)
+            self.downsample = nn.Sequential(nn.Conv2d(in_channels, channels, 1, stride=stride, bias=False),
+                                            nn.BatchNorm2d(channels))
         else:
             self.downsample = None
 
@@ -93,12 +86,11 @@ class CIFARBasicBlockV2(nn.Module):
         Additional `norm_layer` arguments
     """
 
-    def __init__(self, in_channels, channels, stride, downsample=False,
-                 norm_layer=nn.BatchNorm2d, norm_kwargs=None, **kwargs):
+    def __init__(self, in_channels, channels, stride, downsample=False, **kwargs):
         super(CIFARBasicBlockV2, self).__init__(**kwargs)
-        self.bn1 = norm_layer(in_channels, **({} if norm_kwargs is None else norm_kwargs))
+        self.bn1 = nn.BatchNorm2d(in_channels)
         self.conv1 = _conv3x3(in_channels, channels, stride)
-        self.bn2 = norm_layer(channels, **({} if norm_kwargs is None else norm_kwargs))
+        self.bn2 = nn.BatchNorm2d(channels)
         self.conv2 = _conv3x3(channels, channels, 1)
         if downsample:
             self.downsample = nn.Conv2d(in_channels, channels, 1, stride, bias=False)
@@ -147,31 +139,26 @@ class CIFARResNetV1(nn.Module):
         Additional `norm_layer` arguments
     """
 
-    def __init__(self, block, layers, channels, classes=10,
-                 norm_layer=nn.BatchNorm2d, norm_kwargs=None, **kwargs):
+    def __init__(self, block, layers, channels, classes=10, **kwargs):
         super(CIFARResNetV1, self).__init__(**kwargs)
         assert len(layers) == len(channels) - 2
         self.features = list()
         self.features.append(nn.Conv2d(channels[0], channels[1], 3, 1, 1, bias=False))
-        self.features.append(norm_layer(channels[1], **({} if norm_kwargs is None else norm_kwargs)))
+        self.features.append(nn.BatchNorm2d(channels[1]))
 
         for i, num_layer in enumerate(layers):
             stride = 1 if i == 0 else 2
-            self.features.append(self._make_layer(block, num_layer, channels[i + 1], channels[i + 2],
-                                                  stride, norm_layer=norm_layer, norm_kwargs=norm_kwargs))
+            self.features.append(self._make_layer(block, num_layer, channels[i + 1], channels[i + 2], stride))
 
         self.features = nn.Sequential(*self.features)
 
         self.output = nn.Linear(channels[-1], classes)
 
-    def _make_layer(self, block, layers, in_channels, channels, stride,
-                    norm_layer=nn.BatchNorm2d, norm_kwargs=None):
+    def _make_layer(self, block, layers, in_channels, channels, stride):
         layer = list()
-        layer.append(block(in_channels, channels, stride, channels != in_channels,
-                           norm_layer=norm_layer, norm_kwargs=norm_kwargs))
+        layer.append(block(in_channels, channels, stride, channels != in_channels))
         for _ in range(layers - 1):
-            layer.append(block(channels, channels, 1, False,
-                               norm_layer=norm_layer, norm_kwargs=norm_kwargs))
+            layer.append(block(channels, channels, 1, False))
         return nn.Sequential(*layer)
 
     def forward(self, x):
@@ -204,32 +191,27 @@ class CIFARResNetV2(nn.Module):
         Additional `norm_layer` arguments
     """
 
-    def __init__(self, block, layers, channels, classes=10,
-                 norm_layer=nn.BatchNorm2d, norm_kwargs=None, **kwargs):
+    def __init__(self, block, layers, channels, classes=10, **kwargs):
         super(CIFARResNetV2, self).__init__(**kwargs)
         assert len(layers) == len(channels) - 2
         self.features = list()
-        self.features.append(_bn_no_affine(channels[0], norm_layer, norm_kwargs))
+        self.features.append(_bn_no_affine(channels[0]))
         self.features.append(nn.Conv2d(channels[0], channels[1], 3, 1, 1, bias=False))
 
         for i, num_layer in enumerate(layers):
             stride = 1 if i == 0 else 2
-            self.features.append(self._make_layer(block, num_layer, channels[i + 1], channels[i + 2],
-                                                  stride, norm_layer=norm_layer, norm_kwargs=norm_kwargs))
-        self.features.append(norm_layer(channels[-1], **({} if norm_kwargs is None else norm_kwargs)))
+            self.features.append(self._make_layer(block, num_layer, channels[i + 1], channels[i + 2], stride))
+        self.features.append(nn.BatchNorm2d(channels[-1]))
         self.features.append(nn.ReLU(inplace=True))
         self.features = nn.Sequential(*self.features)
 
         self.output = nn.Linear(channels[-1], classes)
 
-    def _make_layer(self, block, layers, in_channels, channels, stride,
-                    norm_layer=nn.BatchNorm2d, norm_kwargs=None):
+    def _make_layer(self, block, layers, in_channels, channels, stride):
         layer = list()
-        layer.append(block(in_channels, channels, stride, channels != in_channels,
-                           norm_layer=norm_layer, norm_kwargs=norm_kwargs))
+        layer.append(block(in_channels, channels, stride, channels != in_channels))
         for _ in range(layers - 1):
-            layer.append(block(channels, channels, 1, False,
-                               norm_layer=norm_layer, norm_kwargs=norm_kwargs))
+            layer.append(block(channels, channels, 1, False))
         return nn.Sequential(*layer)
 
     def forward(self, x):
@@ -406,7 +388,6 @@ def cifar_resnet110_v2(**kwargs):
         Additional `norm_layer` arguments
     """
     return get_cifar_resnet(2, 110, **kwargs)
-
 
 # if __name__ == '__main__':
 #     import torch

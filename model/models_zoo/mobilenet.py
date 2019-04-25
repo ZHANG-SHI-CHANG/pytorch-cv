@@ -40,18 +40,14 @@ class LinearBottleneck(nn.Module):
         Additional `norm_layer` arguments.
     """
 
-    def __init__(self, in_channels, channels, t, stride,
-                 norm_layer=nn.BatchNorm2d, norm_kwargs=None, **kwargs):
+    def __init__(self, in_channels, channels, t, stride, **kwargs):
         super(LinearBottleneck, self).__init__(**kwargs)
         self.use_shortcut = stride == 1 and in_channels == channels
         self.out = list()
-        _add_conv(self.out, in_channels, in_channels * t, relu6=True,
-                  norm_layer=norm_layer, norm_kwargs=norm_kwargs)
+        _add_conv(self.out, in_channels, in_channels * t, relu6=True)
         _add_conv(self.out, in_channels * t, in_channels * t, kernel=3,
-                  stride=stride, pad=1, num_group=in_channels * t,
-                  relu6=True, norm_layer=norm_layer, norm_kwargs=norm_kwargs)
-        _add_conv(self.out, in_channels * t, channels, active=False,
-                  relu6=True, norm_layer=norm_layer, norm_kwargs=norm_kwargs)
+                  stride=stride, pad=1, num_group=in_channels * t, relu6=True)
+        _add_conv(self.out, in_channels * t, channels, active=False, relu6=True)
         self.out = nn.Sequential(*self.out)
 
     def forward(self, x):
@@ -84,12 +80,10 @@ class MobileNet(nn.Module):
         Additional `norm_layer` arguments.
     """
 
-    def __init__(self, multiplier=1.0, classes=1000,
-                 norm_layer=nn.BatchNorm2d, norm_kwargs=None, **kwargs):
+    def __init__(self, multiplier=1.0, classes=1000, **kwargs):
         super(MobileNet, self).__init__(**kwargs)
         self.features = list()
-        _add_conv(self.features, 3, channels=int(32 * multiplier), kernel=3, pad=1, stride=2,
-                  norm_layer=norm_layer, norm_kwargs=norm_kwargs)
+        _add_conv(self.features, 3, channels=int(32 * multiplier), kernel=3, pad=1, stride=2)
         dw_channels = [int(x * multiplier) for x in [32, 64] + [128] * 2 +
                        [256] * 2 + [512] * 6 + [1024]]
         channels = [int(x * multiplier) for x in [64] + [128] * 2 +
@@ -97,8 +91,7 @@ class MobileNet(nn.Module):
         strides = [1, 2] * 3 + [1] * 5 + [2, 1]
         in_channels = int(32 * multiplier)
         for dwc, c, s in zip(dw_channels, channels, strides):
-            _add_conv_dw(self.features, in_channels, dw_channels=dwc, channels=c, stride=s,
-                         norm_layer=norm_layer, norm_kwargs=norm_kwargs)
+            _add_conv_dw(self.features, in_channels, dw_channels=dwc, channels=c, stride=s)
             in_channels = c
         self.features = nn.Sequential(*self.features)
 
@@ -106,7 +99,7 @@ class MobileNet(nn.Module):
 
     def forward(self, x):
         x = self.features(x)
-        x = F.avg_pool2d(x, x.shape[2]).squeeze(3).squeeze(2)
+        x = F.adaptive_avg_pool2d(x, 1).squeeze(3).squeeze(2)
         x = self.output(x)
         return x
 
@@ -131,12 +124,11 @@ class MobileNetV2(nn.Module):
         Additional `norm_layer` arguments.
     """
 
-    def __init__(self, multiplier=1.0, classes=1000,
-                 norm_layer=nn.BatchNorm2d, norm_kwargs=None, **kwargs):
+    def __init__(self, multiplier=1.0, classes=1000, **kwargs):
         super(MobileNetV2, self).__init__(**kwargs)
         self.features = list()
         _add_conv(self.features, 3, int(32 * multiplier), kernel=3, stride=2,
-                  pad=1, relu6=True, norm_layer=norm_layer, norm_kwargs=norm_kwargs)
+                  pad=1, relu6=True)
 
         in_channels_group = [int(x * multiplier) for x in [32] + [16] + [24] * 2
                              + [32] * 3 + [64] * 4 + [96] * 3 + [160] * 3]
@@ -146,12 +138,10 @@ class MobileNetV2(nn.Module):
         strides = [1, 2] * 2 + [1, 1, 2] + [1] * 6 + [2] + [1] * 3
 
         for in_c, c, t, s in zip(in_channels_group, channels_group, ts, strides):
-            self.features.append(LinearBottleneck(in_channels=in_c, channels=c, t=t, stride=s,
-                                                  norm_layer=norm_layer, norm_kwargs=norm_kwargs))
+            self.features.append(LinearBottleneck(in_channels=in_c, channels=c, t=t, stride=s))
 
         last_channels = int(1280 * multiplier) if multiplier > 1.0 else 1280
-        _add_conv(self.features, channels_group[-1], last_channels, relu6=True,
-                  norm_layer=norm_layer, norm_kwargs=norm_kwargs)
+        _add_conv(self.features, channels_group[-1], last_channels, relu6=True)
 
         self.features = nn.Sequential(*self.features)
 
@@ -159,7 +149,7 @@ class MobileNetV2(nn.Module):
 
     def forward(self, x):
         x = self.features(x)
-        x = F.avg_pool2d(x, x.shape[2])
+        x = F.adaptive_avg_pool2d(x, 1)
         x = self.output(x).squeeze(3).squeeze(2)
         return x
 
@@ -167,8 +157,7 @@ class MobileNetV2(nn.Module):
 # -----------------------------------------------------------------------------
 # Constructor
 # -----------------------------------------------------------------------------
-def get_mobilenet(multiplier, pretrained=False, root=os.path.expanduser('~/.torch/models'),
-                  norm_layer=nn.BatchNorm2d, norm_kwargs=None, **kwargs):
+def get_mobilenet(multiplier, pretrained=False, root=os.path.expanduser('~/.torch/models'), **kwargs):
     r"""MobileNet model from the
     `"MobileNets: Efficient Convolutional Neural Networks for Mobile Vision Applications"
     <https://arxiv.org/abs/1704.04861>`_ paper.
@@ -190,7 +179,7 @@ def get_mobilenet(multiplier, pretrained=False, root=os.path.expanduser('~/.torc
     norm_kwargs : dict
         Additional `norm_layer` arguments.
     """
-    net = MobileNet(multiplier, norm_layer=norm_layer, norm_kwargs=norm_kwargs, **kwargs)
+    net = MobileNet(multiplier, **kwargs)
     if pretrained:
         import torch
         from model.model_store import get_model_file
@@ -207,7 +196,7 @@ def get_mobilenet(multiplier, pretrained=False, root=os.path.expanduser('~/.torc
 
 
 def get_mobilenet_v2(multiplier, pretrained=False, root=os.path.expanduser('~/.torch/models'),
-                     norm_layer=nn.BatchNorm2d, norm_kwargs=None, **kwargs):
+                     **kwargs):
     r"""MobileNetV2 model from the
     `"Inverted Residuals and Linear Bottlenecks:
       Mobile Networks for Classification, Detection and Segmentation"
@@ -230,7 +219,7 @@ def get_mobilenet_v2(multiplier, pretrained=False, root=os.path.expanduser('~/.t
     norm_kwargs : dict
         Additional `norm_layer` arguments.
     """
-    net = MobileNetV2(multiplier, norm_layer=norm_layer, norm_kwargs=norm_kwargs, **kwargs)
+    net = MobileNetV2(multiplier, **kwargs)
 
     if pretrained:
         import torch
@@ -397,26 +386,26 @@ def mobilenet_v2_0_25(**kwargs):
 
 if __name__ == '__main__':
     net = mobilenet1_0()
-    print(net)
-    print(len(list(net.features.children())))
-    # net1 = mobilenet0_25()
-    # net2 = mobilenet0_5()
-    # net3 = mobilenet0_75()
-    # net4 = mobilenet1_0()
-    # net5 = mobilenet_v2_0_5()
-    # net6 = mobilenet_v2_0_25()
-    # net7 = mobilenet_v2_0_75()
-    # net8 = mobilenet_v2_1_0()
+    # print(net)
+    # print(len(list(net.features.children())))
+    net1 = mobilenet0_25()
+    net2 = mobilenet0_5()
+    net3 = mobilenet0_75()
+    net4 = mobilenet1_0()
+    net5 = mobilenet_v2_0_5()
+    net6 = mobilenet_v2_0_25()
+    net7 = mobilenet_v2_0_75()
+    net8 = mobilenet_v2_1_0()
     # # print(net8)
-    # import torch
-    #
-    # a = torch.randn(2, 3, 224, 224)
-    # with torch.no_grad():
-    #     net1(a)
-    #     net2(a)
-    #     net3(a)
-    #     net4(a)
-    #     net5(a)
-    #     net6(a)
-    #     net7(a)
-    #     net8(a)
+    import torch
+
+    a = torch.randn(2, 3, 224, 224)
+    with torch.no_grad():
+        net1(a)
+        net2(a)
+        net3(a)
+        net4(a)
+        net5(a)
+        net6(a)
+        net7(a)
+        net8(a)

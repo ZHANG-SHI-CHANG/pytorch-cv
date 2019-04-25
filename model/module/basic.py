@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+import torch.nn.functional as F
 
 __all__ = ['_conv3x3', '_bn_no_affine', 'GroupNorm']
 
@@ -10,26 +11,25 @@ def _conv3x3(in_channels, channels, stride):
 
 
 # for darknet
-def _conv2d(in_channel, channel, kernel, padding, stride, norm_layer=nn.BatchNorm2d, norm_kwargs=None):
+def _conv2d(in_channel, channel, kernel, padding, stride):
     """A common conv-bn-leakyrelu cell"""
-    cell = list()
-    cell.append(nn.Conv2d(in_channel, channel, kernel_size=kernel,
-                          stride=stride, padding=padding, bias=False))
-    cell.append(norm_layer(channel, eps=1e-5, momentum=0.9, **({} if norm_kwargs is None else norm_kwargs)))
-    cell.append(nn.LeakyReLU(0.1, inplace=True))
-    return nn.Sequential(*cell)
+    cell = nn.Sequential(
+        nn.Conv2d(in_channel, channel, kernel_size=kernel, stride=stride, padding=padding, bias=False),
+        nn.BatchNorm2d(channel, eps=1e-5, momentum=0.9), nn.LeakyReLU(0.1, inplace=True)
+    )
+    return cell
 
 
 # for inception
-def _make_basic_conv(in_channel, norm_layer=nn.BatchNorm2d, norm_kwargs=None, **kwargs):
-    out = list()
-    out.append(nn.Conv2d(in_channel, bias=False, **kwargs))
-    out.append(norm_layer(kwargs['out_channels'], eps=0.001, **({} if norm_kwargs is None else norm_kwargs)))
-    out.append(nn.ReLU(inplace=True))
-    return nn.Sequential(*out)
+def _make_basic_conv(in_channel, **kwargs):
+    return nn.Sequential(
+        nn.Conv2d(in_channel, bias=False, **kwargs),
+        nn.BatchNorm2d(kwargs['out_channels'], eps=0.001),
+        nn.ReLU(inplace=True)
+    )
 
 
-def _make_branch(in_channel, use_pool, norm_layer, norm_kwargs, *conv_settings):
+def _make_branch(in_channel, use_pool, *conv_settings):
     out = list()
     if use_pool == 'avg':
         out.append(nn.AvgPool2d(kernel_size=3, stride=1, padding=1))
@@ -41,22 +41,18 @@ def _make_branch(in_channel, use_pool, norm_layer, norm_kwargs, *conv_settings):
         for i, value in enumerate(setting):
             if value is not None:
                 kwargs[setting_names[i]] = value
-        out.append(_make_basic_conv(in_channel, norm_layer, norm_kwargs, **kwargs))
+        out.append(_make_basic_conv(in_channel, **kwargs))
         in_channel = kwargs['out_channels']
     return nn.Sequential(*out)
 
 
 class MakeA(nn.Module):
-    def __init__(self, in_channel, pool_features, norm_layer, norm_kwargs):
+    def __init__(self, in_channel, pool_features):
         super(MakeA, self).__init__()
-        self.out1 = _make_branch(in_channel, None, norm_layer, norm_kwargs,
-                                 (64, 1, 1, 0))
-        self.out2 = _make_branch(in_channel, None, norm_layer, norm_kwargs,
-                                 (48, 1, 1, 0), (64, 5, 1, 2))
-        self.out3 = _make_branch(in_channel, None, norm_layer, norm_kwargs,
-                                 (64, 1, 1, 0), (96, 3, 1, 1), (96, 3, 1, 1))
-        self.out4 = _make_branch(in_channel, 'avg', norm_layer, norm_kwargs,
-                                 (pool_features, 1, 1, 0))
+        self.out1 = _make_branch(in_channel, None, (64, 1, 1, 0))
+        self.out2 = _make_branch(in_channel, None, (48, 1, 1, 0), (64, 5, 1, 2))
+        self.out3 = _make_branch(in_channel, None, (64, 1, 1, 0), (96, 3, 1, 1), (96, 3, 1, 1))
+        self.out4 = _make_branch(in_channel, 'avg', (pool_features, 1, 1, 0))
 
     def forward(self, x):
         o1 = self.out1(x)
@@ -68,13 +64,11 @@ class MakeA(nn.Module):
 
 
 class MakeB(nn.Module):
-    def __init__(self, in_channel, norm_layer, norm_kwargs):
+    def __init__(self, in_channel):
         super(MakeB, self).__init__()
-        self.out1 = _make_branch(in_channel, None, norm_layer, norm_kwargs,
-                                 (384, 3, 2, 0))
-        self.out2 = _make_branch(in_channel, None, norm_layer, norm_kwargs,
-                                 (64, 1, 1, 0), (96, 3, 1, 1), (96, 3, 2, 0))
-        self.out3 = _make_branch(in_channel, 'max', norm_layer, norm_kwargs)
+        self.out1 = _make_branch(in_channel, None, (384, 3, 2, 0))
+        self.out2 = _make_branch(in_channel, None, (64, 1, 1, 0), (96, 3, 1, 1), (96, 3, 2, 0))
+        self.out3 = _make_branch(in_channel, 'max')
 
     def forward(self, x):
         o1 = self.out1(x)
@@ -85,19 +79,15 @@ class MakeB(nn.Module):
 
 
 class MakeC(nn.Module):
-    def __init__(self, in_channel, channels_7x7, norm_layer, norm_kwargs):
+    def __init__(self, in_channel, channels_7x7):
         super(MakeC, self).__init__()
-        self.out1 = _make_branch(in_channel, None, norm_layer, norm_kwargs,
-                                 (192, 1, 1, 0))
-        self.out2 = _make_branch(in_channel, None, norm_layer, norm_kwargs,
-                                 (channels_7x7, 1, 1, 0), (channels_7x7, (1, 7), 1, (0, 3)),
-                                 (192, (7, 1), 1, (3, 0)))
-        self.out3 = _make_branch(in_channel, None, norm_layer, norm_kwargs,
-                                 (channels_7x7, 1, 1, 0), (channels_7x7, (7, 1), 1, (3, 0)),
-                                 (channels_7x7, (1, 7), 1, (0, 3)), (channels_7x7, (7, 1), 1, (3, 0)),
-                                 (192, (1, 7), 1, (0, 3)))
-        self.out4 = _make_branch(in_channel, 'avg', norm_layer, norm_kwargs,
-                                 (192, 1, 1, 0))
+        self.out1 = _make_branch(in_channel, None, (192, 1, 1, 0))
+        self.out2 = _make_branch(in_channel, None, (channels_7x7, 1, 1, 0),
+                                 (channels_7x7, (1, 7), 1, (0, 3)), (192, (7, 1), 1, (3, 0)))
+        self.out3 = _make_branch(in_channel, None, (channels_7x7, 1, 1, 0),
+                                 (channels_7x7, (7, 1), 1, (3, 0)), (channels_7x7, (1, 7), 1, (0, 3)),
+                                 (channels_7x7, (7, 1), 1, (3, 0)), (192, (1, 7), 1, (0, 3)))
+        self.out4 = _make_branch(in_channel, 'avg', (192, 1, 1, 0))
 
     def forward(self, x):
         o1 = self.out1(x)
@@ -109,14 +99,12 @@ class MakeC(nn.Module):
 
 
 class MakeD(nn.Module):
-    def __init__(self, in_channel, norm_layer, norm_kwargs):
+    def __init__(self, in_channel):
         super(MakeD, self).__init__()
-        self.out1 = _make_branch(in_channel, None, norm_layer, norm_kwargs,
-                                 (192, 1, 1, 0), (320, 3, 2, 0))
-        self.out2 = _make_branch(in_channel, None, norm_layer, norm_kwargs,
-                                 (192, 1, 1, 0), (192, (1, 7), 1, (0, 3)),
+        self.out1 = _make_branch(in_channel, None, (192, 1, 1, 0), (320, 3, 2, 0))
+        self.out2 = _make_branch(in_channel, None, (192, 1, 1, 0), (192, (1, 7), 1, (0, 3)),
                                  (192, (7, 1), 1, (3, 0)), (192, 3, 2, 0))
-        self.out3 = _make_branch(in_channel, 'max', norm_layer, norm_kwargs)
+        self.out3 = _make_branch(in_channel, 'max')
 
     def forward(self, x):
         o1 = self.out1(x)
@@ -127,20 +115,20 @@ class MakeD(nn.Module):
 
 
 class MakeE(nn.Module):
-    def __init__(self, in_channel, norm_layer, norm_kwargs):
+    def __init__(self, in_channel):
         super(MakeE, self).__init__()
-        self.s0 = _make_branch(in_channel, None, norm_layer, norm_kwargs, (320, 1, 1, 0))
+        self.s0 = _make_branch(in_channel, None, (320, 1, 1, 0))
 
-        self.s1 = _make_branch(in_channel, None, norm_layer, norm_kwargs, (384, 1, 1, 0))
-        self.s11 = _make_branch(384, None, norm_layer, norm_kwargs, (384, (1, 3), 1, (0, 1)))
-        self.s12 = _make_branch(384, None, norm_layer, norm_kwargs, (384, (3, 1), 1, (1, 0)))
+        self.s1 = _make_branch(in_channel, None, (384, 1, 1, 0))
+        self.s11 = _make_branch(384, None, (384, (1, 3), 1, (0, 1)))
+        self.s12 = _make_branch(384, None, (384, (3, 1), 1, (1, 0)))
 
-        self.s2 = _make_branch(in_channel, None, norm_layer, norm_kwargs, (448, 1, 1, 0),
+        self.s2 = _make_branch(in_channel, None, (448, 1, 1, 0),
                                (384, 3, 1, 1))
-        self.s21 = _make_branch(384, None, norm_layer, norm_kwargs, (384, (1, 3), 1, (0, 1)))
-        self.s22 = _make_branch(384, None, norm_layer, norm_kwargs, (384, (3, 1), 1, (1, 0)))
+        self.s21 = _make_branch(384, None, (384, (1, 3), 1, (0, 1)))
+        self.s22 = _make_branch(384, None, (384, (3, 1), 1, (1, 0)))
 
-        self.s3 = _make_branch(in_channel, 'avg', norm_layer, norm_kwargs, (192, 1, 1, 0))
+        self.s3 = _make_branch(in_channel, 'avg', (192, 1, 1, 0))
 
     def forward(self, x):
         o0 = self.s0(x)
@@ -159,20 +147,17 @@ class MakeE(nn.Module):
 
 # for mobile net
 def _add_conv(out, in_channels, channels=1, kernel=1, stride=1, pad=0, num_group=1,
-              active=True, relu6=False, norm_layer=nn.BatchNorm2d, norm_kwargs=None):
+              active=True, relu6=False):
     out.append(nn.Conv2d(in_channels, channels, kernel, stride, pad, groups=num_group, bias=False))
-    out.append(norm_layer(channels, **({} if norm_kwargs is None else norm_kwargs)))
+    out.append(nn.BatchNorm2d(channels))
     if active:
         out.append(nn.ReLU6(inplace=True) if relu6 else nn.ReLU(inplace=True))
 
 
-def _add_conv_dw(out, in_channels, dw_channels, channels, stride, relu6=False,
-                 norm_layer=nn.BatchNorm2d, norm_kwargs=None):
+def _add_conv_dw(out, in_channels, dw_channels, channels, stride, relu6=False):
     _add_conv(out, in_channels, dw_channels, kernel=3, stride=stride,
-              pad=1, num_group=dw_channels, relu6=relu6,
-              norm_layer=norm_layer, norm_kwargs=norm_kwargs)
-    _add_conv(out, dw_channels, channels, relu6=relu6,
-              norm_layer=norm_layer, norm_kwargs=None)
+              pad=1, num_group=dw_channels, relu6=relu6)
+    _add_conv(out, dw_channels, channels, relu6=relu6)
 
 
 # for squeeze net
@@ -199,13 +184,13 @@ class MakeFire(nn.Module):
 
 # for dense net
 class DenseLayer(nn.Module):
-    def __init__(self, in_channel, growth_rate, bn_size, dropout, norm_layer, norm_kwargs):
+    def __init__(self, in_channel, growth_rate, bn_size, dropout):
         super(DenseLayer, self).__init__()
         features = list()
-        features.append(norm_layer(in_channel, **({} if norm_kwargs is None else norm_kwargs)))
+        features.append(nn.BatchNorm2d(in_channel))
         features.append(nn.ReLU(inplace=True))
         features.append(nn.Conv2d(in_channel, bn_size * growth_rate, kernel_size=1, bias=False))
-        features.append(norm_layer(bn_size * growth_rate, **({} if norm_kwargs is None else norm_kwargs)))
+        features.append(nn.BatchNorm2d(bn_size * growth_rate))
         features.append(nn.ReLU(inplace=True))
         features.append(nn.Conv2d(bn_size * growth_rate, growth_rate, kernel_size=3, padding=1, bias=False))
         if dropout:
@@ -217,27 +202,26 @@ class DenseLayer(nn.Module):
         return torch.cat([x, out], 1)
 
 
-def _make_dense_block(in_channel, num_layers, bn_size, growth_rate, dropout,
-                      norm_layer, norm_kwargs):
+def _make_dense_block(in_channel, num_layers, bn_size, growth_rate, dropout):
     out = list()
     for _ in range(num_layers):
-        out.append(DenseLayer(in_channel, growth_rate, bn_size, dropout, norm_layer, norm_kwargs))
+        out.append(DenseLayer(in_channel, growth_rate, bn_size, dropout))
         in_channel = in_channel + growth_rate
     return nn.Sequential(*out)
 
 
-def _make_transition(in_channels, num_output_features, norm_layer, norm_kwargs):
-    out = list()
-    out.append(norm_layer(in_channels, **({} if norm_kwargs is None else norm_kwargs)))
-    out.append(nn.ReLU(inplace=True))
-    out.append(nn.Conv2d(in_channels, num_output_features, kernel_size=1, bias=False))
-    out.append(nn.AvgPool2d(kernel_size=2, stride=2))
-    return nn.Sequential(*out)
+def _make_transition(in_channels, num_output_features):
+    out = nn.Sequential(
+        nn.BatchNorm2d(in_channels), nn.ReLU(inplace=True),
+        nn.Conv2d(in_channels, num_output_features, kernel_size=1, bias=False),
+        nn.AvgPool2d(kernel_size=2, stride=2)
+    )
+    return out
 
 
 # batch normalization affine=False: in order to fit gluon
-def _bn_no_affine(channels, norm_layer=nn.BatchNorm2d, norm_kwargs=None):
-    bn_layer = norm_layer(channels, **({} if norm_kwargs is None else norm_kwargs))
+def _bn_no_affine(channels):
+    bn_layer = nn.BatchNorm2d(channels)
     nn.init.ones_(bn_layer.weight)
     nn.init.zeros_(bn_layer.bias)
     bn_layer.weight.requires_grad = False
@@ -256,6 +240,67 @@ class GroupNorm(nn.GroupNorm):
     def __init__(self, num_channels, num_groups=32, eps=1e-5, affine=True):
         super(GroupNorm, self).__init__(num_groups, num_channels, eps, affine)
 
+
+# for hourglass
+class Residual(nn.Module):
+    def __init__(self, inp_dim, out_dim, k=3, stride=1):
+        super(Residual, self).__init__()
+        p = (k - 1) // 2
+
+        self.feat = nn.Sequential(
+            nn.Conv2d(inp_dim, out_dim, k, stride, p, bias=False),
+            nn.BatchNorm2d(out_dim), nn.ReLU(inplace=True),
+            nn.Conv2d(out_dim, out_dim, k, 1, p, bias=False),
+            nn.BatchNorm2d(out_dim))
+
+        self.skip = nn.Sequential(
+            nn.Conv2d(inp_dim, out_dim, 1, stride, bias=False),
+            nn.BatchNorm2d(out_dim),
+        ) if stride != 1 or inp_dim != out_dim else nn.Sequential()
+
+    def forward(self, x):
+        out = self.feat(x)
+
+        skip = self.skip(x)
+        return F.relu(out + skip)
+
+
+class Upsample(nn.Module):
+    def __init__(self, scale_factor):
+        super(Upsample, self).__init__()
+        self.scale_factor = scale_factor
+
+    def forward(self, x):
+        return F.interpolate(x, scale_factor=self.scale_factor)
+
+
+class Merge(nn.Module):
+    def forward(self, x, y):
+        return x + y
+
+
+def _layer(inp_dim, out_dim, num):
+    layers = [Residual(inp_dim, out_dim)]
+    layers += [Residual(out_dim, out_dim) for _ in range(1, num)]
+    return nn.Sequential(*layers)
+
+
+def _layer_reverse(inp_dim, out_dim, num):
+    layers = [Residual(inp_dim, inp_dim) for _ in range(num - 1)]
+    layers += [Residual(inp_dim, out_dim)]
+    return nn.Sequential(*layers)
+
+
+def _pool_layer(dim):
+    return nn.MaxPool2d(kernel_size=2, stride=2)
+
+
+def _unpool_layer(dim):
+    return Upsample(scale_factor=2)
+
+
+def _merge_layer(dim):
+    return Merge()
 
 
 if __name__ == '__main__':

@@ -40,10 +40,10 @@ class DeepLabV3(SegBaseModel):
 
     """
 
-    def __init__(self, nclass, backbone='resnet50', aux=True, pretrained_base=True,
-                 base_size=520, crop_size=480, **kwargs):
+    def __init__(self, nclass, backbone='resnet50', aux=True, dilated=True, jpu=False,
+                 pretrained_base=True, base_size=520, crop_size=480, **kwargs):
         super(DeepLabV3, self).__init__(nclass, aux, backbone, base_size=base_size, crop_size=crop_size,
-                                        pretrained_base=pretrained_base, **kwargs)
+                                        dilated=dilated, jpu=jpu, pretrained_base=pretrained_base, **kwargs)
         self.head = _DeepLabHead(nclass, height=self._up_kwargs[0] // 8,
                                  width=self._up_kwargs[1] // 8, **kwargs)
         if self.aux:
@@ -227,3 +227,13 @@ def get_deeplab_resnet101_ade(**kwargs):
     >>> print(model)
     """
     return get_deeplab('ade20k', 'resnet101', **kwargs)
+
+
+if __name__ == '__main__':
+    deeplab = get_deeplab_resnet101_voc(dilated=False, jpu=True)
+    deeplab.eval()
+    # print(deeplab)
+    a = torch.randn(1, 3, 480, 480)
+    deeplab.eval()
+    with torch.no_grad():
+        out = deeplab(a)

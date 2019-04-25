@@ -11,7 +11,6 @@ __all__ = ['get_simple_pose_resnet', 'SimplePoseResNet',
            'simple_pose_resnet152_v1d']
 
 
-# TODO: change norm_layer
 class SimplePoseResNet(nn.Module):
     def __init__(self, base_name='resnet50_v1b',
                  pretrained_base=False,
@@ -23,8 +22,7 @@ class SimplePoseResNet(nn.Module):
         super(SimplePoseResNet, self).__init__(**kwargs)
 
         from model.model_zoo import get_model
-        base_network = get_model(base_name, pretrained=pretrained_base,
-                                 norm_layer=nn.BatchNorm2d)
+        base_network = get_model(base_name, pretrained=pretrained_base)
 
         self.resnet = list()
         for layer in ['features']:

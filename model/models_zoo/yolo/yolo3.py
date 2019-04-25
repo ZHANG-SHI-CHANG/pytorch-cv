@@ -71,7 +71,7 @@ class YOLOV3(nn.Module):
 
     def __init__(self, stages, out_channels, block_channels, channels, anchors, strides, classes,
                  alloc_size=(128, 128), nms_thresh=0.45, nms_topk=400, post_nms=100, pos_iou_thresh=1.0,
-                 ignore_iou_thresh=0.7, norm_layer=nn.BatchNorm2d, norm_kwargs=None, **kwargs):
+                 ignore_iou_thresh=0.7, **kwargs):
         super(YOLOV3, self).__init__(**kwargs)
         self._anchors = anchors
         self._classes = classes
@@ -95,13 +95,12 @@ class YOLOV3(nn.Module):
         for i, stage, out_channel, block_channel, channel, anchor, stride in zip(
                 range(len(stages)), stages, out_channels, block_channels, channels, anchors[::-1], strides[::-1]):
             self.stages.append(stage)
-            block = YOLODetectionBlockV3(block_channel, channel, norm_layer=norm_layer, norm_kwargs=norm_kwargs)
+            block = YOLODetectionBlockV3(block_channel, channel)
             self.yolo_blocks.append(block)
             output = YOLOOutputV3(out_channel, len(classes), anchor, stride, alloc_size=alloc_size)
             self.yolo_outputs.append(output)
             if i > 0:
-                self.transitions.append(_conv2d(out_channel, channel, 1, 0, 1, norm_layer=norm_layer,
-                                                norm_kwargs=norm_kwargs))
+                self.transitions.append(_conv2d(out_channel, channel, 1, 0, 1))
 
     def forward(self, x, *args):
         """YOLOV3 network forward.
@@ -307,7 +306,7 @@ class YOLOV3(nn.Module):
 
 
 def get_yolov3(name, stages, out_channels, block_channels, filters, anchors, strides, classes, dataset,
-               pretrained=False, root=os.path.join(os.path.expanduser('~'), '.torch', 'models'), **kwargs):
+               pretrained=False, root=os.path.expanduser('~/.torch/models'), **kwargs):
     """Get YOLOV3 models.
     Parameters
     ----------
@@ -364,8 +363,7 @@ def get_yolov3(name, stages, out_channels, block_channels, filters, anchors, str
     return net
 
 
-def yolo3_darknet53_voc(pretrained_base=True, pretrained=False,
-                        norm_layer=nn.BatchNorm2d, norm_kwargs=None, **kwargs):
+def yolo3_darknet53_voc(pretrained_base=True, pretrained=False, **kwargs):
     """YOLO3 multi-scale with darknet53 base network on VOC dataset.
     Parameters
     ----------
@@ -388,18 +386,16 @@ def yolo3_darknet53_voc(pretrained_base=True, pretrained=False,
     """
     from data.pascal_voc.detection import VOCDetection
     pretrained_base = False if pretrained else pretrained_base
-    base_net = darknet53(
-        pretrained=pretrained_base, norm_layer=norm_layer, norm_kwargs=norm_kwargs, **kwargs)
+    base_net = darknet53(pretrained=pretrained_base, **kwargs)
     stages = [base_net.features[:15], base_net.features[15:24], base_net.features[24:]]
     anchors = [[10, 13, 16, 30, 33, 23], [30, 61, 62, 45, 59, 119], [116, 90, 156, 198, 373, 326]]
     strides = [8, 16, 32]
     classes = VOCDetection.CLASSES
     return get_yolov3('darknet53', stages, [1024, 512, 256], [1024, 768, 384], [512, 256, 128], anchors, strides,
-                      classes, 'voc', pretrained=pretrained, norm_layer=norm_layer, norm_kwargs=norm_kwargs, **kwargs)
+                      classes, 'voc', pretrained=pretrained, **kwargs)
 
 
-def yolo3_darknet53_coco(pretrained_base=True, pretrained=False,
-                         norm_layer=nn.BatchNorm2d, norm_kwargs=None, **kwargs):
+def yolo3_darknet53_coco(pretrained_base=True, pretrained=False, **kwargs):
     """YOLO3 multi-scale with darknet53 base network on COCO dataset.
     Parameters
     ----------
@@ -421,18 +417,16 @@ def yolo3_darknet53_coco(pretrained_base=True, pretrained=False,
     """
     from data.mscoco.detection import COCODetection
     pretrained_base = False if pretrained else pretrained_base
-    base_net = darknet53(pretrained=pretrained_base, norm_layer=norm_layer, norm_kwargs=norm_kwargs, **kwargs)
+    base_net = darknet53(pretrained=pretrained_base, **kwargs)
     stages = [base_net.features[:15], base_net.features[15:24], base_net.features[24:]]
     anchors = [[10, 13, 16, 30, 33, 23], [30, 61, 62, 45, 59, 119], [116, 90, 156, 198, 373, 326]]
     strides = [8, 16, 32]
     classes = COCODetection.CLASSES
     return get_yolov3('darknet53', stages, [1024, 512, 256], [1024, 768, 384], [512, 256, 128],
-                      anchors, strides, classes, 'coco', pretrained=pretrained,
-                      norm_layer=norm_layer, norm_kwargs=norm_kwargs, **kwargs)
+                      anchors, strides, classes, 'coco', pretrained=pretrained, **kwargs)
 
 
-def yolo3_mobilenet1_0_voc(pretrained_base=True, pretrained=False,
-                           norm_layer=nn.BatchNorm2d, norm_kwargs=None, **kwargs):
+def yolo3_mobilenet1_0_voc(pretrained_base=True, pretrained=False, **kwargs):
     """YOLO3 multi-scale with mobilenet base network on VOC dataset.
     Parameters
     ----------
@@ -456,8 +450,7 @@ def yolo3_mobilenet1_0_voc(pretrained_base=True, pretrained=False,
     from data.pascal_voc.detection import VOCDetection
 
     pretrained_base = False if pretrained else pretrained_base
-    base_net = get_mobilenet(multiplier=1, pretrained=pretrained_base,
-                             norm_layer=norm_layer, norm_kwargs=norm_kwargs, **kwargs)
+    base_net = get_mobilenet(multiplier=1, pretrained=pretrained_base, **kwargs)
     stages = [base_net.features[:33],
               base_net.features[33:69],
               base_net.features[69:]]
@@ -467,12 +460,10 @@ def yolo3_mobilenet1_0_voc(pretrained_base=True, pretrained=False,
     strides = [8, 16, 32]
     classes = VOCDetection.CLASSES
     return get_yolov3('mobilenet1.0', stages, [1024, 512, 256], [1024, 768, 384], [512, 256, 128],
-                      anchors, strides, classes, 'voc', pretrained=pretrained,
-                      norm_layer=norm_layer, norm_kwargs=norm_kwargs, **kwargs)
+                      anchors, strides, classes, 'voc', pretrained=pretrained, **kwargs)
 
 
-def yolo3_mobilenet1_0_coco(pretrained_base=True, pretrained=False,
-                            norm_layer=nn.BatchNorm2d, norm_kwargs=None, **kwargs):
+def yolo3_mobilenet1_0_coco(pretrained_base=True, pretrained=False, **kwargs):
     """YOLO3 multi-scale with mobilenet base network on COCO dataset.
     Parameters
     ----------
@@ -496,8 +487,7 @@ def yolo3_mobilenet1_0_coco(pretrained_base=True, pretrained=False,
     from data.mscoco.detection import COCODetection
 
     pretrained_base = False if pretrained else pretrained_base
-    base_net = get_mobilenet(multiplier=1, pretrained=pretrained_base,
-                             norm_layer=norm_layer, norm_kwargs=norm_kwargs, **kwargs)
+    base_net = get_mobilenet(multiplier=1, pretrained=pretrained_base, **kwargs)
     stages = [base_net.features[:33],
               base_net.features[33:69],
               base_net.features[69:]]
@@ -507,8 +497,7 @@ def yolo3_mobilenet1_0_coco(pretrained_base=True, pretrained=False,
     strides = [8, 16, 32]
     classes = COCODetection.CLASSES
     return get_yolov3('mobilenet1.0', stages, [1024, 512, 256], [1024, 768, 384], [512, 256, 128],
-                      anchors, strides, classes, 'coco', pretrained=pretrained,
-                      norm_layer=norm_layer, norm_kwargs=norm_kwargs, **kwargs)
+                      anchors, strides, classes, 'coco', pretrained=pretrained, **kwargs)
 
 
 if __name__ == '__main__':

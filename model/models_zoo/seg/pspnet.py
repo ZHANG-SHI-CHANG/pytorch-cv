@@ -38,9 +38,9 @@ class PSPNet(SegBaseModel):
 
     """
 
-    def __init__(self, nclass, backbone='resnet50', aux=True, pretrained_base=True,
-                 base_size=520, crop_size=480, **kwargs):
-        super(PSPNet, self).__init__(nclass, aux, backbone, base_size=base_size,
+    def __init__(self, nclass, backbone='resnet50', aux=True, dilated=True, jpu=False,
+                 pretrained_base=True, base_size=520, crop_size=480, **kwargs):
+        super(PSPNet, self).__init__(nclass, aux, backbone, base_size=base_size, dilated=dilated, jpu=jpu,
                                      crop_size=crop_size, pretrained_base=pretrained_base, **kwargs)
         self.head = _PSPHead(nclass, **kwargs)
         if self.aux:

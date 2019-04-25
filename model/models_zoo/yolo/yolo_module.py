@@ -69,22 +69,19 @@ class YOLODetectionBlockV3(nn.Module):
         Additional `norm_layer` arguments.
     """
 
-    def __init__(self, in_channel, channel, norm_layer=nn.BatchNorm2d, norm_kwargs=None, **kwargs):
+    def __init__(self, in_channel, channel, **kwargs):
         super(YOLODetectionBlockV3, self).__init__(**kwargs)
         assert channel % 2 == 0, "channel {} cannot be divided by 2".format(channel)
         self.body = list()
         for _ in range(2):
             # 1x1 reduce
-            self.body.append(_conv2d(in_channel, channel, 1, 0, 1,
-                                     norm_layer=norm_layer, norm_kwargs=norm_kwargs))
+            self.body.append(_conv2d(in_channel, channel, 1, 0, 1))
             # 3x3 expand
-            self.body.append(_conv2d(channel, channel * 2, 3, 1, 1,
-                                     norm_layer=norm_layer, norm_kwargs=norm_kwargs))
+            self.body.append(_conv2d(channel, channel * 2, 3, 1, 1))
             in_channel = channel * 2
-        self.body.append(_conv2d(in_channel, channel, 1, 0, 1,
-                                 norm_layer=norm_layer, norm_kwargs=norm_kwargs))
+        self.body.append(_conv2d(in_channel, channel, 1, 0, 1))
         self.body = nn.Sequential(*self.body)
-        self.tip = _conv2d(channel, channel * 2, 3, 1, 1, norm_layer=norm_layer, norm_kwargs=norm_kwargs)
+        self.tip = _conv2d(channel, channel * 2, 3, 1, 1)
 
     def forward(self, x):
         route = self.body(x)

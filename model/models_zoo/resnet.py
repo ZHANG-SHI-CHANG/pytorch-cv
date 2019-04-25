@@ -44,25 +44,24 @@ class BasicBlockV1(nn.Module):
     """
 
     def __init__(self, in_channels, channels, stride, downsample=False,
-                 last_gamma=False, norm_layer=nn.BatchNorm2d, norm_kwargs=None, **kwargs):
+                 last_gamma=False, **kwargs):
         super(BasicBlockV1, self).__init__(**kwargs)
         self.body = list()
         self.body.append(_conv3x3(in_channels, channels, stride))
-        self.body.append(norm_layer(channels, **({} if norm_kwargs is None else norm_kwargs)))
+        self.body.append(nn.BatchNorm2d(channels))
         self.body.append(nn.ReLU(inplace=True))
         self.body.append(_conv3x3(channels, channels, 1))
-        tmp_layer = norm_layer(channels, **({} if norm_kwargs is None else norm_kwargs))
+        tmp_layer = nn.BatchNorm2d(channels)
         if last_gamma:
             nn.init.zeros_(tmp_layer.weight)
         self.body.append(tmp_layer)
         self.body = nn.Sequential(*self.body)
 
         if downsample:
-            self.downsample = list()
-            self.downsample.append(nn.Conv2d(in_channels, channels, kernel_size=1, stride=stride,
-                                             bias=False))
-            self.downsample.append(norm_layer(channels, **({} if norm_kwargs is None else norm_kwargs)))
-            self.downsample = nn.Sequential(*self.downsample)
+            self.downsample = nn.Sequential(
+                nn.Conv2d(in_channels, channels, kernel_size=1, stride=stride, bias=False),
+                nn.BatchNorm2d(channels)
+            )
         else:
             self.downsample = None
 
@@ -104,28 +103,27 @@ class BottleneckV1(nn.Module):
     """
 
     def __init__(self, in_channels, channels, stride, downsample=False,
-                 last_gamma=False, norm_layer=nn.BatchNorm2d, norm_kwargs=None, **kwargs):
+                 last_gamma=False, **kwargs):
         super(BottleneckV1, self).__init__(**kwargs)
         self.body = list()
         self.body.append(nn.Conv2d(in_channels, channels // 4, kernel_size=1, stride=stride))
-        self.body.append(norm_layer(channels // 4, **({} if norm_kwargs is None else norm_kwargs)))
+        self.body.append(nn.BatchNorm2d(channels // 4))
         self.body.append(nn.ReLU(inplace=True))
         self.body.append(_conv3x3(channels // 4, channels // 4, 1))
-        self.body.append(norm_layer(channels // 4, **({} if norm_kwargs is None else norm_kwargs)))
+        self.body.append(nn.BatchNorm2d(channels // 4))
         self.body.append(nn.ReLU(inplace=True))
         self.body.append(nn.Conv2d(channels // 4, channels, kernel_size=1, stride=1))
-        tmp_layer = norm_layer(channels, **({} if norm_kwargs is None else norm_kwargs))
+        tmp_layer = nn.BatchNorm2d(channels)
         if last_gamma:
             nn.init.zeros_(tmp_layer.weight)
         self.body.append(tmp_layer)
         self.body = nn.Sequential(*self.body)
 
         if downsample:
-            self.downsample = list()
-            self.downsample.append(nn.Conv2d(in_channels, channels, kernel_size=1, stride=stride,
-                                             bias=False, ))
-            self.downsample.append(norm_layer(channels, **({} if norm_kwargs is None else norm_kwargs)))
-            self.downsample = nn.Sequential(*self.downsample)
+            self.downsample = nn.Sequential(
+                nn.Conv2d(in_channels, channels, kernel_size=1, stride=stride, bias=False),
+                nn.BatchNorm2d(channels)
+            )
         else:
             self.downsample = None
 
@@ -167,11 +165,11 @@ class BasicBlockV2(nn.Module):
     """
 
     def __init__(self, in_channels, channels, stride, downsample=False,
-                 last_gamma=False, norm_layer=nn.BatchNorm2d, norm_kwargs=None, **kwargs):
+                 last_gamma=False, **kwargs):
         super(BasicBlockV2, self).__init__(**kwargs)
-        self.bn1 = norm_layer(in_channels, **({} if norm_kwargs is None else norm_kwargs))
+        self.bn1 = nn.BatchNorm2d(in_channels)
         self.conv1 = _conv3x3(in_channels, channels, stride)
-        self.bn2 = norm_layer(channels, **({} if norm_kwargs is None else norm_kwargs))
+        self.bn2 = nn.BatchNorm2d(channels)
         if last_gamma:
             nn.init.zeros_(self.bn2.weight)
 
@@ -223,13 +221,13 @@ class BottleneckV2(nn.Module):
     """
 
     def __init__(self, in_channels, channels, stride, downsample=False,
-                 last_gamma=False, norm_layer=nn.BatchNorm2d, norm_kwargs=None, **kwargs):
+                 last_gamma=False, **kwargs):
         super(BottleneckV2, self).__init__(**kwargs)
-        self.bn1 = norm_layer(in_channels, **({} if norm_kwargs is None else norm_kwargs))
+        self.bn1 = nn.BatchNorm2d(in_channels)
         self.conv1 = nn.Conv2d(in_channels, channels // 4, kernel_size=1, stride=1, bias=False)
-        self.bn2 = norm_layer(channels // 4, **({} if norm_kwargs is None else norm_kwargs))
+        self.bn2 = nn.BatchNorm2d(channels // 4)
         self.conv2 = _conv3x3(channels // 4, channels // 4, stride)
-        self.bn3 = norm_layer(channels // 4, **({} if norm_kwargs is None else norm_kwargs))
+        self.bn3 = nn.BatchNorm2d(channels // 4)
         if last_gamma:
             nn.init.zeros_(self.bn3.weight)
         self.conv3 = nn.Conv2d(channels // 4, channels, kernel_size=1, stride=1, bias=False)
@@ -288,7 +286,7 @@ class ResNetV1(nn.Module):
     """
 
     def __init__(self, block, layers, channels, classes=1000, thumbnail=False,
-                 last_gamma=False, norm_layer=nn.BatchNorm2d, norm_kwargs=None, **kwargs):
+                 last_gamma=False,  **kwargs):
         super(ResNetV1, self).__init__(**kwargs)
         assert len(layers) == len(channels) - 2
 
@@ -297,33 +295,30 @@ class ResNetV1(nn.Module):
             self.features.append(_conv3x3(channels[0], channels[1], 1))
         else:
             self.features.append(nn.Conv2d(channels[0], channels[1], 7, 2, 3, bias=False))
-            self.features.append(norm_layer(channels[1], **({} if norm_kwargs is None else norm_kwargs)))
+            self.features.append(nn.BatchNorm2d(channels[1]))
             self.features.append(nn.ReLU(inplace=True))
             self.features.append(nn.MaxPool2d(3, 2, 1))
 
         for i, num_layer in enumerate(layers):
             stride = 1 if i == 0 else 2
             self.features.append(self._make_layer(block, num_layer, channels[i + 1], channels[i + 2],
-                                                  stride, last_gamma=last_gamma, norm_layer=norm_layer,
-                                                  norm_kwargs=norm_kwargs))
+                                                  stride, last_gamma=last_gamma))
         self.features = nn.Sequential(*self.features)
 
         self.output = nn.Linear(channels[-1], classes)
 
-    def _make_layer(self, block, layers, in_channels, channels, stride,
-                    last_gamma=False, norm_layer=nn.BatchNorm2d, norm_kwargs=None):
+    def _make_layer(self, block, layers, in_channels, channels, stride, last_gamma=False):
         layer = list()
 
         layer.append(block(in_channels, channels, stride, channels != in_channels,
-                           last_gamma=last_gamma, norm_layer=norm_layer, norm_kwargs=norm_kwargs))
+                           last_gamma=last_gamma))
         for _ in range(layers - 1):
-            layer.append(block(channels, channels, 1, False, last_gamma=last_gamma,
-                               norm_layer=norm_layer, norm_kwargs=norm_kwargs))
+            layer.append(block(channels, channels, 1, False, last_gamma=last_gamma))
         return nn.Sequential(*layer)
 
     def forward(self, x):
         x = self.features(x)
-        x = F.avg_pool2d(x, x.shape[2]).squeeze_(3).squeeze_(2)
+        x = F.adaptive_avg_pool2d(x, 1).squeeze_(3).squeeze_(2)
         x = self.output(x)
         return x
 
@@ -355,45 +350,41 @@ class ResNetV2(nn.Module):
     """
 
     def __init__(self, block, layers, channels, classes=1000, thumbnail=False,
-                 last_gamma=False, norm_layer=nn.BatchNorm2d, norm_kwargs=None, **kwargs):
+                 last_gamma=False, **kwargs):
         super(ResNetV2, self).__init__(**kwargs)
         assert len(layers) == len(channels) - 2
 
         self.features = list()
-        self.features.append(_bn_no_affine(channels[0], norm_layer, norm_kwargs))
+        self.features.append(_bn_no_affine(channels[0]))
         if thumbnail:
             self.features.append(_conv3x3(channels[0], channels[1], 1))
         else:
             self.features.append(nn.Conv2d(channels[0], channels[1], 7, 2, 3, bias=False))
-            self.features.append(norm_layer(channels[1], **({} if norm_kwargs is None else norm_kwargs)))
+            self.features.append(nn.BatchNorm2d(channels[1]))
             self.features.append(nn.ReLU(inplace=True))
             self.features.append(nn.MaxPool2d(3, 2, 1))
 
         for i, num_layer in enumerate(layers):
             stride = 1 if i == 0 else 2
             self.features.append(self._make_layer(block, num_layer, channels[i + 1], channels[i + 2],
-                                                  stride, last_gamma=last_gamma, norm_layer=norm_layer,
-                                                  norm_kwargs=norm_kwargs))
-        self.features.append(norm_layer(channels[-1], **({} if norm_kwargs is None else norm_kwargs)))
+                                                  stride, last_gamma=last_gamma))
+        self.features.append(nn.BatchNorm2d(channels[-1]))
         self.features.append(nn.ReLU(inplace=True))
         self.features = nn.Sequential(*self.features)
 
         self.output = nn.Linear(channels[-1], classes)
 
-    def _make_layer(self, block, layers, in_channels, channels, stride,
-                    last_gamma=False, norm_layer=nn.BatchNorm2d, norm_kwargs=None):
+    def _make_layer(self, block, layers, in_channels, channels, stride, last_gamma=False):
         layer = list()
         layer.append(block(in_channels, channels, stride, channels != in_channels,
-                           last_gamma=last_gamma, norm_layer=norm_layer,
-                           norm_kwargs=norm_kwargs))
+                           last_gamma=last_gamma))
         for _ in range(layers - 1):
-            layer.append(block(channels, channels, 1, False, last_gamma=last_gamma,
-                               norm_layer=norm_layer, norm_kwargs=norm_kwargs))
+            layer.append(block(channels, channels, 1, False, last_gamma=last_gamma))
         return nn.Sequential(*layer)
 
     def forward(self, x):
         x = self.features(x)
-        x = F.avg_pool2d(x, x.shape[2]).squeeze_(3).squeeze_(2)
+        x = F.adaptive_avg_pool2d(x, 1).squeeze_(3).squeeze_(2)
         x = self.output(x)
         return x
 
@@ -653,33 +644,33 @@ def resnet152_v2(**kwargs):
 if __name__ == '__main__':
     import torch
 
-    net = resnet18_v1()
-    print(net)
+    # net = resnet18_v1()
+    # print(net)
     # cnt = 0
     # for key in net.state_dict().keys():
     #     if not key.endswith('num_batches_tracked'):
     #         print(key)
 
-    # a = torch.randn(2, 3, 224, 224)
+    a = torch.randn(2, 3, 224, 224)
 
-    # net1 = resnet18_v1()
-    # net2 = resnet18_v2()
-    # net3 = resnet34_v1()
-    # net4 = resnet34_v2()
-    # net5 = resnet50_v1()
-    # net6 = resnet50_v2()
-    # net7 = resnet101_v1()
-    # net8 = resnet101_v2()
-    # net9 = resnet152_v1()
-    # net10 = resnet152_v2()
-    # with torch.no_grad():
-    #     net1(a)
-    #     net2(a)
-    #     net3(a)
-    #     net4(a)
-    #     net5(a)
-    #     net6(a)
-    #     net7(a)
-    #     net8(a)
-    #     net9(a)
-    #     net10(a)
+    net1 = resnet18_v1()
+    net2 = resnet18_v2()
+    net3 = resnet34_v1()
+    net4 = resnet34_v2()
+    net5 = resnet50_v1()
+    net6 = resnet50_v2()
+    net7 = resnet101_v1()
+    net8 = resnet101_v2()
+    net9 = resnet152_v1()
+    net10 = resnet152_v2()
+    with torch.no_grad():
+        net1(a)
+        net2(a)
+        net3(a)
+        net4(a)
+        net5(a)
+        net6(a)
+        net7(a)
+        net8(a)
+        net9(a)
+        net10(a)

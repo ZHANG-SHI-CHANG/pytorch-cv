@@ -24,15 +24,15 @@ class BasicBlockV1b(nn.Module):
     expansion = 1
 
     def __init__(self, in_channel, planes, strides=1, dilation=1, downsample=None,
-                 previous_dilation=1, norm_layer=None, norm_kwargs=None, **kwargs):
+                 previous_dilation=1, **kwargs):
         super(BasicBlockV1b, self).__init__()
         self.conv1 = nn.Conv2d(in_channel, planes, kernel_size=3, stride=strides,
                                padding=dilation, dilation=dilation, bias=False)
-        self.bn1 = norm_layer(planes, **({} if norm_kwargs is None else norm_kwargs))
+        self.bn1 = nn.BatchNorm2d(planes)
         self.relu1 = nn.ReLU(inplace=True)
         self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=1, padding=previous_dilation,
                                dilation=previous_dilation, bias=False)
-        self.bn2 = norm_layer(planes, **({} if norm_kwargs is None else norm_kwargs))
+        self.bn2 = nn.BatchNorm2d(planes)
         self.relu2 = nn.ReLU(inplace=True)
         self.downsample = downsample
         self.strides = strides
@@ -61,21 +61,20 @@ class BottleneckV1b(nn.Module):
     expansion = 4
 
     def __init__(self, in_channel, planes, strides=1, dilation=1,
-                 downsample=None, previous_dilation=1, norm_layer=None,
-                 norm_kwargs=None, last_gamma=False, **kwargs):
+                 downsample=None, last_gamma=False, **kwargs):
         super(BottleneckV1b, self).__init__()
         self.conv1 = nn.Conv2d(in_channel, planes, kernel_size=1, bias=False)
-        self.bn1 = norm_layer(planes, **({} if norm_kwargs is None else norm_kwargs))
+        self.bn1 = nn.BatchNorm2d(planes)
         self.relu1 = nn.ReLU(inplace=True)
         self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=strides,
                                padding=dilation, dilation=dilation, bias=False)
-        self.bn2 = norm_layer(planes, **({} if norm_kwargs is None else norm_kwargs))
+        self.bn2 = nn.BatchNorm2d(planes)
         self.relu2 = nn.ReLU(inplace=True)
         self.conv3 = nn.Conv2d(planes, planes * 4, kernel_size=1, bias=False)
         if not last_gamma:
-            self.bn3 = norm_layer(planes * 4, **({} if norm_kwargs is None else norm_kwargs))
+            self.bn3 = nn.BatchNorm2d(planes * 4)
         else:
-            self.bn3 = norm_layer(planes * 4, **({} if norm_kwargs is None else norm_kwargs))
+            self.bn3 = nn.BatchNorm2d(planes * 4)
             nn.init.zeros_(self.bn3.weight)
         self.relu3 = nn.ReLU(inplace=True)
         self.downsample = downsample
@@ -147,51 +146,42 @@ class ResNetV1b(nn.Module):
         - Yu, Fisher, and Vladlen Koltun. "Multi-scale context aggregation by dilated convolutions."
     """
 
-    def __init__(self, block, layers, classes=1000, dilated=False, norm_layer=nn.BatchNorm2d,
-                 norm_kwargs=None, last_gamma=False, deep_stem=False, stem_width=32,
-                 avg_down=False, final_drop=0.0, use_global_stats=False, **kwargs):
+    def __init__(self, block, layers, classes=1000, dilated=False, last_gamma=False, deep_stem=False,
+                 stem_width=32, avg_down=False, final_drop=0.0, **kwargs):
         channel = [64, 64, 128, 256] if block is BasicBlockV1b else [64, 256, 512, 1024]
         self.basic = block is BasicBlockV1b
         self.inplanes = stem_width * 2 if deep_stem else 64
         super(ResNetV1b, self).__init__(**kwargs)
-        norm_kwargs = norm_kwargs if norm_kwargs is not None else {}
-        if use_global_stats:
-            norm_kwargs['track_running_stats'] = True
-        self.norm_kwargs = norm_kwargs
         self.features = list()
         if not deep_stem:
             self.features.append(nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False))
         else:
             self.features.append(nn.Conv2d(3, stem_width, kernel_size=3, stride=2, padding=1, bias=False))
-            self.features.append(norm_layer(stem_width, **({} if norm_kwargs is None else norm_kwargs)))
+            self.features.append(nn.BatchNorm2d(stem_width))
             self.features.append(nn.ReLU(inplace=True))
             self.features.append(nn.Conv2d(stem_width, stem_width, kernel_size=3, stride=1, padding=1, bias=False))
-            self.features.append(norm_layer(stem_width, **({} if norm_kwargs is None else norm_kwargs)))
+            self.features.append(nn.BatchNorm2d(stem_width))
             self.features.append(nn.ReLU(inplace=True))
             self.features.append(nn.Conv2d(stem_width, stem_width * 2, kernel_size=3, stride=1,
                                            padding=1, bias=False))
             channel[0] = stem_width * 2
-        self.features.append(norm_layer(stem_width * 2, **({} if norm_kwargs is None else norm_kwargs)))
+        self.features.append(nn.BatchNorm2d(stem_width * 2))
         self.features.append(nn.ReLU(inplace=True))
         self.features.append(nn.MaxPool2d(kernel_size=3, stride=2, padding=1))
         self.features.append(self._make_layer(block, channel[0], 64, layers[0], avg_down=avg_down,
-                                              norm_layer=norm_layer, last_gamma=last_gamma))
+                                              last_gamma=last_gamma))
         self.features.append(self._make_layer(block, channel[1], 128, layers[1], strides=2, avg_down=avg_down,
-                                              norm_layer=norm_layer, last_gamma=last_gamma))
+                                              last_gamma=last_gamma))
         if dilated:
             self.features.append(self._make_layer(block, channel[2], 256, layers[2], strides=1, dilation=2,
-                                                  avg_down=avg_down, norm_layer=norm_layer,
-                                                  last_gamma=last_gamma))
+                                                  avg_down=avg_down, last_gamma=last_gamma))
             self.features.append(self._make_layer(block, channel[3], 512, layers[3], strides=1, dilation=4,
-                                                  avg_down=avg_down, norm_layer=norm_layer,
-                                                  last_gamma=last_gamma))
+                                                  avg_down=avg_down, last_gamma=last_gamma))
         else:
             self.features.append(self._make_layer(block, channel[2], 256, layers[2], strides=2,
-                                                  avg_down=avg_down, norm_layer=norm_layer,
-                                                  last_gamma=last_gamma))
+                                                  avg_down=avg_down, last_gamma=last_gamma))
             self.features.append(self._make_layer(block, channel[3], 512, layers[3], strides=2,
-                                                  avg_down=avg_down, norm_layer=norm_layer,
-                                                  last_gamma=last_gamma))
+                                                  avg_down=avg_down, last_gamma=last_gamma))
         self.features = nn.Sequential(*self.features)
         self.drop = None
         if final_drop > 0.0:
@@ -199,7 +189,7 @@ class ResNetV1b(nn.Module):
         self.fc = nn.Linear(512 * block.expansion, classes)
 
     def _make_layer(self, block, in_channel, planes, blocks, strides=1, dilation=1,
-                    avg_down=False, norm_layer=None, last_gamma=False):
+                    avg_down=False, last_gamma=False):
         downsample = None
         if strides != 1 or self.inplanes != planes * block.expansion:
             downsample = list()
@@ -212,22 +202,20 @@ class ResNetV1b(nn.Module):
                                                    ceil_mode=True, count_include_pad=False))
                 downsample.append(nn.Conv2d(in_channel, planes * block.expansion, kernel_size=1,
                                             stride=1, bias=False))
-                downsample.append(norm_layer(planes * block.expansion, **self.norm_kwargs))
+                downsample.append(nn.BatchNorm2d(planes * block.expansion))
             else:
                 downsample.append(nn.Conv2d(in_channel, planes * block.expansion,
                                             kernel_size=1, stride=strides, bias=False))
-                downsample.append(norm_layer(planes * block.expansion, **self.norm_kwargs))
+                downsample.append(nn.BatchNorm2d(planes * block.expansion))
             downsample = nn.Sequential(*downsample)
         layers = list()
         if dilation in (1, 2):
             layers.append(block(in_channel, planes, strides, dilation=1,
                                 downsample=downsample, previous_dilation=dilation,
-                                norm_layer=norm_layer, norm_kwargs=self.norm_kwargs,
                                 last_gamma=last_gamma))
         elif dilation == 4:
             layers.append(block(in_channel, planes, strides, dilation=2,
                                 downsample=downsample, previous_dilation=dilation,
-                                norm_layer=norm_layer, norm_kwargs=self.norm_kwargs,
                                 last_gamma=last_gamma))
         else:
             raise RuntimeError("=> unknown dilation size: {}".format(dilation))
@@ -235,15 +223,14 @@ class ResNetV1b(nn.Module):
         self.inplanes = planes * block.expansion
         for i in range(1, blocks):
             layers.append(block(planes if self.basic else planes * 4, planes, dilation=dilation,
-                                previous_dilation=dilation, norm_layer=norm_layer,
-                                norm_kwargs=self.norm_kwargs, last_gamma=last_gamma))
+                                previous_dilation=dilation, last_gamma=last_gamma))
 
         return nn.Sequential(*layers)
 
     def forward(self, x):
         x = self.features(x)
 
-        x = F.avg_pool2d(x, x.shape[2]).squeeze(3).squeeze(2)
+        x = F.adaptive_avg_pool2d(x, 1).squeeze(3).squeeze(2)
         if self.drop is not None:
             x = self.drop(x)
         x = self.fc(x)
@@ -373,8 +360,10 @@ def resnet50_v1b_gn(pretrained=False, root=os.path.expanduser('~/.torch/models')
         optionally set to True if finetuning using ImageNet classification pretrained models.
     """
     from model.module.basic import GroupNorm
-    model = ResNetV1b(BottleneckV1b, [3, 4, 6, 3], norm_layer=GroupNorm,
-                      norm_kwargs={'num_groups': 32}, **kwargs)
+    from model.module.convert import convert_norm_layer
+    model = ResNetV1b(BottleneckV1b, [3, 4, 6, 3], **kwargs)
+    norm_kwargs = {'num_groups': 32}
+    model = convert_norm_layer(model, norm_layer=GroupNorm, norm_kwargs=norm_kwargs)
     if pretrained:
         from model.model_store import get_model_file
         model.load_state_dict(torch.load(get_model_file('resnet%d_v%db_gn' % (50, 1),
@@ -442,7 +431,10 @@ def resnet101_v1b_gn(pretrained=False, root=os.path.expanduser('~/.torch/models'
         optionally set to True if finetuning using ImageNet classification pretrained models.
     """
     from model.module.basic import GroupNorm
-    model = ResNetV1b(BottleneckV1b, [3, 4, 23, 3], norm_layer=GroupNorm, **kwargs)
+    from model.module.convert import convert_norm_layer
+    model = ResNetV1b(BottleneckV1b, [3, 4, 23, 3], **kwargs)
+    norm_kwargs = {'num_groups': 32}
+    model = convert_norm_layer(model, norm_layer=GroupNorm, norm_kwargs=norm_kwargs)
     if pretrained:
         import torch
         from model.model_store import get_model_file
@@ -831,13 +823,45 @@ def resnet152_v1s(pretrained=False, root=os.path.expanduser('~/.torch/models'), 
 
 
 if __name__ == '__main__':
-    net = resnet18_v1b(pretrained=False)
-    print(net)
-    # import numpy as np
-    #
-    # np.random.seed(10)
-    # x = np.random.randn(1, 3, 200, 200).astype(np.float32)
-    # x = torch.from_numpy(x)
-    # with torch.no_grad():
-    #     out = net(x)
-    # print(net)
+    net1 = resnet18_v1b()
+    net2 = resnet34_v1b()
+    net3 = resnet50_v1b()
+    net4 = resnet50_v1b_gn()
+    net5 = resnet50_v1c()
+    net6 = resnet50_v1d()
+    net7 = resnet50_v1e()
+    net8 = resnet50_v1s()
+    net9 = resnet101_v1b()
+    net10 = resnet101_v1b_gn()
+    net11 = resnet101_v1c()
+    net12 = resnet101_v1d()
+    net13 = resnet101_v1e()
+    net14 = resnet101_v1s()
+    net15 = resnet152_v1b()
+    net16 = resnet152_v1c()
+    net17 = resnet152_v1d()
+    net18 = resnet152_v1e()
+    net19 = resnet152_v1s()
+    a = torch.randn(1, 3, 224, 224)
+    with torch.no_grad():
+        net1(a)
+        net2(a)
+        net3(a)
+        net4(a)
+        net5(a)
+        net6(a)
+        net7(a)
+        net8(a)
+        net9(a)
+        net10(a)
+        net11(a)
+        net12(a)
+        net13(a)
+        net14(a)
+        net15(a)
+        net16(a)
+        net17(a)
+        net18(a)
+        net19(a)
+
+

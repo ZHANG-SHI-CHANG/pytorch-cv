@@ -45,22 +45,21 @@ class Block(nn.Module):
     """
 
     def __init__(self, in_channels, channels, cardinality, bottleneck_width, stride,
-                 downsample=False, last_gamma=False, use_se=False,
-                 norm_layer=nn.BatchNorm2d, norm_kwargs=None, **kwargs):
+                 downsample=False, last_gamma=False, use_se=False, **kwargs):
         super(Block, self).__init__(**kwargs)
         D = int(math.floor(channels * (bottleneck_width / 64)))
         group_width = cardinality * D
 
         self.body = list()
         self.body.append(nn.Conv2d(in_channels, group_width, kernel_size=1, bias=False))
-        self.body.append(norm_layer(group_width, **({} if norm_kwargs is None else norm_kwargs)))
+        self.body.append(nn.BatchNorm2d(group_width))
         self.body.append(nn.ReLU(inplace=True))
         self.body.append(nn.Conv2d(group_width, group_width, kernel_size=3, stride=stride, padding=1,
                                    groups=cardinality, bias=False))
-        self.body.append(norm_layer(group_width, **({} if norm_kwargs is None else norm_kwargs)))
+        self.body.append(nn.BatchNorm2d(group_width))
         self.body.append(nn.ReLU(inplace=True))
         self.body.append(nn.Conv2d(group_width, channels * 4, kernel_size=1, bias=False))
-        tmp_layer = norm_layer(channels * 4, **({} if norm_kwargs is None else norm_kwargs))
+        tmp_layer = nn.BatchNorm2d(channels * 4)
         if last_gamma:
             nn.init.zeros_(tmp_layer.weight)
         self.body.append(tmp_layer)
@@ -80,7 +79,7 @@ class Block(nn.Module):
             self.downsample = list()
             self.downsample.append(nn.Conv2d(in_channels, channels * 4, kernel_size=1, stride=stride,
                                              bias=False))
-            self.downsample.append(norm_layer(channels * 4, **({} if norm_kwargs is None else norm_kwargs)))
+            self.downsample.append(nn.BatchNorm2d(channels * 4))
             self.downsample = nn.Sequential(*self.downsample)
         else:
             self.downsample = None
@@ -132,8 +131,7 @@ class ResNext(nn.Module):
     """
 
     def __init__(self, layers, cardinality, bottleneck_width,
-                 classes=1000, last_gamma=False, use_se=False,
-                 norm_layer=nn.BatchNorm2d, norm_kwargs=None, **kwargs):
+                 classes=1000, last_gamma=False, use_se=False, **kwargs):
         super(ResNext, self).__init__(**kwargs)
         self.cardinality = cardinality
         self.bottleneck_width = bottleneck_width
@@ -142,30 +140,27 @@ class ResNext(nn.Module):
         self.features = list()
         self.features.append(nn.Conv2d(3, channels, 7, 2, 3, bias=False))
 
-        self.features.append(norm_layer(channels, **({} if norm_kwargs is None else norm_kwargs)))
+        self.features.append(nn.BatchNorm2d(channels))
         self.features.append(nn.ReLU(inplace=True))
         self.features.append(nn.MaxPool2d(3, 2, 1))
 
         for i, num_layer in enumerate(layers):
             stride = 1 if i == 0 else 2
             self.features.append(self._make_layer(in_channels, channels, num_layer, stride, last_gamma,
-                                                  use_se, norm_layer=norm_layer, norm_kwargs=norm_kwargs))
+                                                  use_se))
             in_channels = in_channels * 4 if i == 0 else in_channels * 2
             channels *= 2
         self.features = nn.Sequential(*self.features)
 
         self.output = nn.Linear(in_channels, classes)
 
-    def _make_layer(self, in_channels, channels, num_layers, stride, last_gamma, use_se,
-                    norm_layer=nn.BatchNorm2d, norm_kwargs=None):
+    def _make_layer(self, in_channels, channels, num_layers, stride, last_gamma, use_se):
         layer = list()
         layer.append(Block(in_channels, channels, self.cardinality, self.bottleneck_width,
-                           stride, True, last_gamma=last_gamma, use_se=use_se,
-                           norm_layer=norm_layer, norm_kwargs=norm_kwargs))
+                           stride, True, last_gamma=last_gamma, use_se=use_se))
         for _ in range(num_layers - 1):
             layer.append(Block(channels * 4, channels, self.cardinality, self.bottleneck_width,
-                               1, False, last_gamma=last_gamma, use_se=use_se,
-                               norm_layer=norm_layer, norm_kwargs=norm_kwargs))
+                               1, False, last_gamma=last_gamma, use_se=use_se))
         return nn.Sequential(*layer)
 
     def forward(self, x):
@@ -382,3 +377,20 @@ def se_resnext101_64x4d(**kwargs):
     """
     kwargs['use_se'] = True
     return get_resnext(101, 64, 4, **kwargs)
+
+
+if __name__ == '__main__':
+    net1 = se_resnext50_32x4d()
+    net2 = se_resnext101_32x4d()
+    net3 = se_resnext101_64x4d()
+    net4 = resnext50_32x4d()
+    net5 = resnext101_32x4d()
+    net6 = resnext101_64x4d()
+    a = torch.randn(1, 3, 224, 224)
+    with torch.no_grad():
+        net1(a)
+        net2(a)
+        net3(a)
+        net4(a)
+        net5(a)
+        net6(a)

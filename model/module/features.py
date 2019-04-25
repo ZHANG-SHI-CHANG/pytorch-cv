@@ -7,12 +7,10 @@ from __future__ import absolute_import
 
 from torch import nn
 import torch.nn.functional as F
-from utils.distributed import get_world_size
 from utils.init import xavier_uniform_init, mxnet_xavier_normal_init
 
 
-def _parse_network(network, outputs, pretrained, norm_layer=nn.BatchNorm2d,
-                   norm_kwargs=None, **kwargs):
+def _parse_network(network, outputs, pretrained, **kwargs):
     """Parse network with specified outputs and other arguments.
 
     Parameters
@@ -34,10 +32,7 @@ def _parse_network(network, outputs, pretrained, norm_layer=nn.BatchNorm2d,
     results = [[] for _ in range(l)]
     if isinstance(network, str):
         from model.model_zoo import get_model
-        if norm_layer == nn.BatchNorm2d and get_world_size() > 1:
-            norm_layer = nn.SyncBatchNorm
-        network = get_model(network, pretrained=pretrained, norm_layer=norm_layer,
-                            norm_kwargs=norm_kwargs, **kwargs).features
+        network = get_model(network, pretrained=pretrained, **kwargs).features
 
     # helper func
     def recursive(pos, block, arr, j):
@@ -95,11 +90,9 @@ class FeatureExpander(nn.Module):
     """
 
     def __init__(self, network, outputs, num_filters, channels=[1024, 2048], use_1x1_transition=True,
-                 use_bn=True, reduce_ratio=1.0, min_depth=128, global_pool=False,
-                 pretrained=False, norm_layer=nn.BatchNorm2d, norm_kwargs=None, **kwargs):
+                 use_bn=True, reduce_ratio=1.0, min_depth=128, global_pool=False, pretrained=False, **kwargs):
         super(FeatureExpander, self).__init__()
-        self.features = nn.ModuleList(_parse_network(network, outputs, pretrained,
-                                                     norm_layer, norm_kwargs, **kwargs))
+        self.features = nn.ModuleList(_parse_network(network, outputs, pretrained, **kwargs))
         self.channel = channels + num_filters[1:]
         self.extras = list()
         for i, f in enumerate(num_filters[1:]):
@@ -108,11 +101,11 @@ class FeatureExpander(nn.Module):
                 num_trans = max(min_depth, int(round(f * reduce_ratio)))
                 extra.append(nn.Conv2d(num_filters[i], num_trans, 1, bias=not use_bn))
                 if use_bn:
-                    extra.append(norm_layer(num_trans, **({} if norm_kwargs is None else norm_kwargs)))
+                    extra.append(nn.BatchNorm2d(num_trans))
                 extra.append(nn.ReLU(inplace=True))
             extra.append(nn.Conv2d(num_trans, f, 3, stride=2, padding=1, bias=not use_bn))
             if use_bn:
-                extra.append(norm_layer(f, **({} if norm_kwargs is None else norm_kwargs)))
+                extra.append(nn.BatchNorm2d(f))
             extra.append(nn.ReLU(inplace=True))
             self.extras.append(nn.Sequential(*extra))
         self.extras = nn.ModuleList(self.extras)

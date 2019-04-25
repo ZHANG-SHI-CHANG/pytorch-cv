@@ -37,12 +37,11 @@ class CIFARBasicBlockV2(nn.Module):
         Additional `norm_layer` arguments.
     """
 
-    def __init__(self, in_channels, channels, stride, downsample=False, drop_rate=0.0,
-                 norm_layer=nn.BatchNorm2d, norm_kwargs=None, **kwargs):
+    def __init__(self, in_channels, channels, stride, downsample=False, drop_rate=0.0, **kwargs):
         super(CIFARBasicBlockV2, self).__init__(**kwargs)
-        self.bn1 = norm_layer(in_channels, **({} if norm_kwargs is None else norm_kwargs))
+        self.bn1 = nn.BatchNorm2d(in_channels)
         self.conv1 = _conv3x3(in_channels, channels, stride)
-        self.bn2 = norm_layer(channels, **({} if norm_kwargs is None else norm_kwargs))
+        self.bn2 = nn.BatchNorm2d(channels)
         self.conv2 = _conv3x3(channels, channels, 1)
         self.droprate = drop_rate
         if downsample:
@@ -92,40 +91,36 @@ class CIFARWideResNet(nn.Module):
         Additional `norm_layer` arguments
     """
 
-    def __init__(self, block, layers, channels, drop_rate, classes=10,
-                 norm_layer=nn.BatchNorm2d, norm_kwargs=None, **kwargs):
+    def __init__(self, block, layers, channels, drop_rate, classes=10, **kwargs):
         super(CIFARWideResNet, self).__init__(**kwargs)
         assert len(layers) == len(channels) - 2
         self.features = list()
-        self.features.append(_bn_no_affine(channels[0], **({} if norm_kwargs is None else norm_kwargs)))
+        self.features.append(_bn_no_affine(channels[0]))
         self.features.append(nn.Conv2d(channels[0], channels[1], 3, 1, 1, bias=False))
-        self.features.append(norm_layer(channels[1], **({} if norm_kwargs is None else norm_kwargs)))
+        self.features.append(nn.BatchNorm2d(channels[1]))
 
         in_channels = channels[1]
         for i, num_layer in enumerate(layers):
             stride = 1 if i == 0 else 2
             self.features.append(self._make_layer(block, num_layer, in_channels, channels[i + 2], drop_rate,
-                                                  stride, norm_layer=norm_layer, norm_kwargs=norm_kwargs))
+                                                  stride))
             in_channels = channels[i + 2]
-        self.features.append(norm_layer(channels[-1], **({} if norm_kwargs is None else norm_kwargs)))
+        self.features.append(nn.BatchNorm2d(channels[-1]))
         self.features.append(nn.ReLU(inplace=True))
         self.features = nn.Sequential(*self.features)
 
         self.output = nn.Linear(channels[-1], classes)
 
-    def _make_layer(self, block, layers, in_channels, channels, drop_rate, stride,
-                    norm_layer=nn.BatchNorm2d, norm_kwargs=None):
+    def _make_layer(self, block, layers, in_channels, channels, drop_rate, stride):
         layer = list()
-        layer.append(block(in_channels, channels, stride, channels != in_channels, drop_rate,
-                           norm_layer=norm_layer, norm_kwargs=norm_kwargs))
+        layer.append(block(in_channels, channels, stride, channels != in_channels, drop_rate))
         for _ in range(layers - 1):
-            layer.append(block(channels, channels, 1, False, drop_rate,
-                               norm_layer=norm_layer, norm_kwargs=norm_kwargs))
+            layer.append(block(channels, channels, 1, False, drop_rate))
         return nn.Sequential(*layer)
 
     def forward(self, x):
         x = self.features(x)
-        x = F.avg_pool2d(x, x.shape[2]).squeeze(3).squeeze(2)
+        x = F.adaptive_avg_pool2d(x, 1).squeeze(3).squeeze(2)
         x = self.output(x)
         return x
 
