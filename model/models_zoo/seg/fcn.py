@@ -13,7 +13,8 @@ __all__ = ['FCN', 'get_fcn',
            'get_fcn_resnet101_voc',
            'get_fcn_resnet101_coco',
            'get_fcn_resnet101_ade',
-           'get_fcn_resnet50_ade']
+           'get_fcn_resnet50_ade',
+           'get_fcn_resnet101_citys']
 
 
 class FCN(SegBaseModel):
@@ -55,6 +56,7 @@ class FCN(SegBaseModel):
         self.head = _FCNHead(2048, nclass, **kwargs)
         if self.aux:
             self.auxlayer = _FCNHead(1024, nclass, **kwargs)
+        self.__setattr__('others', ['head', 'auxlayer'] if aux else ['head'])
 
     def forward(self, x):
         c3, c4 = self.base_forward(x)
@@ -101,6 +103,7 @@ def get_fcn(dataset='pascal_voc', backbone='resnet50', pretrained=False,
         'pascal_aug': 'voc',
         'ade20k': 'ade',
         'coco': 'coco',
+        'citys': 'citys'
     }
     from data import datasets
     # infer number of classes
@@ -226,3 +229,26 @@ def get_fcn_resnet50_ade(**kwargs):
     >>> print(model)
     """
     return get_fcn('ade20k', 'resnet50', **kwargs)
+
+
+def get_fcn_resnet101_citys(**kwargs):
+    r"""FCN model with base network ResNet-50 pre-trained on ADE20K dataset
+    from the paper `"Fully Convolutional Network for semantic segmentation"
+    <https://people.eecs.berkeley.edu/~jonlong/long_shelhamer_fcn.pdf>`_
+
+    Parameters
+    ----------
+    pretrained : bool or str
+        Boolean value controls whether to load the default pretrained weights for model.
+        String value represents the hashtag for a certain version of pretrained weights.
+    ctx : Context, default CPU
+        The context in which to load the pretrained weights.
+    root : str, default '~/.mxnet/models'
+        Location for keeping the model parameters.
+
+    Examples
+    --------
+    >>> model = get_fcn_resnet50_ade(pretrained=True)
+    >>> print(model)
+    """
+    return get_fcn('citys', 'resnet101', **kwargs)

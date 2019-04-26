@@ -16,11 +16,13 @@ def get_segmentation_model(model, **kwargs):
     from .pspnet import get_psp
     from .deeplabv3 import get_deeplab
     from .danet import get_danet
+    from .bisenet import get_bisenet
     models = {
         'fcn': get_fcn,
         'psp': get_psp,
         'deeplab': get_deeplab,
         'danet': get_danet,
+        'bisenet': get_bisenet
     }
     return models[model](**kwargs)
 
@@ -44,17 +46,21 @@ class SegBaseModel(nn.Module):
         self.nclass = nclass
         self.jpu = jpu
         self.keep_shape = keep_shape
-        if backbone == 'resnet50':
-            outputs = [[11, 3], [12, 5], [13, 2]]
-        elif backbone == 'resnet101':
-            outputs = [[11, 3], [12, 22], [13, 2]]
-        elif backbone == 'resnet152':
-            outputs = [[11, 7], [12, 35], [13, 2]]
+        if isinstance(backbone, torch.nn.ModuleList) and len(backbone) == 3:
+            self.base1, self.base2, self.base3 = backbone[0], backbone[1], backbone[2]
         else:
-            raise RuntimeError('unknown backbone: {}'.format(backbone))
+            if backbone == 'resnet50':
+                outputs = [[11, 3], [12, 5], [13, 2]]
+            elif backbone == 'resnet101':
+                outputs = [[11, 3], [12, 22], [13, 2]]
+            elif backbone == 'resnet152':
+                outputs = [[11, 7], [12, 35], [13, 2]]
+            else:
+                raise RuntimeError('unknown backbone: {}'.format(backbone))
 
-        self.base1, self.base2, self.base3 = _parse_network(backbone + '_v1s', outputs,
-                                                            pretrained=pretrained_base, dilated=dilated)
+            # TODO: change
+            self.base1, self.base2, self.base3 = _parse_network(backbone + '_v1s', outputs,
+                                                                pretrained=pretrained_base, dilated=dilated)
 
         height = height if height is not None else crop_size
         width = width if width is not None else crop_size

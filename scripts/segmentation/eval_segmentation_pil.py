@@ -20,7 +20,7 @@ from utils.distributed.parallel import synchronize, is_main_process, accumulate_
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Eval Segmentation.')
-    parser.add_argument('--model_name', type=str, default='psp_resnet101_voc',
+    parser.add_argument('--model_name', type=str, default='bisenet_resnet18_voc',
                         help="Base network name")
     parser.add_argument('--batch-size', type=int, default=1,
                         help='Training mini-batch size')
@@ -32,21 +32,21 @@ def parse_args():
                         help='Select val|test, evaluate in val or test data')
     parser.add_argument('--mode', type=str, default='testval',
                         help='Select testval|val, w/o corp and with crop')
-    parser.add_argument('--base-size', type=int, default=540,
+    parser.add_argument('--base-size', type=int, default=540,  # 1024
                         help='base image size')
     parser.add_argument('--crop-size', type=int, default=480,  # 768
                         help='crop image size')
     parser.add_argument('--multi', action='store_true', default=False,
                         help='whether using multiple scale evaluate')
-    parser.add_argument('--aux', action='store_true', default=True,  # TODO: unnecessary in eval
+    parser.add_argument('--aux', action='store_true', default=False,  # TODO: unnecessary in eval
                         help='whether using aux loss')
     parser.add_argument('--dilated', action='store_true', default=False,
                         help='whether using dilated in backbone')
-    parser.add_argument('--jpu', action='store_true', default=True,
+    parser.add_argument('--jpu', action='store_true', default=False,
                         help='whether using JPU after backbone')
     # parser.add_argument('--root', type=str, default=os.path.expanduser('~/.torch/models'),
     #                     help='Default Pre-trained model root.')
-    parser.add_argument('--root', type=str, default='/home/ace/cbb/own/pretrained/seg_jpu',
+    parser.add_argument('--root', type=str, default='/home/ace/cbb/own/pretrained/seg',
                         help='Default Pre-trained model root.')
 
     # device
@@ -87,6 +87,7 @@ if __name__ == '__main__':
 
     # Load Model
     model = model_zoo.get_model(args.model_name, pretrained=True, pretrained_base=False,
+                                base_size=args.base_size, crop_size=args.crop_size,
                                 root=args.root, aux=args.aux, dilated=args.dilated, jpu=args.jpu)
     model.keep_shape = True if args.mode == 'testval' else False
     model.to(device)

@@ -29,29 +29,41 @@ from utils.logger import setup_logger
 from torch import nn
 
 
-class Demo(nn.Module):
-    def __init__(self, parent=None):
-        super(Demo, self).__init__()
-        if parent is None:
-            self.conv1 = nn.Conv2d(10, 20, 3, 1, 1)
-            self.conv2 = nn.Conv2d(20, 30, 3, 1, 1)
-        else:
-            self.conv1 = parent.conv1
-            self.conv2 = parent.conv2
-
-    def forward(self, x):
-        x = self.conv1(x)
-        x = self.conv2(x)
-        return x
+class Demo(object):
+    def __init__(self):
+        self.a = nn.Conv2d(10, 20, 3, 1, 1)
+        self.b = nn.Conv2d(20, 30, 3, 1)
+        setattr(self, 'heads', ['a', 'b'])
+        # self.__setattr__('heads', [self.a, self.b])
 
 
-if __name__ == '__main__':
-    import torch
+demo = Demo()
+for name in demo.heads:
+    print(getattr(demo, name).parameters())
 
-    demo = Demo(parent=None)
-    demo2 = Demo(parent=demo)
-    print(demo.conv1.bias)
-    print(demo2.conv1.bias)
-    demo.conv1.bias.data = torch.randn(20, 1)
-    print(demo.conv1.bias)
-    print(demo2.conv1.bias)
+# class Demo(nn.Module):
+#     def __init__(self, parent=None):
+#         super(Demo, self).__init__()
+#         if parent is None:
+#             self.conv1 = nn.Conv2d(10, 20, 3, 1, 1)
+#             self.conv2 = nn.Conv2d(20, 30, 3, 1, 1)
+#         else:
+#             self.conv1 = parent.conv1
+#             self.conv2 = parent.conv2
+#
+#     def forward(self, x):
+#         x = self.conv1(x)
+#         x = self.conv2(x)
+#         return x
+#
+#
+# if __name__ == '__main__':
+#     import torch
+#
+#     demo = Demo(parent=None)
+#     demo2 = Demo(parent=demo)
+#     print(demo.conv1.bias)
+#     print(demo2.conv1.bias)
+#     demo.conv1.bias.data = torch.randn(20, 1)
+#     print(demo.conv1.bias)
+#     print(demo2.conv1.bias)

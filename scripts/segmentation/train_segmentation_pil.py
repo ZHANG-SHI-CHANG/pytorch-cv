@@ -17,7 +17,7 @@ import utils as ptutil
 from utils.metrics import SegmentationMetric
 from data import get_segmentation_dataset
 from data.helper import make_data_sampler, IterationBasedBatchSampler
-from model.loss import MixSoftmaxCrossEntropyLoss
+from model.loss import MixSoftmaxCrossEntropyLoss, OHEMSoftmaxCrossEntropyLoss
 from model.lr_scheduler_v2 import WarmupPolyLR
 from model.model_zoo import get_model
 from model.models_zoo import get_segmentation_model
@@ -27,11 +27,11 @@ def parse_args():
     """Training Options for Segmentation Experiments"""
     parser = argparse.ArgumentParser(description='PyTorch Segmentation')
     # model and dataset
-    parser.add_argument('--model', type=str, default='psp',
+    parser.add_argument('--model', type=str, default='bisenet',
                         help='model name (default: fcn)')
-    parser.add_argument('--backbone', type=str, default='resnet50',
+    parser.add_argument('--backbone', type=str, default='resnet18',
                         help='backbone name (default: resnet50)')
-    parser.add_argument('--dataset', type=str, default='pascal_paper',
+    parser.add_argument('--dataset', type=str, default='citys',
                         help='dataset name (default: ade20k)')
     parser.add_argument('--workers', '-j', type=int, default=4,
                         metavar='N', help='dataloader threads')
@@ -48,8 +48,10 @@ def parse_args():
                         help='auxiliary loss weight')
     parser.add_argument('--dilated', action='store_true', default=False,
                         help='Using dilated conv in backbone')
-    parser.add_argument('--jpu', action='store_true', default=True,
+    parser.add_argument('--jpu', action='store_true', default=False,
                         help='Using jpu in backbone')
+    parser.add_argument('--ohem', action='store_true', default=False,
+                        help='whether using ohem loss')
     parser.add_argument('--epochs', type=int, default=-1, metavar='N',
                         help='number of epochs to train (default: 50)')
     parser.add_argument('--start_epoch', type=int, default=0,
@@ -172,18 +174,21 @@ class Trainer(object):
                 raise RuntimeError("=> no checkpoint found at '{}'".format(args.resume))
 
         # create criterion
-        self.criterion = MixSoftmaxCrossEntropyLoss(args.aux, aux_weight=args.aux_weight)
+        if args.ohem:
+            min_kept = args.batch_size * args.crop_size ** 2 // 16
+            self.criterion = OHEMSoftmaxCrossEntropyLoss(thresh=0.7, min_kept=min_kept, use_weight=False)
+        else:
+            self.criterion = MixSoftmaxCrossEntropyLoss(args.aux, aux_weight=args.aux_weight)
 
         # optimizer and lr scheduling
         params_list = [{'params': self.net.base1.parameters(), 'lr': args.lr},
                        {'params': self.net.base2.parameters(), 'lr': args.lr},
                        {'params': self.net.base3.parameters(), 'lr': args.lr}]
-        if hasattr(self.net, 'head'):
-            params_list.append({'params': self.net.head.parameters(), 'lr': args.lr * 10})
+        if hasattr(self.net, 'others'):
+            for name in self.net.others:
+                params_list.append({'params': getattr(self.net, name).parameters(), 'lr': args.lr * 10})
         if hasattr(self.net, 'JPU'):
             params_list.append({'params': self.net.JPU.parameters(), 'lr': args.lr * 10})
-        if hasattr(self.net, 'auxlayer'):
-            params_list.append({'params': self.net.auxlayer.parameters(), 'lr': args.lr * 10})
         self.optimizer = optim.SGD(params_list, lr=args.lr, momentum=args.momentum,
                                    weight_decay=args.weight_decay)
         self.scheduler = WarmupPolyLR(self.optimizer, T_max=args.max_iter, warmup_factor=args.warmup_factor,

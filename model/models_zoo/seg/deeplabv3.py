@@ -13,7 +13,8 @@ __all__ = ['DeepLabV3', 'get_deeplab',
            'get_deeplab_resnet101_voc',
            'get_deeplab_resnet152_voc',
            'get_deeplab_resnet50_ade',
-           'get_deeplab_resnet101_ade']
+           'get_deeplab_resnet101_ade',
+           'get_deeplab_resnet101_citys', ]
 
 
 class DeepLabV3(SegBaseModel):
@@ -49,9 +50,13 @@ class DeepLabV3(SegBaseModel):
         if self.aux:
             self.auxlayer = _FCNHead(1024, nclass, **kwargs)
 
+        self.__setattr__('others', ['head', 'auxlayer'] if self.aux else ['head'])
+
     def forward(self, x):
         c3, c4 = self.base_forward(x)
         outputs = []
+        if self.keep_shape:
+            self.head.aspp.b4._up_kwargs = (math.ceil(self._up_kwargs[0] / 8), math.ceil(self._up_kwargs[1] / 8))
         x = self.head(c4)
         x = F.interpolate(x, self._up_kwargs, mode='bilinear', align_corners=True)
         outputs.append(x)
@@ -73,7 +78,7 @@ class DeepLabV3(SegBaseModel):
 
 
 def get_deeplab(dataset='pascal_voc', backbone='resnet50', pretrained=False,
-                root=os.path.join(os.path.expanduser('~'), '.torch/models'), **kwargs):
+                root=os.path.expanduser('~/.torch/models'), **kwargs):
     r"""DeepLabV3
     Parameters
     ----------
@@ -98,6 +103,7 @@ def get_deeplab(dataset='pascal_voc', backbone='resnet50', pretrained=False,
         'pascal_aug': 'voc',
         'ade20k': 'ade',
         'coco': 'coco',
+        'citys': 'citys'
     }
     from data import datasets
     # infer number of classes
@@ -227,6 +233,26 @@ def get_deeplab_resnet101_ade(**kwargs):
     >>> print(model)
     """
     return get_deeplab('ade20k', 'resnet101', **kwargs)
+
+
+def get_deeplab_resnet101_citys(**kwargs):
+    r"""DeepLabV3
+    Parameters
+    ----------
+    pretrained : bool or str
+        Boolean value controls whether to load the default pretrained weights for model.
+        String value represents the hashtag for a certain version of pretrained weights.
+    ctx : Context, default CPU
+        The context in which to load the pretrained weights.
+    root : str, default '~/.mxnet/models'
+        Location for keeping the model parameters.
+
+    Examples
+    --------
+    >>> model = get_deeplab_resnet101_ade(pretrained=True)
+    >>> print(model)
+    """
+    return get_deeplab('citys', 'resnet101', **kwargs)
 
 
 if __name__ == '__main__':

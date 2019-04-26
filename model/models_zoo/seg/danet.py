@@ -8,12 +8,15 @@ from model.module.basic_seg import _DANetHead
 __all__ = ['get_danet', 'get_danet_resnet101_voc']
 
 
+# TODO: add aux support
 class DANet(SegBaseModel):
-    def __init__(self, nclass, backbone='resnet101', aux=False, pretrained_base=True,
-                 base_size=520, crop_size=480, **kwargs):
-        super(DANet, self).__init__(nclass, aux, backbone, base_size=base_size, crop_size=crop_size,
-                                    pretrained_base=pretrained_base, **kwargs)
+    def __init__(self, nclass, backbone='resnet101', aux=False, dilated=True, jpu=False,
+                 pretrained_base=True, base_size=520, crop_size=480, **kwargs):
+        super(DANet, self).__init__(nclass, aux, backbone, dilated=dilated, jpu=jpu, base_size=base_size,
+                                    crop_size=crop_size, pretrained_base=pretrained_base, **kwargs)
         self.head = _DANetHead(2048, nclass, **kwargs)
+
+        self.__setattr__('heads', ['head'])
 
     def forward(self, x):
         c3, c4 = self.base_forward(x)
@@ -23,7 +26,7 @@ class DANet(SegBaseModel):
 
 
 def get_danet(dataset='pascal_voc', backbone='resnet50', pretrained=False,
-              root=os.path.join(os.path.expanduser('~'), '.torch/models'), **kwargs):
+              root=os.path.expanduser('~/.torch/models'), **kwargs):
     acronyms = {
         'pascal_voc': 'voc',
         'pascal_paper': 'voc',
@@ -42,7 +45,7 @@ def get_danet(dataset='pascal_voc', backbone='resnet50', pretrained=False,
 
 
 def get_danet_resnet101_voc(**kwargs):
-    return get_danet('pascal_voc', 'resnet101', **kwargs)
+    return get_danet('pascal_paper', 'resnet101', **kwargs)
 
 
 if __name__ == '__main__':

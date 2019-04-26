@@ -45,7 +45,8 @@ class PSPNet(SegBaseModel):
         self.head = _PSPHead(nclass, **kwargs)
         if self.aux:
             self.auxlayer = _FCNHead(1024, nclass, **kwargs)
-        # print('self.crop_size', self.crop_size)
+
+        self.__setattr__('others', ['head', 'auxlayer'] if self.aux else ['head'])
 
     def forward(self, x):
         c3, c4 = self.base_forward(x)

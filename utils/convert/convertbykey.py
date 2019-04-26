@@ -23,13 +23,13 @@ def convert_by_keys(json_file, trained_path, check_name, save_filename):
 
 if __name__ == '__main__':
     parse = argparse.ArgumentParser(description='Convert pytorch model from json keys map')
-    parse.add_argument('--name', type=str, default='centernet_dla34_dcn_coco', help='name of the model')
+    parse.add_argument('--name', type=str, default='corner_squeeze_hourglass_coco', help='name of the model')
     parse.add_argument('--save-path', type=str, default=os.path.expanduser('~/.torch/models'),
                        help='path to the pytorch models')
     parse.add_argument('--trained-path', type=str,
-                       default='/home/ace/cbb/code/dl/CenterNet/models/ctdet_coco_dla_1x.pth',
+                       default='/home/ace/cbb/code/dl/CornerNet-Lite/weights/CornerNet_Squeeze_500000.pkl',
                        help='trained model')
-    parse.add_argument('--check_name', type=str, default='state_dict', help='for pth is not pure state_dict')
+    parse.add_argument('--check_name', type=str, default=None, help='for pth is not pure state_dict')
     args = parse.parse_args()
     json_file = os.path.join('./key_json', args.name + '.json')
     save_filename = os.path.join(args.save_path, args.name + '.pth')

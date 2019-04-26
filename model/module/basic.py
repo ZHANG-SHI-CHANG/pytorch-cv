@@ -24,7 +24,7 @@ def _conv2d(in_channel, channel, kernel, padding, stride):
 def _make_basic_conv(in_channel, **kwargs):
     return nn.Sequential(
         nn.Conv2d(in_channel, bias=False, **kwargs),
-        nn.BatchNorm2d(kwargs['out_channels'], eps=0.001),
+        nn.BatchNorm2d(kwargs['out_channels']),
         nn.ReLU(inplace=True)
     )
 
@@ -242,6 +242,22 @@ class GroupNorm(nn.GroupNorm):
 
 
 # for hourglass
+class BasicConv(nn.Module):
+    def __init__(self, k, inp_dim, out_dim, stride=1, with_bn=True, with_relu=True):
+        super(BasicConv, self).__init__()
+        p = (k - 1) // 2
+        self.with_bn, self.with_relu = with_bn, with_relu
+        self.conv = nn.Conv2d(inp_dim, out_dim, k, stride, p, bias=not with_bn)
+        if with_bn:
+            self.bn = nn.BatchNorm2d(out_dim)
+
+    def forward(self, x):
+        x = self.conv(x)
+        if self.with_bn:
+            x = self.bn(x)
+        return F.relu(x) if self.with_relu else x
+
+
 class Residual(nn.Module):
     def __init__(self, inp_dim, out_dim, k=3, stride=1):
         super(Residual, self).__init__()

@@ -293,3 +293,5 @@ class _DANetHead(nn.Module):
         sasc_output = self.conv8(feat_sum)
 
         return [sasc_output, sa_output, sc_output]
+
+

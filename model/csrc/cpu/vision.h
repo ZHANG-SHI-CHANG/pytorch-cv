@@ -103,3 +103,17 @@ std::tuple<at::Tensor, at::Tensor> dcn_v2_psroi_pooling_cpu_backward(
     const int part_size,
     const int sample_per_part,
     const float trans_std);
+
+// corner pooling
+std::vector<at::Tensor> top_pool_forward(at::Tensor input);
+std::vector<at::Tensor> top_pool_backward(at::Tensor input, at::Tensor grad_output);
+
+std::vector<at::Tensor> bottom_pool_forward(at::Tensor input);
+std::vector<at::Tensor> bottom_pool_backward(at::Tensor input, at::Tensor grad_output);
+
+std::vector<at::Tensor> left_pool_forward(at::Tensor input);
+std::vector<at::Tensor> left_pool_backward(at::Tensor input, at::Tensor grad_output);
+
+std::vector<at::Tensor> right_pool_forward(at::Tensor input);
+std::vector<at::Tensor> right_pool_backward(at::Tensor input, at::Tensor grad_output);
+

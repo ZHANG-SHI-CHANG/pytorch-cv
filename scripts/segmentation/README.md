@@ -5,6 +5,8 @@
 - [x] FCN
 - [x] PSPNet
 - [x] DeepLabv3
+- [x] DANet
+- [x] BiseNet
 
 ## Performance
 
@@ -12,18 +14,31 @@
 
 Here, we using train (10582), val (1449), test (1456) as most paper used. (More detail can reference [DeepLabv3](https://github.com/chenxi116/DeepLabv3.pytorch)) . And the performance is evaluated with single scale
 
-- Base LR 0.001, Base Size 540, Crop Size 480
+- Base Size 540, Crop Size 480
 
 |   Model   |   backbone    |   Paper    | OHEM | aux  | dilated | JPU  | Epoch | val (crop)  |     val     |
 | :-------: | :-----------: | :--------: | :--: | :--: | :-----: | :--: | :---: | :---------: | :---------: |
 |    FCN    | ResNet101-v1s |     /      |  ✗   |  ✓   |    ✗    |  ✓   |  50   | 94.54/78.31 | 94.50/76.89 |
 |  PSPNet   | ResNet101-v1s |     /      |  ✗   |  ✓   |    ✓    |  ✗   |  50   | 94.87/80.13 | 94.88/78.57 |
-| DeepLabv3 | ResNet101-v1s | no / 77.02 |  ✗   |  ✓   |    ✗    |  ✓   |  50   |             |             |
-|           |               |     /      |      |      |         |      |       |             |             |
+| DeepLabv3 | ResNet101-v1s | no / 77.02 |  ✗   |  ✓   |    ✗    |  ✓   |  50   | 95.17/81.00 | 94.81/78.75 |
+|   DANet   |               |     /      |      |      |         |      |       |             |             |
+|  BiSeNet  | ResNet18-v1b  |     /      |  ✗   |  ✗   |    ✗    |  ✗   |  50   | 92.58/71.89 | 91.86/67.11 |
 
 > 1. the metric is `pixAcc/mIoU`
 
+#### Cityscapes
 
+- Base Size 1024, Crop Size 768
+
+|   Model   |   backbone    | Paper(*) | OHEM | aux  | dilated | JPU  | Epoch | val (crop)  |     val     |
+| :-------: | :-----------: | :------: | :--: | :--: | :-----: | :--: | :---: | :---------: | :---------: |
+|    FCN    | ResNet101-v1s | no/75.96 |  ✗   |  ✓   |    ✗    |  ✓   |  120  | 96.29/73.60 | 96.18/78.61 |
+|  PSPNet   | ResNet101-v1s | no/78.56 |      |      |         |      |       |             |             |
+| DeepLabv3 | ResNet101-v1s | no/78.90 |  ✗   |  ✓   |    ✗    |  ✓   |  120  | 96.25/73.44 | 96.23/79.03 |
+
+> Note：
+>
+> 1. Paper(*) means results from: [openseg.pytorch](https://github.com/openseg-group/openseg.pytorch)（results with single scale without crop），there are a little different in the training strategy.  
 
 ## Demo
 
