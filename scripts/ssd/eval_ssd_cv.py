@@ -19,31 +19,31 @@ from data.mscoco.detection_cv import COCODetection
 from data.transforms.ssd_cv import SSDDefaultValTransform
 from utils.metrics.voc_detection_pt import VOC07MApMetric
 from utils.metrics.coco_detection import COCODetectionMetric
-from utils.distributed.parallel import synchronize, accumulate_metric, is_main_process
+import utils as ptutil
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Eval SSD networks.')
-    parser.add_argument('--network', type=str, default='vgg16_atrous',
+    parser.add_argument('--network', type=str, default='resnet50_v1s',
                         help="Base network name")
     parser.add_argument('--data-shape', type=int, default=512,
                         help="Input data shape")
     parser.add_argument('--batch-size', type=int, default=8,
                         help='Training mini-batch size')
-    parser.add_argument('--dataset', type=str, default='coco',
+    parser.add_argument('--dataset', type=str, default='voc',
                         help='Training dataset.')
     parser.add_argument('--num-workers', '-j', dest='num_workers', type=int,
                         default=4, help='Number of data workers')
-    parser.add_argument('--cuda', action='store_true', default=True,
+    parser.add_argument('--cuda', type=ptutil.str2bool, default='true',
                         help='Training with GPUs.')
     parser.add_argument('--pretrained', type=str, default='True',
                         help='Load weights from previously saved parameters.')
     parser.add_argument('--save-prefix', type=str, default='',
                         help='Saving parameter prefix')
-    parser.add_argument('--root', type=str, default=os.path.expanduser('~/.torch/models'),
-                        help='Saving parameter prefix')
-    # parser.add_argument('--root', type=str, default='/home/ace/cbb/own/pretrained/ssd/dist',
+    # parser.add_argument('--root', type=str, default=os.path.expanduser('~/.torch/models'),
     #                     help='Saving parameter prefix')
+    parser.add_argument('--root', type=str, default='/home/ace/cbb/own/pretrained/ssd/dist',
+                        help='Saving parameter prefix')
 
     # device
     parser.add_argument('--local_rank', type=int, default=0)
@@ -139,8 +139,8 @@ if __name__ == '__main__':
 
     # testing
     val_metric = validate(net, val_data, device, val_metric, args.dataset == 'coco')
-    synchronize()
-    names, values = accumulate_metric(val_metric)
-    if is_main_process():
+    ptutil.synchronize()
+    names, values = ptutil.accumulate_metric(val_metric)
+    if ptutil.is_main_process():
         for k, v in zip(names, values):
             print(k, v)

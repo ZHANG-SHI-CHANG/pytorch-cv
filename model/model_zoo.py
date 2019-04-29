@@ -16,17 +16,19 @@ from model.models_zoo.dla import *
 from model.models_zoo.yolo.darknet import *
 from model.models_zoo.ssd.ssd import *
 from model.models_zoo.ssd.vgg_atrous import *
-from model.models_zoo.yolo.yolo3 import *
-from model.models_zoo.faster_rcnn.faster_rcnn import *
-from model.models_zoo.centernet.centernet import *
-from model.models_zoo.corner_net.corner_squeeze import *
-from model.models_zoo.mask_rcnn.mask_rcnn import *
-from model.models_zoo.yolact.yolact import *
+# from model.models_zoo.yolo.yolo3 import *
+# from model.models_zoo.faster_rcnn.faster_rcnn import *
+# from model.models_zoo.centernet.centernet import *
+# from model.models_zoo.corner_net.corner_squeeze import *
+# from model.models_zoo.mask_rcnn.mask_rcnn import *
+# from model.models_zoo.yolact.yolact import *
 from model.models_zoo.seg.fcn import *
 from model.models_zoo.seg.pspnet import *
 from model.models_zoo.seg.deeplabv3 import *
 from model.models_zoo.seg.danet import *
 from model.models_zoo.seg.bisenet import *
+from model.models_zoo.seg.ocnet import *
+from model.models_zoo.seg.ccnet import *
 from model.models_zoo.simple_pose.simple_pose_resnet import *
 
 __all__ = ['get_model', 'get_model_list']
@@ -124,39 +126,40 @@ _models = {
     'ssd_300_vgg16_atrous_voc': ssd_300_vgg16_atrous_voc,
     'ssd_512_vgg16_atrous_voc': ssd_512_vgg16_atrous_voc,
     'ssd_512_resnet50_v1_voc': ssd_512_resnet50_v1_voc,
+    'ssd_512_resnet50_v1s_voc': ssd_512_resnet50_v1s_voc,
     'ssd_512_mobilenet1.0_voc': ssd_512_mobilenet1_0_voc,
     'ssd_300_vgg16_atrous_coco': ssd_300_vgg16_atrous_coco,
     'ssd_512_vgg16_atrous_coco': ssd_512_vgg16_atrous_coco,
     'ssd_512_resnet50_v1_coco': ssd_512_resnet50_v1_coco,
     'ssd_512_mobilenet1.0_coco': ssd_512_mobilenet1_0_coco,
-    # # yolo3
-    'yolo3_darknet53_voc': yolo3_darknet53_voc,
-    'yolo3_mobilenet1.0_voc': yolo3_mobilenet1_0_voc,
-    'yolo3_darknet53_coco': yolo3_darknet53_coco,
-    'yolo3_mobilenet1.0_coco': yolo3_mobilenet1_0_coco,
-    # # faster-rcnn
-    'faster_rcnn_resnet50_v1b_voc': faster_rcnn_resnet50_v1b_voc,
-    'faster_rcnn_resnet50_v1b_coco': faster_rcnn_resnet50_v1b_coco,
-    'faster_rcnn_fpn_resnet50_v1b_coco': faster_rcnn_fpn_resnet50_v1b_coco,
-    'faster_rcnn_fpn_bn_resnet50_v1b_coco': faster_rcnn_fpn_bn_resnet50_v1b_coco,
-    'faster_rcnn_resnet101_v1d_voc': faster_rcnn_resnet101_v1d_voc,
-    'faster_rcnn_resnet101_v1d_coco': faster_rcnn_resnet101_v1d_coco,
-    'faster_rcnn_fpn_resnet101_v1d_coco': faster_rcnn_fpn_resnet101_v1d_coco,
-    # center-net
-    'centernet_resnet18_dcn_coco': centernet_resnet18_dcn_coco,
-    'centernet_resnet101_dcn_coco': centernet_resnet101_dcn_coco,
-    'centernet_dla34_dcn_coco': centernet_dla34_dcn_coco,
-    # corner-net
-    'corner_squeeze_hourglass_coco': corner_squeeze_hourglass_coco,
-    # mask-rcnn
-    'mask_rcnn_resnet50_v1b_coco': mask_rcnn_resnet50_v1b_coco,
-    # 'mask_rcnn_fpn_resnet50_v1b_coco': mask_rcnn_fpn_resnet50_v1b_coco,
-    # 'mask_rcnn_resnet101_v1d_coco': mask_rcnn_resnet101_v1d_coco,
-    # 'mask_rcnn_fpn_resnet101_v1d_coco': mask_rcnn_fpn_resnet101_v1d_coco,
-    # yolact
-    'yolact_fpn_resnet50_v1b_coco': yolact_fpn_resnet50_v1b_coco,
-    'yolact_fpn_darknet53_coco': yolact_fpn_darknet53_coco,
-    'yolact_fpn_resnet101_v1b_coco': yolact_fpn_resnet101_v1b_coco,
+    # # # yolo3
+    # 'yolo3_darknet53_voc': yolo3_darknet53_voc,
+    # 'yolo3_mobilenet1.0_voc': yolo3_mobilenet1_0_voc,
+    # 'yolo3_darknet53_coco': yolo3_darknet53_coco,
+    # 'yolo3_mobilenet1.0_coco': yolo3_mobilenet1_0_coco,
+    # # # faster-rcnn
+    # 'faster_rcnn_resnet50_v1b_voc': faster_rcnn_resnet50_v1b_voc,
+    # 'faster_rcnn_resnet50_v1b_coco': faster_rcnn_resnet50_v1b_coco,
+    # 'faster_rcnn_fpn_resnet50_v1b_coco': faster_rcnn_fpn_resnet50_v1b_coco,
+    # 'faster_rcnn_fpn_bn_resnet50_v1b_coco': faster_rcnn_fpn_bn_resnet50_v1b_coco,
+    # 'faster_rcnn_resnet101_v1d_voc': faster_rcnn_resnet101_v1d_voc,
+    # 'faster_rcnn_resnet101_v1d_coco': faster_rcnn_resnet101_v1d_coco,
+    # 'faster_rcnn_fpn_resnet101_v1d_coco': faster_rcnn_fpn_resnet101_v1d_coco,
+    # # center-net
+    # 'centernet_resnet18_dcn_coco': centernet_resnet18_dcn_coco,
+    # 'centernet_resnet101_dcn_coco': centernet_resnet101_dcn_coco,
+    # 'centernet_dla34_dcn_coco': centernet_dla34_dcn_coco,
+    # # corner-net
+    # 'corner_squeeze_hourglass_coco': corner_squeeze_hourglass_coco,
+    # # mask-rcnn
+    # 'mask_rcnn_resnet50_v1b_coco': mask_rcnn_resnet50_v1b_coco,
+    # # 'mask_rcnn_fpn_resnet50_v1b_coco': mask_rcnn_fpn_resnet50_v1b_coco,
+    # # 'mask_rcnn_resnet101_v1d_coco': mask_rcnn_resnet101_v1d_coco,
+    # # 'mask_rcnn_fpn_resnet101_v1d_coco': mask_rcnn_fpn_resnet101_v1d_coco,
+    # # yolact
+    # 'yolact_fpn_resnet50_v1b_coco': yolact_fpn_resnet50_v1b_coco,
+    # 'yolact_fpn_darknet53_coco': yolact_fpn_darknet53_coco,
+    # 'yolact_fpn_resnet101_v1b_coco': yolact_fpn_resnet101_v1b_coco,
 
     # fcn
     'fcn_resnet50_voc': get_fcn_resnet50_voc,
@@ -184,6 +187,13 @@ _models = {
     # bisenet
     'bisenet_resnet18_voc': get_bisenet_resnet18_voc,
     'bisenet_resnet18_citys': get_bisenet_resnet18_citys,
+
+    # ocnet
+    'ocnet_base_resnet101_voc': get_ocnet_base_resnet101_voc,
+    'ocnet_asp_resnet101_voc': get_ocnet_asp_resnet101_voc,
+
+    # ccnet
+    'ccnet_resnet101_voc': get_ccnet_resnet101_voc,
 
     # simple pose
     'simple_pose_resnet18_v1b': simple_pose_resnet18_v1b,

@@ -45,8 +45,7 @@ def parse_args():
     parser.add_argument('--epochs', type=int, default=200,
                         help='Training epochs.')
     parser.add_argument('--resume', type=str, default='',
-                        help='Resume from previously saved parameters if not None. '
-                             'For example, you can resume from ./yolo3_xxx_0123.params')
+                        help='Resume from previously saved parameters if not None. ')
     parser.add_argument('--start-epoch', type=int, default=0,
                         help='Starting epoch for resuming, default is 0 for new training.'
                              'You can specify it to 100 for example to start from 100 epoch.')

@@ -5,17 +5,15 @@ from utils.bbox_pt import hard_negative_mining
 
 
 # class MixSoftmaxCrossEntropyLoss(nn.Module):
-#     def __init__(self, aux=True, aux_weight=0.2, ignore_label=-1, **kwargs):
-#         super(MixSoftmaxCrossEntropyLoss, self).__init__(**kwargs)
+#     def __init__(self, aux=True, aux_weight=0.4, ignore_label=-1):
+#         super(MixSoftmaxCrossEntropyLoss, self).__init__()
 #         self.aux = aux
 #         self.aux_weight = aux_weight
-#         self.criterion1 = nn.CrossEntropyLoss(ignore_index=ignore_label)
-#         if aux:
-#             self.criterion2 = nn.CrossEntropyLoss(ignore_index=ignore_label)
+#         self.criterion = nn.CrossEntropyLoss(ignore_index=ignore_label)
 #
 #     def _aux_forward(self, pred1, pred2, label):
-#         loss1 = self.criterion1(pred1, label)
-#         loss2 = self.criterion2(pred2, label)
+#         loss1 = self.criterion(pred1, label)
+#         loss2 = self.criterion(pred2, label)
 #
 #         return loss1 + self.aux_weight * loss2
 #
@@ -23,7 +21,7 @@ from utils.bbox_pt import hard_negative_mining
 #         if self.aux:
 #             return dict(loss=self._aux_forward(*preds, target))
 #         else:
-#             return dict(loss=self.criterion1(*preds, target))
+#             return dict(loss=self.criterion(*preds, target))
 
 class MixSoftmaxCrossEntropyLoss(nn.Module):
     def __init__(self, aux=True, aux_weight=0.2, ignore_label=-1, **kwargs):

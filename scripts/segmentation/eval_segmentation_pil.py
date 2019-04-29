@@ -15,42 +15,42 @@ from data import get_segmentation_dataset
 from data.helper import make_data_sampler
 from model.models_zoo.seg.segbase import MultiEvalModel, SegEvalModel
 from utils.metrics.segmentation_pt import SegmentationMetric
-from utils.distributed.parallel import synchronize, is_main_process, accumulate_metric
+import utils as ptutil
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Eval Segmentation.')
-    parser.add_argument('--model_name', type=str, default='bisenet_resnet18_voc',
+    parser.add_argument('--model_name', type=str, default='psp_resnet101_citys',
                         help="Base network name")
     parser.add_argument('--batch-size', type=int, default=1,
                         help='Training mini-batch size')
     parser.add_argument('--num-workers', '-j', dest='num_workers', type=int,
                         default=4, help='Number of data workers')
-    parser.add_argument('--dataset', type=str, default='pascal_paper',
+    parser.add_argument('--dataset', type=str, default='citys',
                         help='Select dataset.')
     parser.add_argument('--split', type=str, default='val',
                         help='Select val|test, evaluate in val or test data')
     parser.add_argument('--mode', type=str, default='testval',
                         help='Select testval|val, w/o corp and with crop')
-    parser.add_argument('--base-size', type=int, default=540,  # 1024
+    parser.add_argument('--base-size', type=int, default=1024,  # 540 1024
                         help='base image size')
-    parser.add_argument('--crop-size', type=int, default=480,  # 768
+    parser.add_argument('--crop-size', type=int, default=768,  # 540 768
                         help='crop image size')
-    parser.add_argument('--multi', action='store_true', default=False,
+    parser.add_argument('--multi', type=ptutil.str2bool, default='false',
                         help='whether using multiple scale evaluate')
-    parser.add_argument('--aux', action='store_true', default=False,  # TODO: unnecessary in eval
+    parser.add_argument('--aux', type=ptutil.str2bool, default='true',
                         help='whether using aux loss')
-    parser.add_argument('--dilated', action='store_true', default=False,
+    parser.add_argument('--dilated', type=ptutil.str2bool, default='false',
                         help='whether using dilated in backbone')
-    parser.add_argument('--jpu', action='store_true', default=False,
+    parser.add_argument('--jpu', type=ptutil.str2bool, default='true',
                         help='whether using JPU after backbone')
     # parser.add_argument('--root', type=str, default=os.path.expanduser('~/.torch/models'),
     #                     help='Default Pre-trained model root.')
-    parser.add_argument('--root', type=str, default='/home/ace/cbb/own/pretrained/seg',
+    parser.add_argument('--root', type=str, default='/home/ace/cbb/own/pretrained/seg_jpu',
                         help='Default Pre-trained model root.')
 
     # device
-    parser.add_argument('--cuda', action='store_true', default=True,
+    parser.add_argument('--cuda', type=ptutil.str2bool, default='true',
                         help='Training with GPUs.')
     parser.add_argument('--local_rank', type=int, default=0)
     parser.add_argument('--init-method', type=str, default="env://")
@@ -112,7 +112,7 @@ if __name__ == '__main__':
     metric = SegmentationMetric(val_dataset.num_class)
 
     metric = validate(evaluator, val_data, metric, device)
-    synchronize()
-    pixAcc, mIoU = accumulate_metric(metric)
-    if is_main_process():
+    ptutil.synchronize()
+    pixAcc, mIoU = ptutil.accumulate_metric(metric)
+    if ptutil.is_main_process():
         print('pixAcc: %.4f, mIoU: %.4f' % (pixAcc, mIoU))

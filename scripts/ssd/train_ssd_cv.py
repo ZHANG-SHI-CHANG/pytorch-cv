@@ -26,11 +26,11 @@ from utils.metrics import VOC07MApMetric, COCODetectionMetric
 def parse_args():
     parser = argparse.ArgumentParser(description='Train SSD networks.')
     # network
-    parser.add_argument('--network', type=str, default='vgg16_atrous',
+    parser.add_argument('--network', type=str, default='resnet50_v1s',
                         help="Base network name which serves as feature extraction base.")
-    parser.add_argument('--data-shape', type=int, default=300,
+    parser.add_argument('--data-shape', type=int, default=512,
                         help="Input data shape, use 300, 512.")
-    parser.add_argument('--batch-size', type=int, default=8,
+    parser.add_argument('--batch-size', type=int, default=2,
                         help='Training mini-batch size')
     parser.add_argument('--test-batch-size', type=int, default=2,
                         help='Testing mini-batch size')
@@ -69,18 +69,20 @@ def parse_args():
                         help='Weight decay, default is 5e-4')
     parser.add_argument('--warmup-iters', type=int, default=500,  # 500
                         help='warmup epochs')
-    parser.add_argument('--warmup-factor', type=float, default=0.01,
+    parser.add_argument('--warmup-factor', type=float, default=1 / 3.0,
                         help='warm up start lr=warmup_factor*lr')
-    parser.add_argument('--lr-mode', type=str, default='step',
+    parser.add_argument('--lr-mode', type=str, default='cos',
                         help='learning mode')
 
     # device
-    parser.add_argument('--no-cuda', action='store_true', default=False,
-                        help='disables CUDA training')
+    parser.add_argument('--cuda', type=ptutil.str2bool, default='true',
+                        help='using CUDA training')
     parser.add_argument('--local_rank', type=int, default=0)
     parser.add_argument('--init-method', type=str, default="env://")
 
     args = parser.parse_args()
+    if args.lr == -1:
+        args.lr = 1e-3 * args.batch_size / 32
     return args
 
 
@@ -184,7 +186,6 @@ class Trainer(object):
         logger.info("Start training, total epochs {:3d} = total iteration: {:6d}".format(self.args.epochs, max_iter))
 
         for i, batch in enumerate(self.train_loader):
-            # if i == 5: break
             iteration += 1
             self.scheduler.step()
             image = batch[0].to(self.device)
@@ -275,7 +276,7 @@ if __name__ == '__main__':
     num_gpus = int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
     args.distributed = num_gpus > 1
     args.num_gpus = num_gpus
-    if not args.no_cuda and torch.cuda.is_available():
+    if args.cuda and torch.cuda.is_available():
         torch.backends.cudnn.benchmark = True
         args.device = "cuda"
     else:

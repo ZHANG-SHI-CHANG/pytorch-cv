@@ -17,12 +17,16 @@ def get_segmentation_model(model, **kwargs):
     from .deeplabv3 import get_deeplab
     from .danet import get_danet
     from .bisenet import get_bisenet
+    from .ocnet import get_ocnet
+    from .ccnet import get_ccnet
     models = {
         'fcn': get_fcn,
         'psp': get_psp,
         'deeplab': get_deeplab,
         'danet': get_danet,
-        'bisenet': get_bisenet
+        'bisenet': get_bisenet,
+        'ocnet': get_ocnet,
+        'ccnet': get_ccnet,
     }
     return models[model](**kwargs)
 

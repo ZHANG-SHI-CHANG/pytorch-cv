@@ -25,21 +25,9 @@
 # print(a)
 
 import logging
+import argparse
 from utils.logger import setup_logger
 from torch import nn
-
-
-class Demo(object):
-    def __init__(self):
-        self.a = nn.Conv2d(10, 20, 3, 1, 1)
-        self.b = nn.Conv2d(20, 30, 3, 1)
-        setattr(self, 'heads', ['a', 'b'])
-        # self.__setattr__('heads', [self.a, self.b])
-
-
-demo = Demo()
-for name in demo.heads:
-    print(getattr(demo, name).parameters())
 
 # class Demo(nn.Module):
 #     def __init__(self, parent=None):

@@ -27,11 +27,11 @@ def parse_args():
     """Training Options for Segmentation Experiments"""
     parser = argparse.ArgumentParser(description='PyTorch Segmentation')
     # model and dataset
-    parser.add_argument('--model', type=str, default='bisenet',
+    parser.add_argument('--model', type=str, default='ccnet',
                         help='model name (default: fcn)')
-    parser.add_argument('--backbone', type=str, default='resnet18',
+    parser.add_argument('--backbone', type=str, default='resnet101',
                         help='backbone name (default: resnet50)')
-    parser.add_argument('--dataset', type=str, default='citys',
+    parser.add_argument('--dataset', type=str, default='pascal_paper',
                         help='dataset name (default: ade20k)')
     parser.add_argument('--workers', '-j', type=int, default=4,
                         metavar='N', help='dataloader threads')
@@ -42,21 +42,21 @@ def parse_args():
     parser.add_argument('--train-split', type=str, default='train',
                         help='dataset train split (default: train)')
     # training hyper params
-    parser.add_argument('--aux', action='store_true', default=False,
+    parser.add_argument('--aux', type=ptutil.str2bool, default='false',
                         help='Auxiliary loss')
     parser.add_argument('--aux-weight', type=float, default=0.5,
                         help='auxiliary loss weight')
-    parser.add_argument('--dilated', action='store_true', default=False,
+    parser.add_argument('--dilated', type=ptutil.str2bool, default='false',
                         help='Using dilated conv in backbone')
-    parser.add_argument('--jpu', action='store_true', default=False,
+    parser.add_argument('--jpu', type=ptutil.str2bool, default='false',
                         help='Using jpu in backbone')
-    parser.add_argument('--ohem', action='store_true', default=False,
+    parser.add_argument('--ohem', type=ptutil.str2bool, default='false',
                         help='whether using ohem loss')
     parser.add_argument('--epochs', type=int, default=-1, metavar='N',
                         help='number of epochs to train (default: 50)')
     parser.add_argument('--start_epoch', type=int, default=0,
                         metavar='N', help='start epochs (default:0)')
-    parser.add_argument('--batch-size', type=int, default=3,
+    parser.add_argument('--batch-size', type=int, default=1,
                         metavar='N', help='input batch size for \
                         training (default: 16)')
     parser.add_argument('--test-batch-size', type=int, default=1,
@@ -73,14 +73,14 @@ def parse_args():
                         and beta/gamma for batchnorm layers.')
     parser.add_argument('--warmup-iters', type=int, default=200,  # 500
                         help='warmup epochs')
-    parser.add_argument('--warmup-factor', type=float, default=0.01,
+    parser.add_argument('--warmup-factor', type=float, default=1.0 / 3,
                         help='warm up start lr=warmup_factor*lr')
     parser.add_argument('--eval-epochs', type=int, default=10,
                         help='validate interval')
-    parser.add_argument('--skip-eval', action='store_true', default=False,
+    parser.add_argument('--skip-eval', type=ptutil.str2bool, default='false',
                         help='validate interval')
     # cuda and logging
-    parser.add_argument('--no-cuda', action='store_true', default=False,
+    parser.add_argument('--cuda', type=ptutil.str2bool, default='true',
                         help='disables CUDA training')
     parser.add_argument('--local_rank', type=int, default=0)
     parser.add_argument('--init-method', type=str, default="env://")
@@ -304,7 +304,7 @@ if __name__ == "__main__":
     num_gpus = int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
     args.distributed = num_gpus > 1
     args.num_gpus = num_gpus
-    if not args.no_cuda and torch.cuda.is_available():
+    if args.cuda and torch.cuda.is_available():
         torch.backends.cudnn.benchmark = True
         args.device = "cuda"
     else:
@@ -316,7 +316,7 @@ if __name__ == "__main__":
 
     args.lr = args.lr * args.num_gpus  # scale by num gpus
 
-    logger = ptutil.setup_logger('Segmentation', args.save_dir, ptutil.get_rank(), 'log_seg.txt', 'w')
+    logger = ptutil.setup_logger('Segmentation', args.save_dir, ptutil.get_rank(), 'log_seg.txt')
     logger.info("Using {} GPUs".format(num_gpus))
     logger.info(args)
     trainer = Trainer(args)

@@ -22,6 +22,7 @@ __all__ = ['SSD', 'get_ssd',
            'ssd_300_vgg16_atrous_voc',
            'ssd_512_vgg16_atrous_voc',
            'ssd_512_resnet50_v1_voc',
+           'ssd_512_resnet50_v1s_voc',
            'ssd_512_mobilenet1_0_voc',
            # coco
            'ssd_300_vgg16_atrous_coco',
@@ -293,7 +294,7 @@ class SSD(nn.Module):
 
 def get_ssd(name, base_size, features, filters, channels, sizes, ratios, steps, classes,
             dataset, pretrained=False, pretrained_base=True,
-            root=os.path.join(os.path.expanduser('~'), '.torch', 'models'), **kwargs):
+            root=os.path.expanduser('~/.torch/models'), **kwargs):
     """Get SSD models.
 
     Parameters
@@ -354,8 +355,7 @@ def get_ssd(name, base_size, features, filters, channels, sizes, ratios, steps, 
     if pretrained:
         from model.model_store import get_model_file
         full_name = '_'.join(('ssd', str(base_size), name, dataset))
-        net.load_state_dict(torch.load(get_model_file(full_name, root=root),
-                                       map_location=lambda storage, loc: storage))
+        net.load_state_dict(torch.load(get_model_file(full_name, root=root)))
     return net
 
 
@@ -497,6 +497,39 @@ def ssd_512_resnet50_v1_voc(pretrained=False, pretrained_base=True, **kwargs):
                    pretrained_base=pretrained_base, **kwargs)
 
 
+def ssd_512_resnet50_v1s_voc(pretrained=False, pretrained_base=True, **kwargs):
+    """SSD architecture with ResNet v1 50 layers.
+
+    Parameters
+    ----------
+    pretrained : bool or str
+        Boolean value controls whether to load the default pretrained weights for model.
+        String value represents the hashtag for a certain version of pretrained weights.
+    pretrained_base : bool or str, optional, default is True
+        Load pretrained base network, the extra layers are randomized.
+    norm_layer : object
+        Normalization layer used (default: :class:`nn.BatchNorm`)
+        Can be :class:`nn.BatchNorm` or :class:`other normalization`.
+    norm_kwargs : dict
+        Additional `norm_layer` arguments
+
+    Returns
+    -------
+    nn.Module
+        A SSD detection network.
+    """
+    classes = VOCDetection.CLASSES
+    return get_ssd('resnet50_v1s', 512,
+                   features=[[12, 5], [13, 2]],
+                   filters=[2048, 512, 512, 256, 256],
+                   channels=[1024, 2048],
+                   sizes=[51.2, 102.4, 189.4, 276.4, 363.52, 450.6, 492],
+                   ratios=[[1, 2, 0.5]] + [[1, 2, 0.5, 3, 1.0 / 3]] * 3 + [[1, 2, 0.5]] * 2,
+                   steps=[16, 32, 64, 128, 256, 512],
+                   classes=classes, dataset='voc', pretrained=pretrained,
+                   pretrained_base=pretrained_base, **kwargs)
+
+
 def ssd_512_resnet50_v1_coco(pretrained=False, pretrained_base=True, **kwargs):
     """SSD architecture with ResNet v1 50 layers for COCO.
 
@@ -601,13 +634,13 @@ def ssd_512_mobilenet1_0_coco(pretrained=False, pretrained_base=True, **kwargs):
 
 
 if __name__ == '__main__':
-    net = ssd_300_vgg16_atrous_voc(pretrained=True)
+    net = ssd_512_resnet50_v1_voc(pretrained=False)
     import numpy as np
 
     np.random.seed(10)
-    a = np.random.randn(2, 3, 300, 300).astype(np.float32)
-    b = np.random.randint(0, 20, size=(2, 8732)).astype(np.float32)
-    c = np.random.randn(2, 8732, 4).astype(np.float32)
+    a = np.random.randn(2, 3, 512, 512).astype(np.float32)
+    b = np.random.randint(0, 20, size=(2, 6132)).astype(np.float32)
+    c = np.random.randn(2, 6132, 4).astype(np.float32)
 
     a = torch.from_numpy(a)
     b = torch.from_numpy(b)

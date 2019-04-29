@@ -32,11 +32,11 @@ python setup.py build_ext develop
 
 |                         Application                          |              Illustration               |                       Available Models                       |
 | :----------------------------------------------------------: | :-------------------------------------: | :----------------------------------------------------------: |
-| **Image Classification:** <br>recognize an object in an image. | ![](NOTE/png/image-classification.png)  | [CIFAR10](scripts/cifar), [IMAGENET](scripts/imagenet) |
+| **Image Classification:** <br>recognize an object in an image. | ![](NOTE/png/image-classification.png)  |    [CIFAR10](scripts/cifar), [IMAGENET](scripts/imagenet)    |
 | **Object Detection:** <br>detect multiple objects with their <br>bounding boxes in an image. |   ![](NOTE/png/object-detection.png)    | [SSD](scripts/ssd), [YOLO3](scripts/yolo), [Faster-RCNN](scripts/faster_rcnn), [CenterNet](scripts/centernet/README.md) |
-| **Semantic Segmentation:** <br>associate each pixel of an image <br>with a categorical label. | ![](NOTE/png/semantic-segmentation.png) | [FCN, DeepLabv3, PSPNet, DANet](scripts/segmentation) |
-| **Instance Segmentation:** <br>detect objects and associate <br>each pixel inside object area with an <br>instance label. | ![](NOTE/png/instance-segmentation.png) | [Mask RCNN](scripts/mask_rcnn), [YOLACT](scripts/yolact) |
-| **Pose Estimation:** <br>detect human pose <br>from images.  |    ![](NOTE/png/pose-estimation.svg)    |         [Simple-Pose](scripts/simple_pose)         |
+| **Semantic Segmentation:** <br>associate each pixel of an image <br>with a categorical label. | ![](NOTE/png/semantic-segmentation.png) | [FCN, DeepLabv3, PSPNet, DANet, OCNet, BiSeNet, CCNet](scripts/segmentation) |
+| **Instance Segmentation:** <br>detect objects and associate <br>each pixel inside object area with an <br>instance label. | ![](NOTE/png/instance-segmentation.png) |   [Mask RCNN](scripts/mask_rcnn), [YOLACT](scripts/yolact)   |
+| **Pose Estimation:** <br>detect human pose <br>from images.  |    ![](NOTE/png/pose-estimation.svg)    |              [Simple-Pose](scripts/simple_pose)              |
 
 ## Schedule
 
@@ -52,7 +52,7 @@ Semantic Segmentation：training performance nearly same as paper
 | :----------: | :--: | :--: | :---: |
 | Segmentation |  ✓   |  ✓   |   ✓   |
 
-Object Detection：the training performance is a little worse than gluon-cv
+Object Detection：the training performance nearly same as gluon-cv
 
 |             | demo | eval | train |           | demo | eval | train |
 | :---------: | :--: | :--: | :---: | :-------: | :--: | :--: | :---: |

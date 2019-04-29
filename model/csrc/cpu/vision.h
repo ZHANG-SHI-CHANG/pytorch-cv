@@ -104,6 +104,16 @@ std::tuple<at::Tensor, at::Tensor> dcn_v2_psroi_pooling_cpu_backward(
     const int sample_per_part,
     const float trans_std);
 
+// criss-cross module
+at::Tensor ca_forward_cpu(const at::Tensor &t, const at::Tensor &f);
+std::tuple<at::Tensor, at::Tensor> ca_backward_cpu(
+    const at::Tensor &dw, const at::Tensor &t, const at::Tensor &f);
+
+at::Tensor ca_map_forward_cpu(const at::Tensor &weight, const at::Tensor &g);
+std::tuple<at::Tensor, at::Tensor> ca_map_backward_cpu(
+    const at::Tensor &dout, const at::Tensor &weight, const at::Tensor &g);
+
+
 // corner pooling
 std::vector<at::Tensor> top_pool_forward(at::Tensor input);
 std::vector<at::Tensor> top_pool_backward(at::Tensor input, at::Tensor grad_output);

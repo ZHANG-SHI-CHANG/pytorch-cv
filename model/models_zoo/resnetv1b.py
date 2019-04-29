@@ -823,7 +823,7 @@ def resnet152_v1s(pretrained=False, root=os.path.expanduser('~/.torch/models'), 
 
 
 if __name__ == '__main__':
-    net1 = resnet18_v1b()
+    net1 = resnet50_v1s()
     print(net1)
 
     # net1 = resnet18_v1b()
